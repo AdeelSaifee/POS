@@ -1,0 +1,15 @@
+C:\POSS\POS\POS.Desktop.Hardware\bin\Debug\net8.0\POS.Desktop.Hardware.deps.json
+C:\POSS\POS\POS.Desktop.Hardware\bin\Debug\net8.0\POS.Desktop.Hardware.dll
+C:\POSS\POS\POS.Desktop.Hardware\bin\Debug\net8.0\POS.Desktop.Hardware.pdb
+C:\POSS\POS\POS.Desktop.Hardware\bin\Debug\net8.0\POS.Shared.dll
+C:\POSS\POS\POS.Desktop.Hardware\bin\Debug\net8.0\POS.Shared.pdb
+C:\POSS\POS\POS.Desktop.Hardware\obj\Debug\net8.0\POS.Desktop.Hardware.csproj.AssemblyReference.cache
+C:\POSS\POS\POS.Desktop.Hardware\obj\Debug\net8.0\POS.Desktop.Hardware.GeneratedMSBuildEditorConfig.editorconfig
+C:\POSS\POS\POS.Desktop.Hardware\obj\Debug\net8.0\POS.Desktop.Hardware.AssemblyInfoInputs.cache
+C:\POSS\POS\POS.Desktop.Hardware\obj\Debug\net8.0\POS.Desktop.Hardware.AssemblyInfo.cs
+C:\POSS\POS\POS.Desktop.Hardware\obj\Debug\net8.0\POS.Desktop.Hardware.csproj.CoreCompileInputs.cache
+C:\POSS\POS\POS.Desktop.Hardware\obj\Debug\net8.0\POS.Desk.AE2C8AD6.Up2Date
+C:\POSS\POS\POS.Desktop.Hardware\obj\Debug\net8.0\POS.Desktop.Hardware.dll
+C:\POSS\POS\POS.Desktop.Hardware\obj\Debug\net8.0\refint\POS.Desktop.Hardware.dll
+C:\POSS\POS\POS.Desktop.Hardware\obj\Debug\net8.0\POS.Desktop.Hardware.pdb
+C:\POSS\POS\POS.Desktop.Hardware\obj\Debug\net8.0\ref\POS.Desktop.Hardware.dll

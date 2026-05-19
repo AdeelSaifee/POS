@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cash Control - Imtiaz POS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-secondary": "#F8FAFC",
+                        "background": "#f9f9ff",
+                        "border-subtle": "#E2E8F0",
+                        "on-primary-container": "#7c839b",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-surface": "#111c2d",
+                        "inverse-primary": "#bec6e0",
+                        "error-container": "#ffdad6",
+                        "text-secondary": "#64748B",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-surface-variant": "#45464d",
+                        "surface": "#f9f9ff",
+                        "on-secondary-container": "#00714d",
+                        "border-input": "#CBD5E1",
+                        "primary-fixed": "#dae2fd",
+                        "surface-tint": "#565e74",
+                        "surface-container-low": "#f0f3ff",
+                        "on-primary": "#ffffff",
+                        "on-background": "#111c2d",
+                        "primary": "#000000",
+                        "tertiary": "#000000",
+                        "secondary": "#006c49",
+                        "secondary-container": "#6cf8bb",
+                        "on-error-container": "#93000a",
+                        "surface-main": "#FFFFFF",
+                        "danger": "#EF4444"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "44px",
+                        "margin": "16px",
+                        "gutter": "16px",
+                        "sidebar-width": "240px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-numeric": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-numeric": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen overflow-hidden">
+<!-- Side Navigation Bar -->
+<aside class="fixed left-0 top-0 h-full w-[240px] bg-primary-container dark:bg-primary-container border-r border-border-subtle dark:border-outline-variant flex flex-col h-full py-6 px-3 z-50">
+<div class="mb-8 px-4">
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary-container">Imtiaz Superstore</h1>
+<p class="font-label-sm text-label-sm text-on-primary-container opacity-70">Tariq Road Branch</p>
+</div>
+<nav class="flex-1 space-y-2">
+<!-- Nav Item: Checkout -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary-container hover:text-on-primary hover:bg-primary dark:hover:bg-surface-tint transition-colors duration-200 cursor-pointer active:opacity-80 rounded-lg" href="#">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="font-label-md text-label-md">Checkout</span>
+</a>
+<!-- Nav Item: Shift -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary-container hover:text-on-primary hover:bg-primary dark:hover:bg-surface-tint transition-colors duration-200 cursor-pointer active:opacity-80 rounded-lg" href="#">
+<span class="material-symbols-outlined">schedule</span>
+<span class="font-label-md text-label-md">Shift</span>
+</a>
+<!-- Nav Item: Cash Control (ACTIVE) -->
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary dark:bg-secondary-container text-on-secondary dark:text-on-secondary-container rounded-lg cursor-pointer active:opacity-80" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-label-md text-label-md">Cash Control</span>
+</a>
+<!-- Nav Item: Catalog -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary-container hover:text-on-primary hover:bg-primary dark:hover:bg-surface-tint transition-colors duration-200 cursor-pointer active:opacity-80 rounded-lg" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-md text-label-md">Catalog</span>
+</a>
+<!-- Nav Item: Reports -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary-container hover:text-on-primary hover:bg-primary dark:hover:bg-surface-tint transition-colors duration-200 cursor-pointer active:opacity-80 rounded-lg" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+<!-- Nav Item: Settings -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary-container hover:text-on-primary hover:bg-primary dark:hover:bg-surface-tint transition-colors duration-200 cursor-pointer active:opacity-80 rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-4 py-4 bg-white/5 rounded-xl border border-white/10">
+<div class="flex items-center gap-3">
+<img alt="Cashier Avatar" class="w-10 h-10 rounded-full border border-secondary-fixed" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpo1Na-i4JG0p_Mq8D8bh25rGK4KS-MvTGH33ggFMmEwlhJod-udKsMPLWxhc3-c7tK6eSgmlNpErjiQLSlzRvAtQsYPmUzYldxUmugIX-T6BLWSg6_bfv-bs7ZSDQdEqo5yCSUeF9EeFLyaO6ufz0fmIP0GoJpmMAyJYbyjTKVzyQImbxc2Wwf7K3Nwh0jbk5QqZuarabQ7810KFMJDSGbTy6UcVfuz3RMQ6Way7AOCOz-prg_2GOvPoboUXjx_qn6_9TUD3bzJHX"/>
+<div>
+<p class="font-label-md text-label-md text-on-primary">Adeel</p>
+<p class="font-label-sm text-label-sm text-secondary-fixed">POS-01</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Top App Bar -->
+<header class="fixed top-0 right-0 left-[240px] h-[64px] bg-surface-main border-b border-border-subtle flex items-center justify-between px-6 z-40">
+<div class="flex items-center gap-6">
+<span class="font-headline-md text-headline-md font-bold text-primary">POS Terminal</span>
+<div class="h-6 w-px bg-border-subtle"></div>
+<div class="flex gap-4">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Terminal</span>
+<span class="font-label-md text-label-md text-on-surface">T-084</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Shift Status</span>
+<span class="flex items-center gap-1.5 font-label-md text-label-md text-secondary">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                        Open (Morning)
+                    </span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Business Date</span>
+<span class="font-label-md text-label-md text-on-surface">2026-05-19</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1.5 bg-surface-secondary rounded-lg border border-border-subtle">
+<span class="material-symbols-outlined text-text-secondary text-[20px]">wifi</span>
+<span class="material-symbols-outlined text-text-secondary text-[20px]">sync</span>
+<span class="material-symbols-outlined text-danger text-[20px]">notifications</span>
+</div>
+<button class="px-4 py-2 bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:opacity-90 transition-all">
+                End Shift
+            </button>
+</div>
+</header>
+<!-- Main Workspace Content -->
+<main class="fixed inset-0 top-[64px] left-[240px] p-6 overflow-hidden flex gap-6">
+<!-- Left Column: Current Cash Summary (40%) -->
+<section class="w-[40%] flex flex-col gap-6">
+<div class="flex flex-col gap-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">Current Cash Summary</h2>
+<p class="font-body-md text-body-md text-text-secondary">Real-time drawer balance and sales metrics.</p>
+</div>
+<!-- Warning Banner -->
+<div class="bg-error-container border border-error/20 p-4 rounded-xl flex items-start gap-4 animate-pulse">
+<span class="material-symbols-outlined text-danger text-[32px]">warning</span>
+<div>
+<p class="font-label-md text-label-md text-on-error-container">Safe Drop Required!</p>
+<p class="font-body-md text-body-md text-on-error-container opacity-80">Current cash exceeds PKR 20,000 threshold. Please perform a safe drop immediately to minimize risk.</p>
+</div>
+</div>
+<!-- Summary Cards Bento Grid -->
+<div class="grid grid-cols-2 gap-4">
+<div class="p-5 bg-surface-main border border-border-subtle rounded-xl flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase">Opening Float</span>
+<span class="font-headline-lg text-headline-lg text-on-surface">PKR 5,000</span>
+</div>
+<div class="p-5 bg-surface-main border border-border-subtle rounded-xl flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase">Net Cash Sales</span>
+<span class="font-headline-lg text-headline-lg text-secondary">PKR 18,500</span>
+</div>
+<div class="p-5 bg-surface-main border border-border-subtle rounded-xl flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-text-secondary uppercase">Safe Drops Made</span>
+<span class="font-headline-lg text-headline-lg text-text-secondary">PKR 0</span>
+</div>
+<div class="p-5 bg-primary-container text-on-primary-container rounded-xl flex flex-col gap-1 border border-primary">
+<span class="font-label-sm text-label-sm opacity-70 uppercase">Drawer Balance</span>
+<span class="font-headline-lg text-headline-lg text-white">PKR 23,500</span>
+</div>
+</div>
+<!-- Decorative Visual for Cash Status -->
+<div class="mt-auto relative h-48 bg-slate-100 rounded-xl overflow-hidden border border-border-subtle group">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="A professional top-down photograph of organized banknotes and coins on a modern minimalist desk background. The lighting is clean and bright, reflecting a high-end corporate financial atmosphere. Subtle cool blue tones and sharp focus on textures of the currency create a systematic and operational mood. The aesthetic is extremely clean and orderly." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6MnkZyrkeywjnBOkfxnYul9Ge8kEkP-QGUWYFfMBVrJvG2CEp6Ka-MT6anIWe7O8EB_HqI7VlrbvO65NixStC6TVt8Wa40A7Lnd3TuteOqh_sao3amD1G3sJqpPRoJtjrhFxiBhkYbGFy9YdKRoDaJSolvVZwE0Bzn23n6pum28rLW1l2p7IJQin6qy9ZCGAgMiltMsYtl3CY8p9isCV4IUkdiuwtN0J-3C2StiQQe5fAVKOjNgu68DGpztcXRtxlMXIFL0EgfP31"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent flex flex-col justify-end p-4">
+<p class="text-white font-label-md text-label-md">Drawer Integrity: Verified</p>
+<p class="text-white/60 font-label-sm text-label-sm">Last Sync: 2 minutes ago</p>
+</div>
+</div>
+</section>
+<!-- Right Column: Cash Entry & Safe Drop Form (60%) -->
+<section class="w-[60%] bg-surface-main border border-border-subtle rounded-xl flex flex-col overflow-hidden shadow-sm">
+<div class="p-6 border-b border-border-subtle bg-surface-secondary/50">
+<h2 class="font-headline-md text-headline-md text-on-surface">Cash Entry &amp; Safe Drop</h2>
+<p class="font-body-md text-body-md text-text-secondary">Record cash withdrawals (Safe Drops) or cash injections (Petty Cash/Float addition).</p>
+</div>
+<!-- Form Tabs -->
+<div class="flex border-b border-border-subtle">
+<button class="flex-1 py-4 font-label-md text-label-md text-secondary border-b-2 border-secondary bg-secondary-container/10">
+                    Safe Drop / Drawer Cash Out
+                </button>
+<button class="flex-1 py-4 font-label-md text-label-md text-text-secondary hover:bg-surface-secondary transition-colors">
+                    Float Addition / Petty Cash In
+                </button>
+</div>
+<div class="flex-1 p-8 overflow-y-auto space-y-8">
+<!-- Amount Entry -->
+<div class="space-y-4">
+<label class="font-label-md text-label-md text-on-surface">Amount to Remove</label>
+<div class="relative">
+<span class="absolute left-6 top-1/2 -translate-y-1/2 font-headline-lg text-headline-lg text-text-secondary">PKR</span>
+<input class="w-full h-[80px] pl-24 pr-6 text-display-numeric font-display-numeric bg-surface-secondary border-2 border-border-input rounded-xl focus:border-secondary focus:ring-0 transition-all text-right" type="text" value="15,000"/>
+</div>
+<div class="flex gap-3">
+<button class="flex-1 py-3 border border-border-subtle rounded-lg font-label-md text-label-md hover:bg-surface-secondary transition-colors">PKR 5,000</button>
+<button class="flex-1 py-3 border border-border-subtle rounded-lg font-label-md text-label-md hover:bg-surface-secondary transition-colors">PKR 10,000</button>
+<button class="flex-1 py-3 border-2 border-secondary bg-secondary-container/20 text-secondary rounded-lg font-label-md text-label-md">PKR 15,000</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<!-- Reason Selection -->
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface">Reason</label>
+<select class="w-full h-11 border-border-input rounded-lg font-body-md focus:border-secondary focus:ring-0">
+<option selected="">Safe Drop to Main Vault</option>
+<option>Shift Change Withdrawal</option>
+<option>Mid-Day Clearing</option>
+<option>Emergency Safe Drop</option>
+</select>
+</div>
+<!-- Manager Verification -->
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface flex items-center justify-between">
+                            Manager Verification
+                            <span class="text-[10px] uppercase text-danger font-bold">Required</span>
+</label>
+<input class="w-full h-11 border-border-input rounded-lg font-body-md focus:border-secondary focus:ring-0 tracking-widest" placeholder="Enter PIN" type="password" value="****"/>
+</div>
+</div>
+<!-- Remarks -->
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface">Remarks</label>
+<textarea class="w-full h-24 border-border-input rounded-lg font-body-md focus:border-secondary focus:ring-0 resize-none p-4" placeholder="Add any additional notes for the finance team..."></textarea>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="p-6 border-t border-border-subtle flex gap-4 bg-surface-secondary/30">
+<button class="px-8 py-4 border border-border-subtle text-text-secondary font-label-md text-label-md rounded-lg hover:bg-white transition-all active:scale-[0.98]">
+                    Cancel / Go Back
+                </button>
+<button class="flex-1 py-4 bg-secondary text-on-secondary font-headline-md text-headline-md rounded-lg shadow-lg shadow-secondary/20 hover:brightness-110 transition-all flex items-center justify-center gap-2 active:scale-[0.99]">
+<span class="material-symbols-outlined">print</span>
+                    Submit Safe Drop &amp; Print Receipt
+                </button>
+</div>
+</section>
+</main>
+<!-- Interactive micro-interactions -->
+<script>
+        document.querySelectorAll('button, a').forEach(elem => {
+            elem.addEventListener('click', function(e) {
+                const ripple = document.createElement('div');
+                ripple.classList.add('ripple');
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+    </script>
+<style>
+        .ripple {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-effect 0.6s linear;
+            pointer-events: none;
+        }
+        @keyframes ripple-effect {
+            to { transform: scale(15); opacity: 0; }
+        }
+    </style>
+</body></html>

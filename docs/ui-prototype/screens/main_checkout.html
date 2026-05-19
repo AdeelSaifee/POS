@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Enterprise POS - Imtiaz Retail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed": "#131b2e",
+                        "border-subtle": "#E2E8F0",
+                        "text-secondary": "#64748B",
+                        "secondary": "#006c49",
+                        "tertiary": "#000000",
+                        "primary": "#000000",
+                        "error": "#ba1a1a",
+                        "surface-variant": "#d8e3fb",
+                        "inverse-on-surface": "#ecf1ff",
+                        "on-primary-container": "#7c839b",
+                        "surface": "#f9f9ff",
+                        "secondary-fixed": "#6ffbbe",
+                        "tertiary-container": "#2a1700",
+                        "surface-container": "#e7eeff",
+                        "on-secondary-fixed": "#002113",
+                        "secondary-container": "#6cf8bb",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#b87500",
+                        "border-input": "#CBD5E1",
+                        "surface-container-highest": "#d8e3fb",
+                        "surface-tint": "#565e74",
+                        "secondary-fixed-dim": "#4edea3",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "surface-main": "#FFFFFF",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "surface-container-high": "#dee8ff",
+                        "surface-secondary": "#F8FAFC",
+                        "on-secondary-fixed-variant": "#005236",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#bec6e0",
+                        "on-background": "#111c2d",
+                        "on-error": "#ffffff",
+                        "surface-bright": "#f9f9ff",
+                        "primary-fixed": "#dae2fd",
+                        "surface-container-low": "#f0f3ff",
+                        "outline-variant": "#c6c6cd",
+                        "on-surface": "#111c2d",
+                        "inverse-surface": "#263143",
+                        "primary-container": "#131b2e",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-secondary": "#ffffff",
+                        "background": "#f9f9ff",
+                        "on-tertiary": "#ffffff",
+                        "surface-dim": "#cfdaf2",
+                        "on-secondary-container": "#00714d",
+                        "inverse-primary": "#bec6e0",
+                        "danger": "#EF4444",
+                        "outline": "#76777d",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-surface-variant": "#45464d",
+                        "on-primary-fixed-variant": "#3f465c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "44px",
+                        "margin": "16px",
+                        "sidebar-width": "240px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "display-numeric": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "display-numeric": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9f9ff;
+            overflow: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .cart-table-container {
+            height: calc(100vh - 380px);
+        }
+        .catalog-container {
+            height: calc(100vh - 180px);
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- Top Status Bar -->
+<header class="bg-surface-main dark:bg-on-background flex justify-between items-center h-16 px-gutter w-full sticky top-0 z-50 border-b border-border-subtle dark:border-outline">
+<div class="flex items-center gap-6">
+<div class="text-headline-md font-headline-md font-bold text-primary dark:text-on-primary-fixed">
+                Imtiaz Retail
+            </div>
+<div class="flex items-center gap-2 text-text-secondary">
+<span class="material-symbols-outlined text-body-md" data-icon="location_on">location_on</span>
+<span class="text-body-md font-body-md">Tariq Road</span>
+</div>
+</div>
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-6 border-r border-border-subtle pr-8">
+<div class="flex flex-col items-end">
+<span class="text-label-sm font-label-sm text-text-secondary">Terminal</span>
+<span class="text-label-md font-label-md">POS-01</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-label-sm font-label-sm text-text-secondary">Cashier</span>
+<span class="text-label-md font-label-md">Adeel</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-label-sm font-label-sm text-text-secondary">Shift Status</span>
+<div class="flex items-center gap-1.5">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="text-label-md font-label-md">Open</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-label-md font-label-md text-text-secondary">2026-05-19</span>
+<span class="material-symbols-outlined text-on-primary-fixed-variant cursor-pointer hover:opacity-70" data-icon="account_circle">account_circle</span>
+<span class="material-symbols-outlined text-on-primary-fixed-variant cursor-pointer hover:opacity-70" data-icon="terminal">terminal</span>
+</div>
+</div>
+</header>
+<div class="flex h-[calc(100vh-64px)] overflow-hidden">
+<!-- Side Navigation -->
+<aside class="flex flex-col h-full w-[240px] py-6 px-4 bg-primary-container dark:bg-on-background border-r border-border-subtle dark:border-outline">
+<div class="flex flex-col gap-2 flex-grow">
+<!-- Checkout Active -->
+<div class="flex items-center gap-4 bg-on-primary-fixed-variant dark:bg-secondary text-on-primary dark:text-on-secondary-fixed rounded-lg px-4 py-3 cursor-pointer scale-95 active:scale-90 duration-150 transition-all">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="text-label-md font-label-md">Checkout</span>
+</div>
+<div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-on-primary-fixed-variant/50 dark:hover:bg-surface-container-highest transition-all cursor-pointer scale-95 active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="person_pin_circle">person_pin_circle</span>
+<span class="text-label-md font-label-md">Shift</span>
+</div>
+<div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-on-primary-fixed-variant/50 dark:hover:bg-surface-container-highest transition-all cursor-pointer scale-95 active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="text-label-md font-label-md">Cash Control</span>
+</div>
+<div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-on-primary-fixed-variant/50 dark:hover:bg-surface-container-highest transition-all cursor-pointer scale-95 active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="text-label-md font-label-md">Catalog</span>
+</div>
+<div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-on-primary-fixed-variant/50 dark:hover:bg-surface-container-highest transition-all cursor-pointer scale-95 active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="assessment">assessment</span>
+<span class="text-label-md font-label-md">Reports</span>
+</div>
+<div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-on-primary-fixed-variant/50 dark:hover:bg-surface-container-highest transition-all cursor-pointer scale-95 active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</div>
+</div>
+<div class="border-t border-on-primary-fixed-variant/30 pt-4 flex flex-col gap-2">
+<div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="text-label-md font-label-md">Help</span>
+</div>
+<div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-error/20 transition-all cursor-pointer">
+<span class="material-symbols-outlined text-danger" data-icon="logout">logout</span>
+<span class="text-label-md font-label-md text-danger">Sign Out</span>
+</div>
+</div>
+</aside>
+<!-- Main Workspace -->
+<main class="flex flex-1 overflow-hidden">
+<!-- Cart Panel (40%) -->
+<section class="w-[40%] flex flex-col bg-surface-secondary border-r border-border-subtle">
+<div class="p-6 flex flex-col h-full">
+<div class="flex justify-between items-center mb-4">
+<h2 class="text-headline-md font-headline-md">Current Order</h2>
+<span class="text-label-md font-label-md text-text-secondary">4 Items</span>
+</div>
+<!-- Cart Table -->
+<div class="cart-table-container overflow-y-auto scrollbar-hide bg-white rounded-lg border border-border-subtle mb-6">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 bg-surface-container-low border-b border-border-subtle">
+<tr>
+<th class="px-4 py-3 text-label-sm font-label-sm text-text-secondary">Item</th>
+<th class="px-4 py-3 text-label-sm font-label-sm text-text-secondary text-center">Qty</th>
+<th class="px-4 py-3 text-label-sm font-label-sm text-text-secondary text-right">Price</th>
+<th class="px-4 py-3 text-label-sm font-label-sm text-text-secondary text-right">Total</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-subtle">
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="px-4 py-4 text-body-md font-medium">Milk 1L</td>
+<td class="px-4 py-4 text-body-md text-center">2</td>
+<td class="px-4 py-4 text-body-md text-right">280</td>
+<td class="px-4 py-4 text-body-md font-bold text-right">560</td>
+</tr>
+<tr class="bg-surface-secondary/30 hover:bg-surface-container-low/50 transition-colors">
+<td class="px-4 py-4 text-body-md font-medium">Rice 5kg</td>
+<td class="px-4 py-4 text-body-md text-center">1</td>
+<td class="px-4 py-4 text-body-md text-right">1,500</td>
+<td class="px-4 py-4 text-body-md font-bold text-right">1,500</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="px-4 py-4 text-body-md font-medium">Coca Cola 1.5L</td>
+<td class="px-4 py-4 text-body-md text-center">2</td>
+<td class="px-4 py-4 text-body-md text-right">150</td>
+<td class="px-4 py-4 text-body-md font-bold text-right">300</td>
+</tr>
+<tr class="bg-surface-secondary/30 hover:bg-surface-container-low/50 transition-colors">
+<td class="px-4 py-4 text-body-md font-medium">Tea Pack 500g</td>
+<td class="px-4 py-4 text-body-md text-center">1</td>
+<td class="px-4 py-4 text-body-md text-right">1,440</td>
+<td class="px-4 py-4 text-body-md font-bold text-right">1,440</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Footer Summary -->
+<div class="mt-auto space-y-3 bg-white p-4 rounded-lg border border-border-subtle shadow-sm">
+<div class="flex justify-between items-center text-body-md">
+<span class="text-text-secondary">Subtotal</span>
+<span class="font-medium">PKR 3,800</span>
+</div>
+<div class="flex justify-between items-center text-body-md">
+<span class="text-text-secondary">Discount</span>
+<span class="text-danger">- PKR 100</span>
+</div>
+<div class="flex justify-between items-center text-body-md">
+<span class="text-text-secondary">Tax (VAT 5%)</span>
+<span class="font-medium">PKR 185</span>
+</div>
+<div class="pt-3 mt-1 border-t border-border-subtle flex justify-between items-center">
+<span class="text-headline-md font-bold text-primary">Total</span>
+<span class="text-display-numeric font-display-numeric text-primary">PKR 3,885</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="grid grid-cols-3 gap-3 mt-6">
+<button class="h-14 flex items-center justify-center gap-2 bg-danger text-white rounded-lg font-label-md hover:bg-error transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+                            Void Order
+                        </button>
+<button class="h-14 flex items-center justify-center gap-2 bg-surface-container-high text-on-surface rounded-lg font-label-md hover:bg-surface-container-highest transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="pause_circle">pause_circle</span>
+                            Hold Order
+                        </button>
+<button class="h-14 flex items-center justify-center gap-2 bg-secondary text-white rounded-lg font-headline-md font-bold hover:opacity-90 transition-all active:scale-95 shadow-md shadow-secondary/20">
+<span class="material-symbols-outlined" data-icon="shopping_cart_checkout">shopping_cart_checkout</span>
+                            Pay Now
+                        </button>
+</div>
+</div>
+</section>
+<!-- Catalog Grid (60%) -->
+<section class="w-[60%] flex flex-col bg-white">
+<div class="p-6 flex flex-col h-full">
+<!-- Search Bar -->
+<div class="relative mb-6">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary" data-icon="barcode_scanner">barcode_scanner</span>
+<input class="w-full h-[56px] pl-12 pr-4 bg-surface-secondary border border-border-input rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all text-body-lg" placeholder="Scan Barcode or Search Item (SKU, Name)..." type="text"/>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2">
+<kbd class="px-2 py-1 bg-white border border-border-subtle rounded text-label-sm text-text-secondary">F1: Search</kbd>
+<kbd class="px-2 py-1 bg-white border border-border-subtle rounded text-label-sm text-text-secondary">F2: Barcode</kbd>
+</div>
+</div>
+<!-- Categories Row -->
+<div class="flex gap-3 mb-8 overflow-x-auto scrollbar-hide pb-2">
+<button class="px-6 py-3 bg-primary text-white rounded-full text-label-md whitespace-nowrap">All Items</button>
+<button class="px-6 py-3 bg-surface-secondary text-on-surface border border-border-subtle rounded-full text-label-md whitespace-nowrap hover:bg-surface-container transition-all">Beverages</button>
+<button class="px-6 py-3 bg-surface-secondary text-on-surface border border-border-subtle rounded-full text-label-md whitespace-nowrap hover:bg-surface-container transition-all">Grocery</button>
+<button class="px-6 py-3 bg-surface-secondary text-on-surface border border-border-subtle rounded-full text-label-md whitespace-nowrap hover:bg-surface-container transition-all">Snacks</button>
+<button class="px-6 py-3 bg-surface-secondary text-on-surface border border-border-subtle rounded-full text-label-md whitespace-nowrap hover:bg-surface-container transition-all">Pharmacy</button>
+<button class="px-6 py-3 bg-surface-secondary text-on-surface border border-border-subtle rounded-full text-label-md whitespace-nowrap hover:bg-surface-container transition-all">Fresh Produce</button>
+</div>
+<!-- Product Grid -->
+<div class="catalog-container overflow-y-auto pr-2">
+<div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+<!-- Product Card 1 -->
+<div class="bg-white border border-border-subtle rounded-xl p-4 flex flex-col hover:border-primary hover:shadow-md transition-all group cursor-pointer active:scale-[0.98]">
+<div class="relative w-full aspect-square mb-3 rounded-lg overflow-hidden bg-surface-secondary">
+<img alt="Milk 1L" class="w-full h-full object-cover" data-alt="A fresh carton of full cream milk placed on a clean marble surface in a bright, modern retail setting. Soft, diffuse commercial lighting highlights the crisp packaging and the pure white liquid condensation. The aesthetic is clean, professional, and corporate, emphasizing high-quality dairy products in a high-end supermarket environment. Minimalist and systematic focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZRQVG3wEhMyo6dgmOF7vOVCr06CwaKn_XUYl0qzAa8n_UGeYqrB739YMiAcrZ206RSfbWSA9pdFSamOj2dNHRI2ePhF3sHrKWcrWDbJ82TuSb1ml0XFTVr4UPBZfP4KnYKuzKhQpBY59No3R4rLwT3Mb_8TstL3E8hPWvlVHVlUv5kblk38ZQLywl5jlxhnMrM_XDkVz8f4TSBfZ1YzKvKJnoFPGeXkcx5oZ_6fZf5AeY9YAHpYsebG59oytkNxqI4BioYIwPJZ-2"/>
+<span class="absolute top-2 right-2 px-2 py-1 bg-secondary/10 text-secondary text-label-sm font-bold rounded">24 in Stock</span>
+</div>
+<h3 class="text-label-md font-bold mb-1 truncate">Milk 1L Tetra</h3>
+<p class="text-headline-md font-bold text-primary mb-4">PKR 280</p>
+<button class="mt-auto w-full h-10 flex items-center justify-center gap-2 bg-surface-container-low group-hover:bg-primary group-hover:text-white transition-all rounded-lg font-label-md">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                                    Add to Cart
+                                </button>
+</div>
+<!-- Product Card 2 -->
+<div class="bg-white border border-border-subtle rounded-xl p-4 flex flex-col hover:border-primary hover:shadow-md transition-all group cursor-pointer active:scale-[0.98]">
+<div class="relative w-full aspect-square mb-3 rounded-lg overflow-hidden bg-surface-secondary">
+<img alt="Rice 5kg" class="w-full h-full object-cover" data-alt="A 5kg premium sack of long-grain basmati rice showcased in a professional retail layout. The lighting is crisp and even, suitable for a corporate point of sale environment. Subtle earthy tones and clean whites dominate the palette. The atmosphere is systematic and efficient, emphasizing staple grocery products with a flat, modern architectural aesthetic. Professional commercial photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxaIG3Cbxz-VvBmnqKRybGibWzC8wAa5WVFvC_JHpz1JipfcUBUtv93ZAJDYTdtMohtZln3SsEvbSLCrQ2S7srDGJWgcMFqSRBpBruHsEFSH3_ckwzISwplRrHWAckzX-X7i9fBqmAOOendwkWsWMGpay6m2gZ_TDakkrFcdzDGZAEGM2bE9-do0Y8rbuaON5E8tU6KobrepkbFURyXtEJruUD2uKsWLjfk_8JDLAMod4obZ-cbgpqgKzCeLi_MWdadgV6-rneyWep"/>
+<span class="absolute top-2 right-2 px-2 py-1 bg-secondary/10 text-secondary text-label-sm font-bold rounded">15 in Stock</span>
+</div>
+<h3 class="text-label-md font-bold mb-1 truncate">Rice 5kg Premium</h3>
+<p class="text-headline-md font-bold text-primary mb-4">PKR 1,500</p>
+<button class="mt-auto w-full h-10 flex items-center justify-center gap-2 bg-surface-container-low group-hover:bg-primary group-hover:text-white transition-all rounded-lg font-label-md">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                                    Add to Cart
+                                </button>
+</div>
+<!-- Product Card 3 -->
+<div class="bg-white border border-border-subtle rounded-xl p-4 flex flex-col hover:border-primary hover:shadow-md transition-all group cursor-pointer active:scale-[0.98]">
+<div class="relative w-full aspect-square mb-3 rounded-lg overflow-hidden bg-surface-secondary">
+<img alt="Coca Cola" class="w-full h-full object-cover" data-alt="A chilled 1.5L bottle of classic cola with condensation droplets, positioned in a bright, professionally lit commercial display. The scene uses high-contrast colors, primarily the bold red of the label against a neutral light-gray background. The visual style is systematic, modern, and high-efficiency, tailored for a desktop point of sale system interface. Clean lines and crisp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRGgUPCkGA6xBl3B7yfi_gJmBQ21UK4h0wPzlA5JTCjkLo5ZJfjs0DrSLKue_3fJDkqPUhrB-BM-COlbmEaVGeCloi5vaH6BZiOP6KAbRnsX5EZN1rhpbVIKGsmc5V029u8HZDMXkOt_U9o7NESp0FjuIoq24SyqqqiLzXHKepDXTjDBBbgu9WpysuHGwJ0ebyBpU3Le-kYEcm4wrc98oBO38_QW3PWze1S3GLaeYjodx47iDAg8LbN4EKd-pc1gC8rD1ZqIZKqJdb"/>
+<span class="absolute top-2 right-2 px-2 py-1 bg-secondary/10 text-secondary text-label-sm font-bold rounded">50+ in Stock</span>
+</div>
+<h3 class="text-label-md font-bold mb-1 truncate">Coca Cola 1.5L</h3>
+<p class="text-headline-md font-bold text-primary mb-4">PKR 150</p>
+<button class="mt-auto w-full h-10 flex items-center justify-center gap-2 bg-surface-container-low group-hover:bg-primary group-hover:text-white transition-all rounded-lg font-label-md">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                                    Add to Cart
+                                </button>
+</div>
+<!-- Product Card 4 -->
+<div class="bg-white border border-border-subtle rounded-xl p-4 flex flex-col hover:border-primary hover:shadow-md transition-all group cursor-pointer active:scale-[0.98]">
+<div class="relative w-full aspect-square mb-3 rounded-lg overflow-hidden bg-surface-secondary">
+<img alt="Apples" class="w-full h-full object-cover" data-alt="A basket of fresh, vibrant red apples in a clean, brightly lit retail section. The photography is sharp and professional, utilizing a modern light-mode aesthetic with minimal shadows. The layout emphasizes high-speed interaction and visual clarity for a retail management system. Natural colors are rendered with high fidelity in a systematic, professional atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAczJ85zO0f-rGmEcyC9dDMmW4ZA_ODfy5jLbuvQHmO3cNCkjoI7c2N7CD8x013a1lNAvXQLhroPKxSLifrALi1yN7vXmWBWHBQoBRMZTfDpnnIa5ExYLnFh0H6CFCt5zYRdfPdSosoOsfLAo8ur-wAaTLwcoIaxJ28xrZnCQCc0l_GUvGh88uJ5bwx5FzT4M2nxANc8KxDToQB8e2Hr6OHNB7cd2xhh-vVLexpDs_1B4NNTYtRMb8cE4Zu_cZtocJxrSP7yUFLHBjp"/>
+<span class="absolute top-2 right-2 px-2 py-1 bg-secondary/10 text-secondary text-label-sm font-bold rounded">12 kg Stock</span>
+</div>
+<h3 class="text-label-md font-bold mb-1 truncate">Fresh Apple 1kg</h3>
+<p class="text-headline-md font-bold text-primary mb-4">PKR 350</p>
+<button class="mt-auto w-full h-10 flex items-center justify-center gap-2 bg-surface-container-low group-hover:bg-primary group-hover:text-white transition-all rounded-lg font-label-md">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                                    Add to Cart
+                                </button>
+</div>
+<!-- Product Card 5 -->
+<div class="bg-white border border-border-subtle rounded-xl p-4 flex flex-col hover:border-primary hover:shadow-md transition-all group cursor-pointer active:scale-[0.98]">
+<div class="relative w-full aspect-square mb-3 rounded-lg overflow-hidden bg-surface-secondary">
+<img alt="Cooking Oil" class="w-full h-full object-cover" data-alt="A 3L jug of clear, golden vegetable cooking oil displayed in a professional retail setting. The lighting is high-key and soft, creating a bright and clean corporate look. The image focuses on transparency and purity, using a refined palette of golds, whites, and subtle grays. Systematic and distraction-free visual style suitable for a high-volume POS interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDctzzJX61Mv2ZyQKBYiGx4Yvb3SFNR1RDEWYQGLJnfStuX0wj3LjMFGnqtVBm8582ZPbtKgzgXMivVFBORs0pf6PuXtAfJEhc475K0apu9EnYU8RH-UupaWlNsrwl9Jt4FykW4Fc3f8XOBJCpbPr2EJ-DYZHnehzY86SrSIC2b6bmza8IUX5F2mM1q50Ju0C9F5lMkV7FRWW_FryPlz-CnmxxwwZkwG2V3XPNVJGdPjWyX3Da_nnCdFWKZ6xxur98AYqUENGbPgxeV"/>
+<span class="absolute top-2 right-2 px-2 py-1 bg-secondary/10 text-secondary text-label-sm font-bold rounded">8 in Stock</span>
+</div>
+<h3 class="text-label-md font-bold mb-1 truncate">Cooking Oil 3L</h3>
+<p class="text-headline-md font-bold text-primary mb-4">PKR 1,650</p>
+<button class="mt-auto w-full h-10 flex items-center justify-center gap-2 bg-surface-container-low group-hover:bg-primary group-hover:text-white transition-all rounded-lg font-label-md">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                                    Add to Cart
+                                </button>
+</div>
+<!-- Product Card 6 -->
+<div class="bg-white border border-border-subtle rounded-xl p-4 flex flex-col hover:border-primary hover:shadow-md transition-all group cursor-pointer active:scale-[0.98]">
+<div class="relative w-full aspect-square mb-3 rounded-lg overflow-hidden bg-surface-secondary">
+<img alt="Sugar" class="w-full h-full object-cover" data-alt="A clean 1kg packet of white refined sugar, professionally photographed on a light-colored background. The scene is bright and airy, reflecting a modern corporate retail identity. Visual focus is on structural clarity and high-efficiency interaction points. The color palette is composed of pristine whites and soft grays, creating a calm, distraction-free environment for retail management." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXlSofktgDfQlhpfd0fT6vETwucslvgYxZhKKhY2Wvjygg5BXUECyMkASkKeQq7N0GnoMbb3JrW1PKHSJB-GurfcWjeVk4QwK-3U0Up5aNU0bqKvRW8o7VUZwMx99Es-FIL9thkct6OLBpIZrLOnG-E82eI5bP0cXNNtMxUGD0pebuPnSR4S4Y_ZNztAIjFXtz1PkGvoqv5PXXF4U5WBo9wMas0_aspaPjnXu1lCvFZi2sosgbO0984tnaWYpGuAZUkOSYLcxYTXzm"/>
+<span class="absolute top-2 right-2 px-2 py-1 bg-secondary/10 text-secondary text-label-sm font-bold rounded">42 in Stock</span>
+</div>
+<h3 class="text-label-md font-bold mb-1 truncate">Sugar 1kg</h3>
+<p class="text-headline-md font-bold text-primary mb-4">PKR 145</p>
+<button class="mt-auto w-full h-10 flex items-center justify-center gap-2 bg-surface-container-low group-hover:bg-primary group-hover:text-white transition-all rounded-lg font-label-md">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                                    Add to Cart
+                                </button>
+</div>
+<!-- Product Card 7 -->
+<div class="bg-white border border-border-subtle rounded-xl p-4 flex flex-col hover:border-primary hover:shadow-md transition-all group cursor-pointer active:scale-[0.98]">
+<div class="relative w-full aspect-square mb-3 rounded-lg overflow-hidden bg-surface-secondary">
+<img alt="Tea Pack" class="w-full h-full object-cover" data-alt="A professional retail box of high-quality loose leaf tea, 500g, showcased in a modern supermarket layout. The lighting is studio-grade, emphasizing the vibrant packaging and premium branding. The overall aesthetic is systematic and efficient, using a palette of rich greens and crisp whites. Professional commercial photography designed for high-end digital point-of-sale systems." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxdNIH2CgdrOoeGst6-K1si4dcKEPKZL-XqVRsH-UB2CY78EM7goEoPbdcky-k4kiXMFWiy94QEb07MUrFBzHRFG9cYp1sTYWX3AB8m7cw8nV1eO9eIfJJ7iCIpzWsweLyxPKhQHdGNgC0p0JMkkxigDjLqgoG0sEZ4DY6xb9gdPWamQcBUjjnchkfirJwIojH-HliIulMV2-y8wBmwt8_4Rwoi8jak55qt8Afx0wDuIfBnah38tg5dEC9TiIHP4SDXy-1GglO04o0"/>
+<span class="absolute top-2 right-2 px-2 py-1 bg-error/10 text-error text-label-sm font-bold rounded">Low Stock: 3</span>
+</div>
+<h3 class="text-label-md font-bold mb-1 truncate">Tea Pack 500g</h3>
+<p class="text-headline-md font-bold text-primary mb-4">PKR 1,440</p>
+<button class="mt-auto w-full h-10 flex items-center justify-center gap-2 bg-surface-container-low group-hover:bg-primary group-hover:text-white transition-all rounded-lg font-label-md">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                                    Add to Cart
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- Floating Numeric Keypad (Interaction Layer) -->
+<div class="fixed bottom-6 right-6 hidden bg-white shadow-xl border border-border-subtle rounded-2xl p-4 w-72 z-[100] transition-all transform scale-95 opacity-0" id="keypad">
+<div class="flex justify-between items-center mb-4 border-b border-border-subtle pb-2">
+<span class="text-label-md font-bold">Qty Override</span>
+<button class="material-symbols-outlined text-text-secondary hover:text-primary" onclick="toggleKeypad()">close</button>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<button class="h-12 bg-surface-secondary hover:bg-surface-container-high rounded-lg font-bold text-body-lg">1</button>
+<button class="h-12 bg-surface-secondary hover:bg-surface-container-high rounded-lg font-bold text-body-lg">2</button>
+<button class="h-12 bg-surface-secondary hover:bg-surface-container-high rounded-lg font-bold text-body-lg">3</button>
+<button class="h-12 bg-surface-secondary hover:bg-surface-container-high rounded-lg font-bold text-body-lg">4</button>
+<button class="h-12 bg-surface-secondary hover:bg-surface-container-high rounded-lg font-bold text-body-lg">5</button>
+<button class="h-12 bg-surface-secondary hover:bg-surface-container-high rounded-lg font-bold text-body-lg">6</button>
+<button class="h-12 bg-surface-secondary hover:bg-surface-container-high rounded-lg font-bold text-body-lg">7</button>
+<button class="h-12 bg-surface-secondary hover:bg-surface-container-high rounded-lg font-bold text-body-lg">8</button>
+<button class="h-12 bg-surface-secondary hover:bg-surface-container-high rounded-lg font-bold text-body-lg">9</button>
+<button class="h-12 bg-danger/10 text-danger hover:bg-danger/20 rounded-lg font-bold text-body-lg">C</button>
+<button class="h-12 bg-surface-secondary hover:bg-surface-container-high rounded-lg font-bold text-body-lg">0</button>
+<button class="h-12 bg-secondary text-white hover:opacity-90 rounded-lg font-bold text-body-lg">OK</button>
+</div>
+</div>
+<script>
+        function toggleKeypad() {
+            const keypad = document.getElementById('keypad');
+            if (keypad.classList.contains('hidden')) {
+                keypad.classList.remove('hidden');
+                setTimeout(() => {
+                    keypad.classList.remove('scale-95', 'opacity-0');
+                    keypad.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            } else {
+                keypad.classList.add('scale-95', 'opacity-0');
+                keypad.classList.remove('scale-100', 'opacity-100');
+                setTimeout(() => {
+                    keypad.classList.add('hidden');
+                }, 200);
+            }
+        }
+
+        // Shortcut keys simulation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F1') {
+                e.preventDefault();
+                document.querySelector('input').focus();
+            }
+            if (e.key === 'q' || e.key === 'Q') {
+                toggleKeypad();
+            }
+        });
+
+        // Simple feedback on product click
+        document.querySelectorAll('.catalog-container > div > div').forEach(card => {
+            card.addEventListener('click', () => {
+                const title = card.querySelector('h3').innerText;
+                console.log(`Added ${title} to cart`);
+                // Visual feedback
+                const btn = card.querySelector('button');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span> Added';
+                btn.classList.add('bg-secondary', 'text-white');
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('bg-secondary', 'text-white');
+                }, 800);
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Enterprise POS - Shift Close</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#c6c6cd",
+                        "background": "#f9f9ff",
+                        "on-secondary-fixed-variant": "#005236",
+                        "surface-container": "#e7eeff",
+                        "primary-fixed-dim": "#bec6e0",
+                        "on-tertiary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#4edea3",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed": "#002113",
+                        "on-primary-fixed": "#131b2e",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#6cf8bb",
+                        "surface-bright": "#f9f9ff",
+                        "on-primary-container": "#7c839b",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "surface-container-low": "#f0f3ff",
+                        "tertiary-container": "#2a1700",
+                        "tertiary": "#000000",
+                        "border-subtle": "#E2E8F0",
+                        "primary": "#000000",
+                        "secondary-fixed": "#6ffbbe",
+                        "inverse-surface": "#263143",
+                        "danger": "#EF4444",
+                        "on-surface": "#111c2d",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "surface-dim": "#cfdaf2",
+                        "outline": "#76777d",
+                        "on-tertiary-container": "#b87500",
+                        "on-background": "#111c2d",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#ecf1ff",
+                        "surface-main": "#FFFFFF",
+                        "primary-fixed": "#dae2fd",
+                        "text-secondary": "#64748B",
+                        "border-input": "#CBD5E1",
+                        "surface-secondary": "#F8FAFC",
+                        "surface": "#f9f9ff",
+                        "surface-container-high": "#dee8ff",
+                        "on-secondary-container": "#00714d",
+                        "on-error": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#d8e3fb",
+                        "on-surface-variant": "#45464d",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#131b2e",
+                        "surface-tint": "#565e74",
+                        "inverse-primary": "#bec6e0",
+                        "surface-container-highest": "#d8e3fb",
+                        "secondary": "#006c49",
+                        "tertiary-fixed": "#ffddb8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "44px",
+                        "sidebar-width": "240px",
+                        "margin": "16px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "display-numeric": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-numeric": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9f9ff; overflow: hidden; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .denomination-input:focus { outline: 2px solid #3f465c; border-color: transparent; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-on-surface">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-full w-[240px] py-6 px-4 border-r border-border-subtle bg-primary-container z-50 fixed left-0 top-0">
+<div class="mb-8 px-4">
+<h1 class="text-headline-md font-headline-md font-bold text-on-primary">Enterprise POS</h1>
+</div>
+<nav class="flex-1 flex flex-col gap-2">
+<!-- Checkout -->
+<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="text-label-md font-label-md">Checkout</span>
+</div>
+<!-- Shift (Active) -->
+<div class="flex items-center gap-4 bg-on-primary-fixed-variant text-on-primary rounded-lg px-4 py-3 cursor-pointer scale-95 active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="person_pin_circle">person_pin_circle</span>
+<span class="text-label-md font-label-md">Shift</span>
+</div>
+<!-- Cash Control -->
+<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="text-label-md font-label-md">Cash Control</span>
+</div>
+<!-- Catalog Management -->
+<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="text-label-md font-label-md">Catalog</span>
+</div>
+<!-- Reports -->
+<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
+<span class="material-symbols-outlined" data-icon="assessment">assessment</span>
+<span class="text-label-md font-label-md">Reports</span>
+</div>
+<!-- Settings -->
+<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</div>
+</nav>
+<div class="mt-auto border-t border-on-primary-fixed-variant/30 pt-4 flex flex-col gap-2">
+<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="text-label-md font-label-md">Help</span>
+</div>
+<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="text-label-md font-label-md">Sign Out</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-[240px] flex flex-col h-full bg-background">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center h-16 px-gutter w-full sticky top-0 z-50 bg-surface-main border-b border-border-subtle">
+<div class="flex items-center gap-6">
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-text-secondary">Company / Location</span>
+<span class="text-body-md font-body-md font-bold text-primary">Imtiaz - Tariq Road</span>
+</div>
+<div class="h-8 w-[1px] bg-border-subtle"></div>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-text-secondary">Terminal / Date</span>
+<span class="text-body-md font-body-md font-bold text-primary">POS-01 | 2026-05-19</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex flex-col items-end mr-4">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-[#10B981]"></div>
+<span class="text-label-md font-label-md text-[#10B981]">Shift Open</span>
+</div>
+<span class="text-body-md font-body-md text-text-secondary">Cashier: Adeel</span>
+</div>
+<div class="flex gap-2">
+<button class="p-2 rounded-full hover:bg-surface-secondary transition-colors material-symbols-outlined text-primary" data-icon="schedule">schedule</button>
+<button class="p-2 rounded-full hover:bg-surface-secondary transition-colors material-symbols-outlined text-primary" data-icon="location_on">location_on</button>
+<button class="p-2 rounded-full hover:bg-surface-secondary transition-colors material-symbols-outlined text-primary" data-icon="terminal">terminal</button>
+<button class="p-2 rounded-full hover:bg-surface-secondary transition-colors material-symbols-outlined text-primary" data-icon="account_circle">account_circle</button>
+</div>
+</div>
+</header>
+<!-- Workspace Split View -->
+<div class="flex flex-1 overflow-hidden">
+<!-- Left Column: Cash Drawer Count (40%) -->
+<section class="w-[40%] border-r border-border-subtle flex flex-col bg-surface-main">
+<div class="p-gutter border-b border-border-subtle">
+<h2 class="text-headline-md font-headline-md text-primary">Cash Drawer Count</h2>
+<p class="text-body-md font-body-md text-text-secondary">Enter the quantity of each denomination</p>
+</div>
+<div class="flex-1 overflow-y-auto p-gutter space-y-3">
+<!-- Denomination Rows -->
+<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
+<div class="flex flex-col">
+<span class="text-label-md font-label-md text-primary">PKR 5,000</span>
+<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
+</div>
+<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="2"/>
+</div>
+<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
+<div class="flex flex-col">
+<span class="text-label-md font-label-md text-primary">PKR 1,000</span>
+<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
+</div>
+<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="4"/>
+</div>
+<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
+<div class="flex flex-col">
+<span class="text-label-md font-label-md text-primary">PKR 500</span>
+<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
+</div>
+<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="0"/>
+</div>
+<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
+<div class="flex flex-col">
+<span class="text-label-md font-label-md text-primary">PKR 100</span>
+<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
+</div>
+<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="2"/>
+</div>
+<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
+<div class="flex flex-col">
+<span class="text-label-md font-label-md text-primary">PKR 50</span>
+<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
+</div>
+<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="1"/>
+</div>
+<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
+<div class="flex flex-col">
+<span class="text-label-md font-label-md text-primary">PKR 20</span>
+<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
+</div>
+<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="0"/>
+</div>
+<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
+<div class="flex flex-col">
+<span class="text-label-md font-label-md text-primary">PKR 10</span>
+<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
+</div>
+<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="0"/>
+</div>
+<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
+<div class="flex flex-col">
+<span class="text-label-md font-label-md text-primary">Coins</span>
+<span class="text-label-sm font-label-sm text-text-secondary">Loose Change</span>
+</div>
+<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="0"/>
+</div>
+</div>
+<div class="p-gutter bg-surface-secondary border-t border-border-subtle">
+<div class="flex justify-between items-center mb-2">
+<span class="text-label-md font-label-md text-text-secondary uppercase tracking-wider">Total Counted Cash</span>
+</div>
+<div class="text-display-numeric font-display-numeric text-primary leading-tight">
+                        PKR 14,250
+                    </div>
+</div>
+</section>
+<!-- Right Column: Shift Reconciliation & Z-Report (60%) -->
+<section class="w-[60%] flex flex-col bg-surface-secondary overflow-y-auto">
+<div class="p-gutter space-y-6">
+<!-- Sales Summary -->
+<div class="space-y-4">
+<h3 class="text-label-md font-label-md text-text-secondary uppercase tracking-wider">Shift Sales Summary</h3>
+<div class="grid grid-cols-5 gap-4">
+<div class="bg-surface-main p-4 rounded-lg border border-border-subtle shadow-sm">
+<span class="text-label-sm font-label-sm text-text-secondary block mb-1">Gross Sales</span>
+<span class="text-body-lg font-bold text-primary">PKR 38,450</span>
+</div>
+<div class="bg-surface-main p-4 rounded-lg border border-border-subtle shadow-sm">
+<span class="text-label-sm font-label-sm text-text-secondary block mb-1">Net Sales</span>
+<span class="text-body-lg font-bold text-primary">PKR 36,950</span>
+</div>
+<div class="bg-surface-main p-4 rounded-lg border border-border-subtle shadow-sm">
+<span class="text-label-sm font-label-sm text-text-secondary block mb-1">Tax Total</span>
+<span class="text-body-lg font-bold text-primary">PKR 1,850</span>
+</div>
+<div class="bg-surface-main p-4 rounded-lg border border-border-subtle shadow-sm">
+<span class="text-label-sm font-label-sm text-text-secondary block mb-1">Discounts</span>
+<span class="text-body-lg font-bold text-danger">PKR 1,500</span>
+</div>
+<div class="bg-surface-main p-4 rounded-lg border border-border-subtle shadow-sm text-center">
+<span class="text-label-sm font-label-sm text-text-secondary block mb-1">Orders</span>
+<span class="text-body-lg font-bold text-primary">14</span>
+</div>
+</div>
+</div>
+<!-- Layout for Tender & Cash Reconciliation -->
+<div class="grid grid-cols-2 gap-6">
+<!-- Tender Breakdown Table -->
+<div class="space-y-4">
+<h3 class="text-label-md font-label-md text-text-secondary uppercase tracking-wider">Tender Breakdown</h3>
+<div class="bg-surface-main border border-border-subtle rounded-lg overflow-hidden">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-secondary border-b border-border-subtle">
+<th class="p-3 text-label-sm font-label-sm text-text-secondary">Payment Method</th>
+<th class="p-3 text-label-sm font-label-sm text-text-secondary text-right">Amount</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-subtle">
+<tr>
+<td class="p-3 text-body-md font-body-md">Cash Payments</td>
+<td class="p-3 text-body-md font-body-md text-right font-display-numeric">15,000</td>
+</tr>
+<tr class="bg-surface-secondary/30">
+<td class="p-3 text-body-md font-body-md">Credit/Debit Card</td>
+<td class="p-3 text-body-md font-body-md text-right font-display-numeric">19,500</td>
+</tr>
+<tr>
+<td class="p-3 text-body-md font-body-md">Mobile Wallet</td>
+<td class="p-3 text-body-md font-body-md text-right font-display-numeric">3,950</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Cash Reconciliation -->
+<div class="space-y-4">
+<h3 class="text-label-md font-label-md text-text-secondary uppercase tracking-wider">Cash Reconciliation</h3>
+<div class="bg-surface-main p-4 border border-border-subtle rounded-lg space-y-3">
+<div class="flex justify-between">
+<span class="text-body-md font-body-md text-text-secondary">Opening Balance</span>
+<span class="text-body-md font-body-md text-primary">PKR 5,000</span>
+</div>
+<div class="flex justify-between">
+<span class="text-body-md font-body-md text-text-secondary">Cash Sales (+)</span>
+<span class="text-body-md font-body-md text-primary">PKR 15,000</span>
+</div>
+<div class="flex justify-between">
+<span class="text-body-md font-body-md text-text-secondary">Paid Outs/Drops (-)</span>
+<span class="text-body-md font-body-md text-danger">PKR 6,000</span>
+</div>
+<div class="h-[1px] bg-border-subtle"></div>
+<div class="flex justify-between font-bold">
+<span class="text-body-md font-body-md">Expected Cash</span>
+<span class="text-body-md font-body-md">PKR 14,000</span>
+</div>
+<div class="flex justify-between">
+<span class="text-body-md font-body-md text-text-secondary">Actual Counted</span>
+<span class="text-body-md font-body-md text-primary">PKR 14,250</span>
+</div>
+<div class="h-[1px] bg-border-subtle"></div>
+<div class="flex justify-between items-center">
+<span class="text-label-md font-label-md text-text-secondary uppercase">Variance</span>
+<span class="text-headline-md font-headline-md text-[#10B981] font-bold">+PKR 250</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Variance Warning -->
+<div class="bg-[#FFFBEB] border border-[#F59E0B]/30 p-4 rounded-lg flex items-start gap-4">
+<span class="material-symbols-outlined text-[#F59E0B]" data-icon="warning">warning</span>
+<div class="flex-1">
+<p class="text-label-md font-label-md text-[#92400E] mb-1">Cash Overage Detected (+PKR 250)</p>
+<p class="text-body-md font-body-md text-[#B45309]">The actual cash count exceeds the expected sales records. Please verify entries or provide a manager explanation note below.</p>
+<textarea class="mt-3 w-full border-border-input rounded-lg p-3 text-body-md focus:ring-[#F59E0B] focus:border-[#F59E0B]" placeholder="Enter explanation for variance (optional)..."></textarea>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="mt-auto p-gutter bg-surface-main border-t border-border-subtle flex gap-4">
+<button class="flex-1 h-14 border border-border-input hover:bg-surface-secondary text-primary font-label-md transition-all rounded-lg flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-icon="print">print</span>
+                        Print Z-Report Preview
+                    </button>
+<button class="flex-[1.5] h-14 bg-[#EF4444] hover:bg-[#DC2626] text-white font-label-md font-bold transition-all rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-danger/20" onclick="alert('Confirming Shift Closure...')">
+<span class="material-symbols-outlined" data-icon="lock">lock</span>
+                        Confirm Close Shift &amp; Lock Terminal
+                    </button>
+</div>
+</section>
+</div>
+</main>
+<script>
+        // Micro-interaction for inputs
+        document.querySelectorAll('.denomination-input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.select();
+            });
+            
+            input.addEventListener('input', function() {
+                // In a real app, this would recalculate the Total Counted Cash live
+                // Here we keep it static as per the prompt requirement
+            });
+        });
+    </script>
+</body></html>

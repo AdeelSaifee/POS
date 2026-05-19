@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Imtiaz POS - Shift Open</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#6cf8bb",
+                        "on-primary": "#ffffff",
+                        "surface-dim": "#cfdaf2",
+                        "on-primary-container": "#7c839b",
+                        "primary-fixed": "#dae2fd",
+                        "secondary-fixed": "#6ffbbe",
+                        "surface-container-high": "#dee8ff",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "surface-secondary": "#F8FAFC",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "primary-container": "#131b2e",
+                        "primary-fixed-dim": "#bec6e0",
+                        "inverse-surface": "#263143",
+                        "outline-variant": "#c6c6cd",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#ecf1ff",
+                        "primary": "#000000",
+                        "on-tertiary-container": "#b87500",
+                        "surface-main": "#FFFFFF",
+                        "secondary": "#006c49",
+                        "on-secondary-fixed-variant": "#005236",
+                        "inverse-primary": "#bec6e0",
+                        "secondary-fixed-dim": "#4edea3",
+                        "on-secondary-fixed": "#002113",
+                        "surface-container": "#e7eeff",
+                        "tertiary-fixed": "#ffddb8",
+                        "tertiary": "#000000",
+                        "border-input": "#CBD5E1",
+                        "text-secondary": "#64748B",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-background": "#111c2d",
+                        "danger": "#EF4444",
+                        "surface-container-highest": "#d8e3fb",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "outline": "#76777d",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#565e74",
+                        "on-primary-fixed": "#131b2e",
+                        "surface-container-low": "#f0f3ff",
+                        "surface": "#f9f9ff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#2a1700",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-surface-variant": "#45464d",
+                        "surface-bright": "#f9f9ff",
+                        "border-subtle": "#E2E8F0",
+                        "on-surface": "#111c2d",
+                        "background": "#f9f9ff",
+                        "on-secondary-container": "#00714d",
+                        "surface-variant": "#d8e3fb",
+                        "on-error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width": "240px",
+                        "margin": "16px",
+                        "gutter": "16px",
+                        "touch-target-min": "44px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-numeric": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-numeric": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .sidebar-active { position: relative; }
+        .sidebar-active::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 4px;
+            bottom: 4px;
+            width: 4px;
+            background-color: #6cf8bb;
+            border-radius: 0 4px 4px 0;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-screen overflow-hidden flex flex-col">
+<!-- Top Status Bar (TopAppBar mapped from JSON) -->
+<header class="bg-surface-main dark:bg-primary-container docked full-width top-0 h-14 border-b border-border-subtle dark:border-outline flex justify-between items-center w-full px-4 z-50">
+<div class="flex items-center gap-6">
+<span class="text-headline-md font-headline-md text-primary dark:text-on-primary-container">Imtiaz Super Market</span>
+<div class="h-6 w-px bg-border-subtle"></div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-text-secondary text-[18px]">location_on</span>
+<span class="font-label-md text-label-md text-on-surface">Tariq Road</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-text-secondary text-[18px]">computer</span>
+<span class="font-label-md text-label-md text-on-surface">POS-01</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-text-secondary text-[18px]">calendar_today</span>
+<span class="font-label-md text-label-md text-on-surface">2026-05-19</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<!-- Amber Warning Status -->
+<div class="bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-full flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-on-tertiary-fixed-variant animate-pulse"></span>
+<span class="font-label-sm text-label-sm uppercase tracking-wide">Shift Status: Closed</span>
+</div>
+<div class="flex items-center gap-3 ml-4 bg-surface-container-low px-3 py-1.5 rounded-lg border border-border-subtle">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+<span class="font-label-md text-label-md">Adeel</span>
+<span class="material-symbols-outlined text-text-secondary text-[16px]">settings_input_component</span>
+<span class="material-symbols-outlined text-text-secondary text-[16px]">schedule</span>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Left Sidebar Navigation -->
+<aside class="bg-primary-container dark:bg-surface-container-lowest fixed left-0 top-14 bottom-0 w-[sidebar-width] border-r border-border-subtle dark:border-outline flex flex-col py-4 z-40">
+<div class="px-4 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined">point_of_sale</span>
+</div>
+<div>
+<p class="font-headline-md text-[16px] text-on-primary-fixed dark:text-primary leading-tight">Terminal 042</p>
+<p class="text-label-sm text-on-primary-fixed-variant dark:text-text-secondary opacity-70">Imtiaz Retail Ops</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1 px-2">
+<!-- Checkout Disabled -->
+<button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-primary-fixed-variant opacity-40 cursor-not-allowed group transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">shopping_cart</span>
+<span class="font-label-md text-label-md">Checkout</span>
+<span class="material-symbols-outlined text-[14px] ml-auto">lock</span>
+</button>
+<!-- Shift Active -->
+<button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-secondary-container text-on-secondary-container dark:bg-primary dark:text-on-primary shadow-sm font-bold">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">timer</span>
+<span class="font-label-md text-label-md">Shift</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-primary-fixed-variant hover:bg-primary-fixed-variant transition-all">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md text-label-md">Cash Control</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-primary-fixed-variant hover:bg-primary-fixed-variant transition-all">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-md text-label-md">Catalog</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-primary-fixed-variant hover:bg-primary-fixed-variant transition-all">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="font-label-md text-label-md">Reports</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-primary-fixed-variant hover:bg-primary-fixed-variant transition-all">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</button>
+</nav>
+<div class="px-2 pt-4 border-t border-white/10 mt-auto">
+<button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-primary-fixed-variant hover:bg-primary-fixed-variant transition-all">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="font-label-md text-label-md">Support</span>
+</button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-error hover:bg-error-container transition-all">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Workspace -->
+<main class="flex-1 ml-[sidebar-width] mt-14 overflow-hidden flex bg-surface-secondary">
+<!-- Left Column (40%): Shift Policies -->
+<div class="w-2/5 p-8 flex flex-col border-r border-border-subtle bg-surface-main">
+<div class="mb-8">
+<span class="text-on-secondary-container bg-secondary-container/20 px-3 py-1 rounded-full text-label-sm font-label-sm">POLICIES &amp; LIMITS</span>
+<h2 class="font-headline-lg text-headline-lg mt-4 mb-2">Shift Opening rules</h2>
+<p class="text-body-md text-text-secondary">Please review the following terminal compliance rules before initiating your shift. All declarations are logged for auditing.</p>
+</div>
+<div class="space-y-4 flex-1">
+<div class="p-4 rounded-lg bg-surface-container border border-border-subtle">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-secondary">account_balance_wallet</span>
+<h3 class="font-label-md text-label-md">Cash Drawer Limits</h3>
+</div>
+<p class="text-body-md text-on-surface-variant">Standard operating limit is <span class="font-bold text-on-surface">PKR 25,000</span>. Ensure excess cash is deposited immediately.</p>
+</div>
+<div class="p-4 rounded-lg bg-surface-container border border-border-subtle">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-secondary">security</span>
+<h3 class="font-label-md text-label-md">Safe Drop Threshold</h3>
+</div>
+<p class="text-body-md text-on-surface-variant">System will trigger mandatory safe drop alert at <span class="font-bold text-on-surface">PKR 20,000</span> to minimize on-floor risk.</p>
+</div>
+<div class="p-4 rounded-lg bg-surface-container border border-border-subtle">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-secondary">assignment_ind</span>
+<h3 class="font-label-md text-label-md">Identity Verification</h3>
+</div>
+<p class="text-body-md text-on-surface-variant">Credentials must match the physical cashier present. Sharing POS logins is a high-level violation.</p>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-border-subtle">
+<a class="flex items-center gap-2 text-secondary font-label-md text-label-md hover:underline" href="#">
+<span class="material-symbols-outlined text-[20px]">help</span>
+                        Help Resources &amp; SOP Manual
+                    </a>
+</div>
+</div>
+<!-- Right Column (60%): Open New Shift Form -->
+<div class="w-3/5 p-8 flex flex-col bg-surface-variant/30 overflow-y-auto custom-scrollbar">
+<div class="max-w-2xl mx-auto w-full">
+<div class="mb-10">
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">Open New Shift</h1>
+<p class="text-body-md text-text-secondary">Declare opening float cash to unlock checkout operations.</p>
+</div>
+<form class="space-y-6">
+<!-- Read Only Info Row -->
+<div class="grid grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="font-label-sm text-label-sm text-text-secondary">Business Date</label>
+<div class="bg-surface-dim/40 border border-outline-variant px-4 py-3 rounded-lg text-on-surface-variant font-label-md flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px]">event</span>
+                                    2026-05-19
+                                </div>
+</div>
+<div class="space-y-2">
+<label class="font-label-sm text-label-sm text-text-secondary">Cashier</label>
+<div class="bg-surface-dim/40 border border-outline-variant px-4 py-3 rounded-lg text-on-surface-variant font-label-md flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px]">person</span>
+                                    Adeel Saifee
+                                </div>
+</div>
+</div>
+<!-- Opening Float Input -->
+<div class="space-y-3">
+<label class="font-label-md text-label-md text-on-surface">Opening Cash Float</label>
+<div class="relative group">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 font-display-numeric text-headline-md text-text-secondary">PKR</span>
+<input class="w-full bg-surface-main border-2 border-border-input hover:border-secondary focus:border-secondary focus:ring-0 rounded-lg pl-16 pr-4 py-4 font-display-numeric text-headline-lg transition-all" type="text" value="5,000"/>
+</div>
+<!-- Quick Suggestions -->
+<div class="flex gap-3 pt-2">
+<button class="px-4 py-2 border border-border-subtle bg-surface-main hover:bg-surface-container rounded-lg font-label-md transition-all" type="button">PKR 2,000</button>
+<button class="px-4 py-2 border-2 border-secondary bg-secondary-container/10 text-on-secondary-container rounded-lg font-label-md shadow-sm" type="button">PKR 5,000</button>
+<button class="px-4 py-2 border border-border-subtle bg-surface-main hover:bg-surface-container rounded-lg font-label-md transition-all" type="button">PKR 10,000</button>
+</div>
+</div>
+<!-- Secondary Fields -->
+<div class="space-y-6 pt-4">
+<div class="space-y-2">
+<label class="font-label-sm text-label-sm text-text-secondary">Manager Approval Code (Optional)</label>
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary">key</span>
+<input class="w-full bg-surface-main border border-border-input focus:border-secondary focus:ring-0 rounded-lg pl-12 pr-4 py-3 font-label-md" placeholder="Enter authorization pin" type="password"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-sm text-label-sm text-text-secondary">Shift Notes</label>
+<textarea class="w-full bg-surface-main border border-border-input focus:border-secondary focus:ring-0 rounded-lg px-4 py-3 font-body-md resize-none" placeholder="Add any notes about initial cash count or hardware status..." rows="3"></textarea>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-4 pt-8 border-t border-border-subtle">
+<button class="flex-1 px-6 py-4 border border-outline text-on-surface font-label-md rounded-lg hover:bg-surface-container-highest transition-all flex items-center justify-center gap-2" type="button">
+<span class="material-symbols-outlined">logout</span>
+                                Cancel / Log Out
+                            </button>
+<button class="flex-[2] px-6 py-4 bg-[#10B981] text-white font-headline-md rounded-lg shadow-lg shadow-emerald-500/20 hover:bg-[#059669] active:scale-[0.98] transition-all flex items-center justify-center gap-3 group" id="openShiftBtn" type="button">
+<span class="material-symbols-outlined transition-transform group-hover:translate-x-1">power_settings_new</span>
+                                Open Shift &amp; Unlock POS
+                            </button>
+</div>
+</form>
+</div>
+<!-- Atmospheric Card -->
+<div class="mt-12 max-w-2xl mx-auto w-full">
+<div class="relative overflow-hidden rounded-xl h-40 group">
+<img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A clean, professionally lit top-down view of a modern checkout counter in a high-end retail store. The aesthetic is bright and minimalist with soft morning sunlight streaming across a polished surface. Deep greens and cool grays dominate the color palette, reflecting a high-efficiency retail environment. The mood is calm, organized, and ready for a busy day of service." src="https://lh3.googleusercontent.com/aida-public/AB6AXuACIFlYNk_9Ri_1HlJCfxsRY_FgZd_4ay_rD5IUtbz6CI37PKeMcjqP9MNvGj4TgIin2MNu_0tJQ4XLf5YflTXqxivo2q1jnrMCVnuCFWjFQ9_-O7tijAgoGDudQYn2Q6DI7tVff_55TRO-uJgshO1mIsUpy4fn0lhdQNh5_TvaDh-J_caYBgmqnFIc6HR9bAWts3FtdtFV1pmdBn79mT0WuYBFlrMoRM4yK1R93aa21XYPH6TDzbyPnDm_RjK_h0oX_qeBPwWx0yux"/>
+<div class="absolute inset-0 bg-gradient-to-r from-primary-container/80 to-transparent flex flex-col justify-center px-8">
+<h4 class="text-white font-headline-md">Operational Readiness</h4>
+<p class="text-white/80 text-body-md max-w-xs">Hardware diagnostic checks completed: All systems nominal.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Success Feedback Overlay (Hidden by Default) -->
+<div class="fixed inset-0 z-[100] bg-primary-container/60 backdrop-blur-sm flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300" id="successOverlay">
+<div class="bg-surface-main p-8 rounded-xl shadow-2xl text-center max-w-sm transform scale-90 transition-transform duration-300">
+<div class="w-20 h-20 bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center mx-auto mb-6">
+<span class="material-symbols-outlined text-[48px]">check_circle</span>
+</div>
+<h2 class="text-headline-lg mb-2">Shift Activated</h2>
+<p class="text-body-md text-text-secondary mb-6">POS-01 has been unlocked and is ready for transactions.</p>
+<div class="flex flex-col gap-3">
+<div class="h-1 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-full origin-left animate-[loading_1.5s_ease-in-out_infinite]"></div>
+</div>
+<span class="text-label-sm text-text-secondary">Redirecting to Checkout...</span>
+</div>
+</div>
+</div>
+<style>
+        @keyframes loading {
+            0% { transform: scaleX(0); }
+            50% { transform: scaleX(1); }
+            100% { transform: scaleX(0); transform-origin: right; }
+        }
+    </style>
+<script>
+        document.getElementById('openShiftBtn').addEventListener('click', function() {
+            const overlay = document.getElementById('successOverlay');
+            const card = overlay.querySelector('div');
+            
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            overlay.classList.add('opacity-100');
+            card.classList.remove('scale-90');
+            card.classList.add('scale-100');
+
+            setTimeout(() => {
+                // Simulation of redirect
+                window.location.reload();
+            }, 2000);
+        });
+
+        // Numeric input formatting simulation
+        const floatInput = document.querySelector('input[value="5,000"]');
+        floatInput.addEventListener('input', function(e) {
+            let val = e.target.value.replace(/[^0-9]/g, '');
+            if (val) {
+                e.target.value = new Intl.NumberFormat('en-PK').format(val);
+            }
+        });
+
+        // Suggestion buttons
+        document.querySelectorAll('.flex.gap-3.pt-2 button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Reset others
+                document.querySelectorAll('.flex.gap-3.pt-2 button').forEach(b => {
+                    b.className = "px-4 py-2 border border-border-subtle bg-surface-main hover:bg-surface-container rounded-lg font-label-md transition-all";
+                });
+                // Set active
+                this.className = "px-4 py-2 border-2 border-secondary bg-secondary-container/10 text-on-secondary-container rounded-lg font-label-md shadow-sm";
+                
+                // Update input
+                const amount = this.innerText.replace('PKR ', '');
+                floatInput.value = amount;
+            });
+        });
+    </script>
+</body></html>

@@ -1,25 +1,28 @@
 <!DOCTYPE html>
-<html class="light" lang="en">
+<html class="dark" lang="en">
+
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>POS Terminal Login</title>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>IMAGYN POS • Terminal Login</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "brand-dark": "#090D1A",
-                        "brand-gray": "#1E293B",
-                        "emerald-neon": "#10B981"
+                        "obsidian": "#06080F",
+                        "console-dark": "#0B0F19",
+                        "neon-emerald": "#0DF29D",
+                        "neon-cyan": "#0DCAF0",
+                        "slate-glass": "rgba(15, 23, 42, 0.45)"
                     },
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Plus Jakarta Sans', 'sans-serif']
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
                     }
                 }
             }
@@ -27,131 +30,248 @@
     </script>
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #05070C;
+            font-family: 'Outfit', sans-serif;
+            background-color: #04060A;
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.03) 0%, transparent 45%),
-                radial-gradient(circle at 90% 80%, rgba(99, 102, 241, 0.03) 0%, transparent 45%);
-        }
-        
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+                radial-gradient(circle at 5% 5%, rgba(13, 242, 157, 0.04) 0%, transparent 40%),
+                radial-gradient(circle at 95% 95%, rgba(13, 202, 240, 0.04) 0%, transparent 40%);
+            overflow: hidden;
         }
 
         .cyber-grid {
-            background-size: 24px 24px;
-            background-image: 
+            background-size: 32px 32px;
+            background-image:
                 linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
                 linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
         }
 
-        .premium-input {
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        /* Glassmorphism styling */
+        .glass-panel {
+            background: rgba(10, 14, 26, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
         }
-        .premium-input:focus {
-            box-shadow: 0 0 0 2.5px rgba(16, 185, 129, 0.15);
-            border-color: #10B981;
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: #0DF29D;
+            box-shadow: 0 0 15px rgba(13, 242, 157, 0.15);
+            outline: none;
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s ease;
+        }
+
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .glass-btn:active {
+            transform: translateY(1px);
+        }
+
+        .keypad-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+        }
+
+        .keypad-btn:hover {
+            background: rgba(13, 242, 157, 0.06);
+            border-color: rgba(13, 242, 157, 0.3);
+            color: #0DF29D;
+            box-shadow: 0 0 10px rgba(13, 242, 157, 0.1);
+        }
+
+        .keypad-btn:active {
+            transform: scale(0.95);
+            background: rgba(13, 242, 157, 0.12);
+        }
+
+        .neon-glow-btn {
+            background: linear-gradient(135deg, #0DF29D 0%, #0DCAF0 100%);
+            box-shadow: 0 4px 20px rgba(13, 242, 157, 0.25);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .neon-glow-btn:hover {
+            box-shadow: 0 6px 28px rgba(13, 242, 157, 0.4);
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        .neon-glow-btn:active {
+            transform: translateY(1px);
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4 md:p-6">
-    <!-- Main Card Container (Fixed height for perfect visual balance) -->
-    <div class="w-full max-w-4xl bg-white rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-100/80 overflow-hidden flex flex-col md:flex-row h-auto md:h-[580px] animate-in fade-in duration-300">
-        
-        <!-- Left Side: System Telemetry & Branding -->
-        <div class="w-full md:w-[42%] bg-brand-dark p-8 md:p-10 flex flex-col justify-center items-center text-white relative overflow-hidden h-[220px] md:h-full">
-            <!-- Background Grid -->
-            <div class="absolute inset-0 cyber-grid opacity-60"></div>
-            <!-- Ambient Radial Glow -->
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-emerald-neon/10 blur-[80px]"></div>
-            
-            <!-- Branding Section (Centered) -->
-            <div class="relative z-10 flex flex-col items-center">
-                <!-- White Logo Card -->
-                <div class="bg-white px-5 py-3.5 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.2)] border border-white/5 flex items-center justify-center w-48 h-14 mb-5 transition-transform duration-300 hover:scale-[1.02]">
-                    <img src="logo.png" alt="Imagyn Technologies" class="max-h-7 object-contain" onerror="this.src='../../logo.png'"/>
-                </div>
 
-                <!-- Minimized System Status Pill -->
-                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] backdrop-blur-md text-[10px] font-display font-semibold tracking-wider text-slate-300 shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-neon animate-pulse"></span>
-                    <span>ALL PERIPHERALS OPERATIONAL</span>
+<body class="flex items-center justify-center min-h-screen p-4 md:p-6 relative select-none">
+    <!-- Background Grid overlay -->
+    <div class="absolute inset-0 cyber-grid z-0"></div>
+
+    <!-- Background Ambient Neon Flares -->
+    <div class="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-neon-emerald/5 blur-[120px] z-0 animate-pulse" style="animation-duration: 8s;"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-neon-cyan/5 blur-[120px] z-0 animate-pulse" style="animation-duration: 10s;"></div>
+
+    <!-- Main Next-Gen Terminal Container -->
+    <div class="w-full max-w-5xl glass-panel rounded-[32px] overflow-hidden flex flex-col md:flex-row h-auto md:h-[640px] z-10 shadow-[0_30px_80px_rgba(0,0,0,0.6)] border border-white/[0.08] relative">
+        
+        <!-- Left Side: Interactive Keypad Node -->
+        <div class="w-full md:w-[48%] p-8 flex flex-col justify-between bg-black/35 border-b md:border-b-0 md:border-r border-white/[0.06] relative">
+            
+            <!-- Terminal Header -->
+            <div class="flex items-center justify-between z-10 mb-6 md:mb-0">
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-bold tracking-[0.25em] text-white/40 uppercase">TERMINAL CONSOLE</span>
+                    <span class="text-sm font-semibold tracking-wide text-white/90">POS-01</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-neon-emerald/10 border border-neon-emerald/20 text-[9px] font-bold tracking-wider text-neon-emerald">
+                    <span class="w-1.5 h-1.5 rounded-full bg-neon-emerald animate-pulse"></span>
+                    <span>SYSTEM ONLINE</span>
                 </div>
             </div>
-        </div>
-        
-        <!-- Right Side: Clean Workspace Form -->
-        <div class="w-full md:w-[58%] p-8 md:p-10 flex flex-col justify-between bg-white h-auto md:h-full">
-            
-            <!-- Centered Form Container -->
-            <div class="my-auto max-w-sm mx-auto w-full">
-                <!-- Heading Group -->
-                <div class="mb-6">
-                    <h2 class="font-display text-2xl font-extrabold text-slate-900 tracking-tight">Account Login</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Please enter your credentials to access the terminal.</p>
-                </div>
+
+            <!-- PIN Pad display area (Touch screen optimized) -->
+            <div class="my-auto py-6 flex flex-col items-center justify-center z-10">
+                <span class="text-[11px] font-bold tracking-widest text-white/40 uppercase mb-4">Touch Entry Console</span>
                 
-                <!-- Login Form -->
-                <form id="login-form" class="space-y-4">
-                    <!-- Account Input -->
-                    <div>
-                        <label for="account" class="font-display text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Account or Email</label>
+                <!-- PIN Keypad Grid -->
+                <div class="grid grid-cols-3 gap-3 w-full max-w-[270px]">
+                    <button type="button" onclick="pressKey('1')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">1</button>
+                    <button type="button" onclick="pressKey('2')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">2</button>
+                    <button type="button" onclick="pressKey('3')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">3</button>
+                    
+                    <button type="button" onclick="pressKey('4')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">4</button>
+                    <button type="button" onclick="pressKey('5')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">5</button>
+                    <button type="button" onclick="pressKey('6')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">6</button>
+                    
+                    <button type="button" onclick="pressKey('7')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">7</button>
+                    <button type="button" onclick="pressKey('8')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">8</button>
+                    <button type="button" onclick="pressKey('9')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">9</button>
+                    
+                    <button type="button" onclick="pressKey('clear')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-xs font-semibold text-rose-400 hover:text-rose-300">CLEAR</button>
+                    <button type="button" onclick="pressKey('0')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">0</button>
+                    <button type="button" onclick="pressKey('backspace')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[20px] text-white/70">backspace</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Operational Metadata ticker -->
+            <div class="flex items-center justify-between text-[9px] font-medium text-white/30 z-10 mt-6 md:mt-0 font-mono tracking-wider">
+                <span>HOST ID: IMAGYN-DESKTOP-POS01</span>
+                <span>SECURE CONNECTED</span>
+            </div>
+
+        </div>
+
+        <!-- Right Side: Immersive Input Form -->
+        <div class="w-full md:w-[52%] p-8 md:p-12 flex flex-col justify-between bg-[#080C14]/40 relative">
+            
+            <!-- Logo area -->
+            <div class="flex items-center justify-center md:justify-start mb-6 md:mb-0">
+                <!-- White Logo Card (Minimalist, exact height, rounded-xl) -->
+                <div class="bg-white px-5 py-3 rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.4)] border border-white/5 flex items-center justify-center w-44 h-12 transition-transform duration-300 hover:scale-[1.02]">
+                    <img src="logo.png" alt="Imagyn Technologies" class="max-h-6 object-contain" onerror="this.src='../../logo.png'"/>
+                </div>
+            </div>
+
+            <!-- Immersive Form panel -->
+            <div class="my-auto w-full max-w-sm mx-auto py-4">
+                <!-- Welcome Headers -->
+                <div class="mb-8 text-center md:text-left">
+                    <h2 class="text-3xl font-extrabold text-white tracking-tight leading-tight">Welcome back</h2>
+                    <p class="text-xs text-white/40 mt-1.5">Configure access parameters to open operator shift.</p>
+                </div>
+
+                <!-- Credential Input Form -->
+                <form id="login-form" class="space-y-5">
+                    <!-- Operator ID/Email field -->
+                    <div class="space-y-1.5">
+                        <label for="account" class="text-[10px] font-bold text-white/50 tracking-[0.2em] uppercase pl-1 block">OPERATOR ID</label>
                         <div class="relative flex items-center group">
-                            <span class="material-symbols-outlined absolute left-3 text-slate-400 group-focus-within:text-slate-600 transition-colors text-[18px]">person</span>
-                            <input type="text" id="account" placeholder="Enter account or email" required
-                                   class="premium-input pl-10 pr-4 py-2.5 w-full rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-0 transition-all placeholder-slate-400 text-xs text-slate-850 font-medium"/>
+                            <span class="material-symbols-outlined absolute left-3.5 text-white/30 group-focus-within:text-neon-emerald transition-colors text-[20px]">badge</span>
+                            <input type="text" id="account" placeholder="Enter account or email" required onfocus="setActiveInput('account')"
+                                class="glass-input pl-11 pr-4 py-3.5 w-full rounded-2xl text-xs font-semibold text-white/90 placeholder-white/20 transition-all font-sans" />
                         </div>
                     </div>
-                    
-                    <!-- Password Input -->
-                    <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <label for="password" class="font-display text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Password</label>
-                        </div>
+
+                    <!-- Passcode/PIN input field -->
+                    <div class="space-y-1.5">
+                        <label for="password" class="text-[10px] font-bold text-white/50 tracking-[0.2em] uppercase pl-1 block">SECURITY PIN</label>
                         <div class="relative flex items-center group">
-                            <span class="material-symbols-outlined absolute left-3 text-slate-400 group-focus-within:text-slate-600 transition-colors text-[18px]">lock</span>
-                            <input type="password" id="password" placeholder="••••••••" required
-                                   class="premium-input pl-10 pr-10 py-2.5 w-full rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-0 transition-all placeholder-slate-400 text-xs text-slate-850 font-medium"/>
-                            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
+                            <span class="material-symbols-outlined absolute left-3.5 text-white/30 group-focus-within:text-neon-emerald transition-colors text-[20px]">lock</span>
+                            <input type="password" id="password" placeholder="••••••••" required onfocus="setActiveInput('password')"
+                                class="glass-input pl-11 pr-12 py-3.5 w-full rounded-2xl text-xs font-semibold text-white/90 placeholder-white/20 transition-all tracking-wider font-mono" />
+                            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 flex items-center justify-center text-white/30 hover:text-white/60 transition-colors">
                                 <span class="material-symbols-outlined text-[18px]" id="eye-icon">visibility</span>
                             </button>
                         </div>
                     </div>
-                    
-                    <!-- Submit Button -->
-                    <button type="submit" id="submit-btn" class="w-full bg-brand-dark hover:bg-slate-800 text-white font-bold py-3 rounded-lg shadow-[0_4px_12px_rgba(9,13,26,0.12)] hover:shadow-[0_4px_16px_rgba(9,13,26,0.2)] hover:-translate-y-[0.5px] active:translate-y-0 transition-all duration-150 text-center text-xs tracking-wider uppercase font-display mt-2 flex items-center justify-center">
-                        Sign In
+
+                    <!-- Modern Action button with subtle neon hover shadow -->
+                    <button type="submit" id="submit-btn" class="w-full neon-glow-btn text-black font-extrabold py-3.5 rounded-2xl text-xs tracking-[0.15em] uppercase font-sans mt-3 flex items-center justify-center">
+                        INITIALIZE SHIFT
                     </button>
                 </form>
-                
-                <!-- Help link -->
-                <div class="text-center mt-4">
-                    <a href="#" class="text-[11px] text-slate-400 hover:text-slate-600 transition-colors font-medium">Forgot password or account info?</a>
-                </div>
             </div>
-            
-            <!-- Unified Metadata Footer -->
-            <div class="mt-6 pt-5 border-t border-slate-100 max-w-sm mx-auto w-full flex flex-col sm:flex-row items-center justify-between text-[9px] text-slate-400 font-medium gap-2">
-                <span class="font-display tracking-wider text-slate-500">POS-01 • MAIN BRANCH</span>
-                <span class="hidden sm:inline text-slate-200">|</span>
-                <span>IMAGYN TECHNOLOGIES POS • V8.4</span>
+
+            <!-- Footer Metadata metadata layout -->
+            <div class="flex flex-col sm:flex-row items-center justify-between text-[9px] text-white/30 font-medium border-t border-white/[0.05] pt-5 mt-6 md:mt-0 gap-2 font-sans tracking-widest">
+                <span class="text-white/40">BRANCH: MAIN OUTLET</span>
+                <span class="hidden sm:inline text-white/10">•</span>
+                <span>IMAGYN PLATFORM V8.4</span>
             </div>
-            
+
         </div>
-        
+
     </div>
 
+    <!-- Scripting for PIN-pad touch interactivity and login flow -->
     <script>
-        // Initialize Terminal Configuration in LocalStorage
-        const terminalConfig = {
-            terminalId: 'POS-01',
-            branch: 'Main Branch',
-            version: 'V8.4',
-            companyName: 'Imagyn Technologies',
-            lastSync: new Date().toISOString()
-        };
-        localStorage.setItem('terminal_config', JSON.stringify(terminalConfig));
+        // Track the actively focused input field so keypad works with both fields!
+        let activeInputId = 'account';
 
+        function setActiveInput(id) {
+            activeInputId = id;
+        }
+
+        // Set 'account' as default active input on startup
+        document.getElementById('account').focus();
+
+        // Keypad action handler
+        function pressKey(val) {
+            const input = document.getElementById(activeInputId);
+            if (!input) return;
+
+            if (val === 'clear') {
+                input.value = '';
+            } else if (val === 'backspace') {
+                input.value = input.value.slice(0, -1);
+            } else {
+                input.value += val;
+            }
+            
+            // Dispatch input event so validation registers it
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.focus();
+        }
+
+        // Password visibility toggler
         function togglePasswordVisibility() {
             const passwordInput = document.getElementById('password');
             const eyeIcon = document.getElementById('eye-icon');
@@ -164,42 +284,54 @@
             }
         }
 
+        // Initialize and persist configuration details in Local Cache
+        const terminalConfig = {
+            terminalId: 'POS-01',
+            branch: 'Main Branch',
+            version: 'V8.4',
+            companyName: 'Imagyn Technologies',
+            lastSync: new Date().toISOString()
+        };
+        localStorage.setItem('terminal_config', JSON.stringify(terminalConfig));
 
-        // Login Submit Logic with elegant transition & validation feedback
+        // Submit form transition simulation
         document.getElementById('login-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            
+
             const submitBtn = document.getElementById('submit-btn');
             const accountInput = document.getElementById('account');
             const passwordInput = document.getElementById('password');
-            
-            // Disable inputs during processing
+
+            // Prevent repeated submission & lock fields
             submitBtn.disabled = true;
             accountInput.disabled = true;
             passwordInput.disabled = true;
-            
-            // Change button state to loading spinner
+
+            // Render glowing neon loading indicator
+            submitBtn.style.background = 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
+            submitBtn.style.color = 'white';
             submitBtn.innerHTML = `
                 <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Authenticating...
+                ESTABLISHING SECURE SESSION...
             `;
-            
-            // Store Operator details
+
+            // Cache Operator Information
             const operator = {
                 name: accountInput.value,
                 role: accountInput.value.toLowerCase().includes('admin') ? 'MANAGER' : 'CASHIER',
                 loginTime: new Date().toISOString()
             };
             localStorage.setItem('terminal_operator', JSON.stringify(operator));
-            
-            // Artificial delay to feel realistic and complete verification
+
+            // Simulating high-speed secure token verification
             setTimeout(() => {
                 window.location.href = 'shift_open.html';
-            }, 1000);
+            }, 1200);
         });
     </script>
 </body>
+
 </html>

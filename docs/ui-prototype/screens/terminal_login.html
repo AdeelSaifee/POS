@@ -59,62 +59,23 @@
     <div class="w-full max-w-4xl bg-white rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-100/80 overflow-hidden flex flex-col md:flex-row h-auto md:h-[580px] animate-in fade-in duration-300">
         
         <!-- Left Side: System Telemetry & Branding -->
-        <div class="w-full md:w-[42%] bg-brand-dark p-8 md:p-10 flex flex-col justify-between text-white relative overflow-hidden h-[300px] md:h-full">
+        <div class="w-full md:w-[42%] bg-brand-dark p-8 md:p-10 flex flex-col justify-center items-center text-white relative overflow-hidden h-[220px] md:h-full">
             <!-- Background Grid -->
             <div class="absolute inset-0 cyber-grid opacity-60"></div>
             <!-- Ambient Radial Glow -->
-            <div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-emerald-neon/10 blur-[80px]"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-emerald-neon/10 blur-[80px]"></div>
             
-            <!-- Top Branding Section -->
-            <div class="relative z-10 flex flex-col items-center mt-2">
-                <!-- White Logo Card (Minimalist, exact height, rounded-xl) -->
-                <div class="bg-white px-5 py-3.5 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.2)] border border-white/5 flex items-center justify-center w-48 h-14 mb-8">
+            <!-- Branding Section (Centered) -->
+            <div class="relative z-10 flex flex-col items-center">
+                <!-- White Logo Card -->
+                <div class="bg-white px-5 py-3.5 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.2)] border border-white/5 flex items-center justify-center w-48 h-14 mb-5 transition-transform duration-300 hover:scale-[1.02]">
                     <img src="logo.png" alt="Imagyn Technologies" class="max-h-7 object-contain" onerror="this.src='../../logo.png'"/>
                 </div>
 
-                <!-- Telemetry Status Dashboard -->
-                <div class="w-full bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 backdrop-blur-md">
-                    <div class="flex items-center justify-between mb-3.5 border-b border-white/[0.05] pb-2.5">
-                        <span class="font-display text-[10px] font-bold text-slate-400 uppercase tracking-widest">SYSTEM STATUS</span>
-                        <div class="flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-neon animate-pulse"></span>
-                            <span class="text-[9px] text-emerald-neon font-bold tracking-wider uppercase font-display">ONLINE</span>
-                        </div>
-                    </div>
-                    
-                    <div class="space-y-2.5">
-                        <div class="flex items-center justify-between text-xs cursor-pointer hover:bg-white/[0.02] p-1 rounded transition-colors" onclick="toggleTelemetry('printer')">
-                            <div class="flex items-center gap-2.5">
-                                <span class="material-symbols-outlined text-slate-400 text-[16px]">print</span>
-                                <span class="text-slate-300 font-medium">Receipt Printer</span>
-                            </div>
-                            <span id="status-printer" class="text-[9px] font-mono text-emerald-neon bg-emerald-neon/10 px-1.5 py-0.5 rounded font-bold transition-all duration-300">READY</span>
-                        </div>
-                        
-                        <div class="flex items-center justify-between text-xs cursor-pointer hover:bg-white/[0.02] p-1 rounded transition-colors" onclick="toggleTelemetry('drawer')">
-                            <div class="flex items-center gap-2.5">
-                                <span class="material-symbols-outlined text-slate-400 text-[16px]">table_rows</span>
-                                <span class="text-slate-300 font-medium">Cash Drawer</span>
-                            </div>
-                            <span id="status-drawer" class="text-[9px] font-mono text-emerald-neon bg-emerald-neon/10 px-1.5 py-0.5 rounded font-bold transition-all duration-300">SECURE</span>
-                        </div>
-                        
-                        <div class="flex items-center justify-between text-xs cursor-pointer hover:bg-white/[0.02] p-1 rounded transition-colors" onclick="toggleTelemetry('scanner')">
-                            <div class="flex items-center gap-2.5">
-                                <span class="material-symbols-outlined text-slate-400 text-[16px]">qr_code_scanner</span>
-                                <span class="text-slate-300 font-medium">Barcode Scanner</span>
-                            </div>
-                            <span id="status-scanner" class="text-[9px] font-mono text-emerald-neon bg-emerald-neon/10 px-1.5 py-0.5 rounded font-bold transition-all duration-300">ACTIVE</span>
-                        </div>
-                        
-                        <div class="flex items-center justify-between text-xs cursor-pointer hover:bg-white/[0.02] p-1 rounded transition-colors" onclick="toggleTelemetry('terminal')">
-                            <div class="flex items-center gap-2.5">
-                                <span class="material-symbols-outlined text-slate-400 text-[16px]">credit_card</span>
-                                <span class="text-slate-300 font-medium">Card Terminal</span>
-                            </div>
-                            <span id="status-terminal" class="text-[9px] font-mono text-slate-400 bg-white/5 px-1.5 py-0.5 rounded font-bold transition-all duration-300">STANDBY</span>
-                        </div>
-                    </div>
+                <!-- Minimized System Status Pill -->
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] backdrop-blur-md text-[10px] font-display font-semibold tracking-wider text-slate-300 shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-neon animate-pulse"></span>
+                    <span>ALL PERIPHERALS OPERATIONAL</span>
                 </div>
             </div>
         </div>
@@ -203,59 +164,6 @@
             }
         }
 
-        // Interactive System Telemetry Simulator for POS-01
-        const telemetryStates = {
-            printer: { status: 'READY', color: 'text-emerald-neon bg-emerald-neon/10' },
-            drawer: { status: 'SECURE', color: 'text-emerald-neon bg-emerald-neon/10' },
-            scanner: { status: 'ACTIVE', color: 'text-emerald-neon bg-emerald-neon/10' },
-            terminal: { status: 'STANDBY', color: 'text-slate-400 bg-white/5' }
-        };
-
-        function toggleTelemetry(device) {
-            const el = document.getElementById(`status-${device}`);
-            if (!el) return;
-
-            let nextState = {};
-            if (device === 'printer') {
-                if (telemetryStates.printer.status === 'READY') {
-                    nextState = { status: 'PAPER OUT', color: 'text-amber-500 bg-amber-500/10' };
-                } else if (telemetryStates.printer.status === 'PAPER OUT') {
-                    nextState = { status: 'OFFLINE', color: 'text-rose-500 bg-rose-500/10' };
-                } else {
-                    nextState = { status: 'READY', color: 'text-emerald-neon bg-emerald-neon/10' };
-                }
-                telemetryStates.printer = nextState;
-            } else if (device === 'drawer') {
-                if (telemetryStates.drawer.status === 'SECURE') {
-                    nextState = { status: 'OPEN', color: 'text-amber-500 bg-amber-500/10' };
-                } else {
-                    nextState = { status: 'SECURE', color: 'text-emerald-neon bg-emerald-neon/10' };
-                }
-                telemetryStates.drawer = nextState;
-            } else if (device === 'scanner') {
-                if (telemetryStates.scanner.status === 'ACTIVE') {
-                    nextState = { status: 'NO BEAM', color: 'text-rose-500 bg-rose-500/10' };
-                } else {
-                    nextState = { status: 'ACTIVE', color: 'text-emerald-neon bg-emerald-neon/10' };
-                }
-                telemetryStates.scanner = nextState;
-            } else if (device === 'terminal') {
-                if (telemetryStates.terminal.status === 'STANDBY') {
-                    nextState = { status: 'PROCESSING', color: 'text-amber-500 bg-amber-500/10 animate-pulse' };
-                } else if (telemetryStates.terminal.status === 'PROCESSING') {
-                    nextState = { status: 'CONNECTED', color: 'text-emerald-neon bg-emerald-neon/10' };
-                } else {
-                    nextState = { status: 'STANDBY', color: 'text-slate-400 bg-white/5' };
-                }
-                telemetryStates.terminal = nextState;
-            }
-
-            el.textContent = nextState.status;
-            el.className = `text-[9px] font-mono px-1.5 py-0.5 rounded font-bold transition-all duration-300 ${nextState.color}`;
-            
-            // Save state in localStorage
-            localStorage.setItem('terminal_telemetry', JSON.stringify(telemetryStates));
-        }
 
         // Login Submit Logic with elegant transition & validation feedback
         document.getElementById('login-form').addEventListener('submit', function(e) {

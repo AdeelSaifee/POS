@@ -83,36 +83,36 @@
                     </div>
                     
                     <div class="space-y-2.5">
-                        <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center justify-between text-xs cursor-pointer hover:bg-white/[0.02] p-1 rounded transition-colors" onclick="toggleTelemetry('printer')">
                             <div class="flex items-center gap-2.5">
                                 <span class="material-symbols-outlined text-slate-400 text-[16px]">print</span>
                                 <span class="text-slate-300 font-medium">Receipt Printer</span>
                             </div>
-                            <span class="text-[9px] font-mono text-emerald-neon bg-emerald-neon/10 px-1.5 py-0.5 rounded font-bold">READY</span>
+                            <span id="status-printer" class="text-[9px] font-mono text-emerald-neon bg-emerald-neon/10 px-1.5 py-0.5 rounded font-bold transition-all duration-300">READY</span>
                         </div>
                         
-                        <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center justify-between text-xs cursor-pointer hover:bg-white/[0.02] p-1 rounded transition-colors" onclick="toggleTelemetry('drawer')">
                             <div class="flex items-center gap-2.5">
                                 <span class="material-symbols-outlined text-slate-400 text-[16px]">table_rows</span>
                                 <span class="text-slate-300 font-medium">Cash Drawer</span>
                             </div>
-                            <span class="text-[9px] font-mono text-emerald-neon bg-emerald-neon/10 px-1.5 py-0.5 rounded font-bold">SECURE</span>
+                            <span id="status-drawer" class="text-[9px] font-mono text-emerald-neon bg-emerald-neon/10 px-1.5 py-0.5 rounded font-bold transition-all duration-300">SECURE</span>
                         </div>
                         
-                        <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center justify-between text-xs cursor-pointer hover:bg-white/[0.02] p-1 rounded transition-colors" onclick="toggleTelemetry('scanner')">
                             <div class="flex items-center gap-2.5">
                                 <span class="material-symbols-outlined text-slate-400 text-[16px]">qr_code_scanner</span>
                                 <span class="text-slate-300 font-medium">Barcode Scanner</span>
                             </div>
-                            <span class="text-[9px] font-mono text-emerald-neon bg-emerald-neon/10 px-1.5 py-0.5 rounded font-bold">ACTIVE</span>
+                            <span id="status-scanner" class="text-[9px] font-mono text-emerald-neon bg-emerald-neon/10 px-1.5 py-0.5 rounded font-bold transition-all duration-300">ACTIVE</span>
                         </div>
                         
-                        <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center justify-between text-xs cursor-pointer hover:bg-white/[0.02] p-1 rounded transition-colors" onclick="toggleTelemetry('terminal')">
                             <div class="flex items-center gap-2.5">
                                 <span class="material-symbols-outlined text-slate-400 text-[16px]">credit_card</span>
                                 <span class="text-slate-300 font-medium">Card Terminal</span>
                             </div>
-                            <span class="text-[9px] font-mono text-slate-400 bg-white/5 px-1.5 py-0.5 rounded font-bold">STANDBY</span>
+                            <span id="status-terminal" class="text-[9px] font-mono text-slate-400 bg-white/5 px-1.5 py-0.5 rounded font-bold transition-all duration-300">STANDBY</span>
                         </div>
                     </div>
                 </div>
@@ -131,7 +131,7 @@
                 </div>
                 
                 <!-- Login Form -->
-                <form class="space-y-4" onsubmit="event.preventDefault(); window.location.href='shift_open.html';">
+                <form id="login-form" class="space-y-4">
                     <!-- Account Input -->
                     <div>
                         <label for="account" class="font-display text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Account or Email</label>
@@ -158,7 +158,7 @@
                     </div>
                     
                     <!-- Submit Button -->
-                    <button type="submit" class="w-full bg-brand-dark hover:bg-slate-800 text-white font-bold py-3 rounded-lg shadow-[0_4px_12px_rgba(9,13,26,0.12)] hover:shadow-[0_4px_16px_rgba(9,13,26,0.2)] hover:-translate-y-[0.5px] active:translate-y-0 transition-all duration-150 text-center text-xs tracking-wider uppercase font-display mt-2">
+                    <button type="submit" id="submit-btn" class="w-full bg-brand-dark hover:bg-slate-800 text-white font-bold py-3 rounded-lg shadow-[0_4px_12px_rgba(9,13,26,0.12)] hover:shadow-[0_4px_16px_rgba(9,13,26,0.2)] hover:-translate-y-[0.5px] active:translate-y-0 transition-all duration-150 text-center text-xs tracking-wider uppercase font-display mt-2 flex items-center justify-center">
                         Sign In
                     </button>
                 </form>
@@ -181,6 +181,16 @@
     </div>
 
     <script>
+        // Initialize Terminal Configuration in LocalStorage
+        const terminalConfig = {
+            terminalId: 'POS-01',
+            branch: 'Main Branch',
+            version: 'V8.4',
+            companyName: 'Imagyn Technologies',
+            lastSync: new Date().toISOString()
+        };
+        localStorage.setItem('terminal_config', JSON.stringify(terminalConfig));
+
         function togglePasswordVisibility() {
             const passwordInput = document.getElementById('password');
             const eyeIcon = document.getElementById('eye-icon');
@@ -192,6 +202,96 @@
                 eyeIcon.textContent = 'visibility';
             }
         }
+
+        // Interactive System Telemetry Simulator for POS-01
+        const telemetryStates = {
+            printer: { status: 'READY', color: 'text-emerald-neon bg-emerald-neon/10' },
+            drawer: { status: 'SECURE', color: 'text-emerald-neon bg-emerald-neon/10' },
+            scanner: { status: 'ACTIVE', color: 'text-emerald-neon bg-emerald-neon/10' },
+            terminal: { status: 'STANDBY', color: 'text-slate-400 bg-white/5' }
+        };
+
+        function toggleTelemetry(device) {
+            const el = document.getElementById(`status-${device}`);
+            if (!el) return;
+
+            let nextState = {};
+            if (device === 'printer') {
+                if (telemetryStates.printer.status === 'READY') {
+                    nextState = { status: 'PAPER OUT', color: 'text-amber-500 bg-amber-500/10' };
+                } else if (telemetryStates.printer.status === 'PAPER OUT') {
+                    nextState = { status: 'OFFLINE', color: 'text-rose-500 bg-rose-500/10' };
+                } else {
+                    nextState = { status: 'READY', color: 'text-emerald-neon bg-emerald-neon/10' };
+                }
+                telemetryStates.printer = nextState;
+            } else if (device === 'drawer') {
+                if (telemetryStates.drawer.status === 'SECURE') {
+                    nextState = { status: 'OPEN', color: 'text-amber-500 bg-amber-500/10' };
+                } else {
+                    nextState = { status: 'SECURE', color: 'text-emerald-neon bg-emerald-neon/10' };
+                }
+                telemetryStates.drawer = nextState;
+            } else if (device === 'scanner') {
+                if (telemetryStates.scanner.status === 'ACTIVE') {
+                    nextState = { status: 'NO BEAM', color: 'text-rose-500 bg-rose-500/10' };
+                } else {
+                    nextState = { status: 'ACTIVE', color: 'text-emerald-neon bg-emerald-neon/10' };
+                }
+                telemetryStates.scanner = nextState;
+            } else if (device === 'terminal') {
+                if (telemetryStates.terminal.status === 'STANDBY') {
+                    nextState = { status: 'PROCESSING', color: 'text-amber-500 bg-amber-500/10 animate-pulse' };
+                } else if (telemetryStates.terminal.status === 'PROCESSING') {
+                    nextState = { status: 'CONNECTED', color: 'text-emerald-neon bg-emerald-neon/10' };
+                } else {
+                    nextState = { status: 'STANDBY', color: 'text-slate-400 bg-white/5' };
+                }
+                telemetryStates.terminal = nextState;
+            }
+
+            el.textContent = nextState.status;
+            el.className = `text-[9px] font-mono px-1.5 py-0.5 rounded font-bold transition-all duration-300 ${nextState.color}`;
+            
+            // Save state in localStorage
+            localStorage.setItem('terminal_telemetry', JSON.stringify(telemetryStates));
+        }
+
+        // Login Submit Logic with elegant transition & validation feedback
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const accountInput = document.getElementById('account');
+            const passwordInput = document.getElementById('password');
+            
+            // Disable inputs during processing
+            submitBtn.disabled = true;
+            accountInput.disabled = true;
+            passwordInput.disabled = true;
+            
+            // Change button state to loading spinner
+            submitBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Authenticating...
+            `;
+            
+            // Store Operator details
+            const operator = {
+                name: accountInput.value,
+                role: accountInput.value.toLowerCase().includes('admin') ? 'MANAGER' : 'CASHIER',
+                loginTime: new Date().toISOString()
+            };
+            localStorage.setItem('terminal_operator', JSON.stringify(operator));
+            
+            // Artificial delay to feel realistic and complete verification
+            setTimeout(() => {
+                window.location.href = 'shift_open.html';
+            }, 1000);
+        });
     </script>
 </body>
 </html>

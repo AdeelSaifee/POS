@@ -5,7 +5,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>POS Terminal Login</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <script id="tailwind-config">
         tailwind.config = {
@@ -13,16 +13,13 @@
             theme: {
                 extend: {
                     colors: {
-                        "primary-dark": "#0A0F1D",
-                        "primary-accent": "#141E33",
-                        "cyber-green": "#00F2FE",
-                        "emerald-neon": "#05FF9E",
-                        "danger-neon": "#FF2E63",
-                        "muted-blue": "#4A5568"
+                        "brand-dark": "#090D1A",
+                        "brand-gray": "#1E293B",
+                        "emerald-neon": "#10B981"
                     },
-                    borderRadius: {
-                        "lg": "12px",
-                        "xl": "16px"
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif']
                     }
                 }
             }
@@ -30,175 +27,162 @@
     </script>
     <style>
         body {
-            font-family: 'Outfit', sans-serif;
-            background-color: #050811;
+            font-family: 'Inter', sans-serif;
+            background-color: #05070C;
             background-image: 
-                radial-gradient(circle at 0% 0%, rgba(5, 255, 158, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 100% 100%, rgba(0, 242, 254, 0.05) 0%, transparent 40%);
+                radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.03) 0%, transparent 45%),
+                radial-gradient(circle at 90% 80%, rgba(99, 102, 241, 0.03) 0%, transparent 45%);
         }
         
-        .space-mono {
-            font-family: 'Space Grotesk', sans-serif;
-        }
-
         .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
         }
 
-        /* Subtle grid background on the left panel */
         .cyber-grid {
             background-size: 24px 24px;
             background-image: 
-                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
         }
 
-        /* Pulsing light effect */
-        .glowing-dot {
-            box-shadow: 0 0 8px #05FF9E;
-        }
-
-        /* Input hover & focus glow */
         .premium-input {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .premium-input:focus {
-            box-shadow: 0 0 12px rgba(5, 255, 158, 0.25);
-            border-color: #05FF9E;
-        }
-
-        /* Float brand logo card animation */
-        .float-card {
-            animation: float 4s ease-in-out infinite;
-        }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-6px); }
+            box-shadow: 0 0 0 2.5px rgba(16, 185, 129, 0.15);
+            border-color: #10B981;
         }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4 md:p-6">
-    <!-- Main Outer Container with double border shadow -->
-    <div class="w-full max-w-5xl bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.4)] border border-slate-200/80 overflow-hidden flex flex-col md:flex-row min-h-[600px] animate-in fade-in duration-500">
+    <!-- Main Card Container (Fixed height for perfect visual balance) -->
+    <div class="w-full max-w-4xl bg-white rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-100/80 overflow-hidden flex flex-col md:flex-row h-auto md:h-[580px] animate-in fade-in duration-300">
         
-        <!-- Left Side: Interactive Telemetry & Brand Panel -->
-        <div class="w-full md:w-[45%] bg-[#0A0F1D] p-8 md:p-12 flex flex-col justify-between text-white relative overflow-hidden">
-            <!-- Grid Background Overlay -->
-            <div class="absolute inset-0 cyber-grid opacity-80"></div>
-            <!-- Radial ambient glow -->
-            <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full bg-emerald-neon/5 blur-[80px]"></div>
+        <!-- Left Side: System Telemetry & Branding -->
+        <div class="w-full md:w-[42%] bg-brand-dark p-8 md:p-10 flex flex-col justify-between text-white relative overflow-hidden h-[300px] md:h-full">
+            <!-- Background Grid -->
+            <div class="absolute inset-0 cyber-grid opacity-60"></div>
+            <!-- Ambient Radial Glow -->
+            <div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-emerald-neon/10 blur-[80px]"></div>
             
-            <div class="relative z-10 flex flex-col items-center text-center mt-6">
-                <!-- Floating Logo Container -->
-                <div class="float-card bg-white p-5 rounded-2xl shadow-[0_12px_24px_rgba(5,255,158,0.1)] border border-white/20 flex items-center justify-center mb-8 max-w-[210px]">
-                    <img src="logo.png" alt="imagyn technologies" class="max-h-11 object-contain" onerror="this.src='../../logo.png'"/>
+            <!-- Top Branding Section -->
+            <div class="relative z-10 flex flex-col items-center mt-2">
+                <!-- White Logo Card (Minimalist, exact height, rounded-xl) -->
+                <div class="bg-white px-5 py-3.5 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.2)] border border-white/5 flex items-center justify-center w-48 h-14 mb-8">
+                    <img src="logo.png" alt="Imagyn Technologies" class="max-h-7 object-contain" onerror="this.src='../../logo.png'"/>
                 </div>
-                
-                <!-- Status Console -->
-                <div class="w-full max-w-xs bg-white/[0.02] border border-white/10 rounded-xl p-6 mt-6 backdrop-blur-md">
-                    <div class="flex items-center justify-between mb-4 border-b border-white/5 pb-3">
-                        <h3 class="space-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest">SYSTEM STATUS</h3>
-                        <span class="text-[9px] bg-emerald-neon/10 text-emerald-neon px-2 py-0.5 rounded font-mono font-bold tracking-wider">ONLINE</span>
+
+                <!-- Telemetry Status Dashboard -->
+                <div class="w-full bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 backdrop-blur-md">
+                    <div class="flex items-center justify-between mb-3.5 border-b border-white/[0.05] pb-2.5">
+                        <span class="font-display text-[10px] font-bold text-slate-400 uppercase tracking-widest">SYSTEM STATUS</span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-neon animate-pulse"></span>
+                            <span class="text-[9px] text-emerald-neon font-bold tracking-wider uppercase font-display">ONLINE</span>
+                        </div>
                     </div>
                     
-                    <div class="space-y-3.5 text-xs">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-neon glowing-dot"></span>
-                                <span class="material-symbols-outlined text-[16px] text-slate-400">print</span>
-                                <span class="text-slate-300 font-medium">Printer</span>
+                    <div class="space-y-2.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2.5">
+                                <span class="material-symbols-outlined text-slate-400 text-[16px]">print</span>
+                                <span class="text-slate-300 font-medium">Receipt Printer</span>
                             </div>
-                            <span class="font-mono text-[10px] text-slate-500">PRN-READY</span>
+                            <span class="text-[9px] font-mono text-emerald-neon bg-emerald-neon/10 px-1.5 py-0.5 rounded font-bold">READY</span>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-neon glowing-dot"></span>
-                                <span class="material-symbols-outlined text-[16px] text-slate-400">table_rows</span>
-                                <span class="text-slate-300 font-medium">Cash drawer</span>
+                        
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2.5">
+                                <span class="material-symbols-outlined text-slate-400 text-[16px]">table_rows</span>
+                                <span class="text-slate-300 font-medium">Cash Drawer</span>
                             </div>
-                            <span class="font-mono text-[10px] text-slate-500">DRW-ACTIVE</span>
+                            <span class="text-[9px] font-mono text-emerald-neon bg-emerald-neon/10 px-1.5 py-0.5 rounded font-bold">SECURE</span>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-neon glowing-dot"></span>
-                                <span class="material-symbols-outlined text-[16px] text-slate-400">qr_code_scanner</span>
-                                <span class="text-slate-300 font-medium">Scanner</span>
+                        
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2.5">
+                                <span class="material-symbols-outlined text-slate-400 text-[16px]">qr_code_scanner</span>
+                                <span class="text-slate-300 font-medium">Barcode Scanner</span>
                             </div>
-                            <span class="font-mono text-[10px] text-slate-500">SCN-READY</span>
+                            <span class="text-[9px] font-mono text-emerald-neon bg-emerald-neon/10 px-1.5 py-0.5 rounded font-bold">ACTIVE</span>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-neon glowing-dot"></span>
-                                <span class="material-symbols-outlined text-[16px] text-slate-400">credit_card</span>
-                                <span class="text-slate-300 font-medium">Card terminal</span>
+                        
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2.5">
+                                <span class="material-symbols-outlined text-slate-400 text-[16px]">credit_card</span>
+                                <span class="text-slate-300 font-medium">Card Terminal</span>
                             </div>
-                            <span class="font-mono text-[10px] text-slate-500">TERM-IDLE</span>
+                            <span class="text-[9px] font-mono text-slate-400 bg-white/5 px-1.5 py-0.5 rounded font-bold">STANDBY</span>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Left Footer links -->
-            <div class="relative z-10 text-center mt-12 md:mt-0 text-[10px] text-slate-500 space-mono tracking-wider flex justify-center gap-5">
-                <a href="#" class="hover:text-emerald-neon transition-colors duration-200">USER AGREEMENT</a>
-                <span class="text-slate-800">|</span>
-                <a href="#" class="hover:text-emerald-neon transition-colors duration-200">PRIVACY POLICY</a>
+            <!-- Bottom Footer Links -->
+            <div class="relative z-10 flex justify-between items-center text-[9px] text-slate-500 font-display tracking-widest border-t border-white/[0.04] pt-3.5 mt-4">
+                <a href="#" class="hover:text-emerald-neon transition-colors">USER AGREEMENT</a>
+                <span class="text-white/10">•</span>
+                <a href="#" class="hover:text-emerald-neon transition-colors">PRIVACY POLICY</a>
             </div>
         </div>
         
-        <!-- Right Side: Account Login Form -->
-        <div class="w-full md:w-[55%] p-8 md:p-12 flex flex-col justify-between bg-white">
-            <div class="my-auto max-w-md mx-auto w-full">
-                <!-- Title Block -->
-                <div class="mb-8">
-                    <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Account Login</h2>
-                    <p class="text-sm text-slate-500 mt-1.5">Sign in to your POS account</p>
+        <!-- Right Side: Clean Workspace Form -->
+        <div class="w-full md:w-[58%] p-8 md:p-10 flex flex-col justify-between bg-white h-auto md:h-full">
+            
+            <!-- Centered Form Container -->
+            <div class="my-auto max-w-sm mx-auto w-full">
+                <!-- Heading Group -->
+                <div class="mb-6">
+                    <h2 class="font-display text-2xl font-extrabold text-slate-900 tracking-tight">Account Login</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Please enter your credentials to access the terminal.</p>
                 </div>
                 
-                <!-- Inputs & Buttons -->
-                <form class="space-y-6" onsubmit="event.preventDefault(); window.location.href='shift_open.html';">
+                <!-- Login Form -->
+                <form class="space-y-4" onsubmit="event.preventDefault(); window.location.href='shift_open.html';">
                     <!-- Account Input -->
                     <div>
-                        <label for="account" class="space-mono text-[10px] font-bold text-slate-700 uppercase tracking-widest mb-2 block">Account or Email</label>
+                        <label for="account" class="font-display text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">Account or Email</label>
                         <div class="relative flex items-center group">
-                            <span class="material-symbols-outlined absolute left-4 text-slate-400 group-focus-within:text-slate-600 transition-colors text-[20px]">person</span>
-                            <input type="text" id="account" placeholder="Account or Email" required
-                                   class="premium-input pl-12 pr-4 py-4 w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-0 focus:border-slate-300 transition-all placeholder-slate-400 text-sm text-slate-900 font-medium"/>
+                            <span class="material-symbols-outlined absolute left-3 text-slate-400 group-focus-within:text-slate-600 transition-colors text-[18px]">person</span>
+                            <input type="text" id="account" placeholder="Enter account or email" required
+                                   class="premium-input pl-10 pr-4 py-2.5 w-full rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-0 transition-all placeholder-slate-400 text-xs text-slate-850 font-medium"/>
                         </div>
                     </div>
                     
                     <!-- Password Input -->
                     <div>
-                        <label for="password" class="space-mono text-[10px] font-bold text-slate-700 uppercase tracking-widest mb-2 block">Password</label>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="password" class="font-display text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Password</label>
+                        </div>
                         <div class="relative flex items-center group">
-                            <span class="material-symbols-outlined absolute left-4 text-slate-400 group-focus-within:text-slate-600 transition-colors text-[20px]">lock</span>
-                            <input type="password" id="password" placeholder="Password" required
-                                   class="premium-input pl-12 pr-12 py-4 w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-0 focus:border-slate-300 transition-all placeholder-slate-400 text-sm text-slate-900 font-medium"/>
-                            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-4 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
-                                <span class="material-symbols-outlined text-[20px]" id="eye-icon">visibility</span>
+                            <span class="material-symbols-outlined absolute left-3 text-slate-400 group-focus-within:text-slate-600 transition-colors text-[18px]">lock</span>
+                            <input type="password" id="password" placeholder="••••••••" required
+                                   class="premium-input pl-10 pr-10 py-2.5 w-full rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-0 transition-all placeholder-slate-400 text-xs text-slate-850 font-medium"/>
+                            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
+                                <span class="material-symbols-outlined text-[18px]" id="eye-icon">visibility</span>
                             </button>
                         </div>
                     </div>
                     
-                    <!-- Login Button -->
-                    <button type="submit" class="w-full bg-[#0A0F1D] hover:bg-slate-800 text-white font-bold py-4 rounded-xl shadow-[0_8px_30px_rgb(10,15,29,0.15)] hover:shadow-[0_8px_30px_rgb(10,15,29,0.25)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-center text-sm tracking-wider uppercase space-mono mt-4">
-                        Login
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full bg-brand-dark hover:bg-slate-800 text-white font-bold py-3 rounded-lg shadow-[0_4px_12px_rgba(9,13,26,0.12)] hover:shadow-[0_4px_16px_rgba(9,13,26,0.2)] hover:-translate-y-[0.5px] active:translate-y-0 transition-all duration-150 text-center text-xs tracking-wider uppercase font-display mt-2">
+                        Sign In
                     </button>
                 </form>
                 
-                <!-- Info Link -->
-                <div class="text-center mt-6">
-                    <a href="#" class="text-xs text-slate-500 font-semibold hover:text-[#0A0F1D] hover:underline transition-colors">How to get an account to login?</a>
+                <!-- Help link -->
+                <div class="text-center mt-4">
+                    <a href="#" class="text-[11px] text-slate-400 hover:text-slate-600 transition-colors font-medium">Forgot password or account info?</a>
                 </div>
             </div>
             
-            <!-- Metadata box -->
-            <div class="mt-8 max-w-md mx-auto w-full">
-                <div class="bg-slate-50/80 border border-slate-100 rounded-xl p-4 flex flex-col items-center justify-center text-center">
-                    <span class="space-mono text-[10px] font-bold text-slate-700 tracking-wider">POS-01 • MAIN BRANCH</span>
-                    <span class="text-[9px] text-slate-400 font-semibold mt-1">IMAGYN TECHNOLOGIES POS • V8.4</span>
-                </div>
+            <!-- Unified Metadata Footer -->
+            <div class="mt-6 pt-5 border-t border-slate-100 max-w-sm mx-auto w-full flex flex-col sm:flex-row items-center justify-between text-[9px] text-slate-400 font-medium gap-2">
+                <span class="font-display tracking-wider text-slate-500">POS-01 • MAIN BRANCH</span>
+                <span class="hidden sm:inline text-slate-200">|</span>
+                <span>IMAGYN TECHNOLOGIES POS • V8.4</span>
             </div>
+            
         </div>
         
     </div>

@@ -54,16 +54,26 @@
         }
 
         .glass-input {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .glass-input:focus {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: #0DF29D;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-color: #0DF29D !important;
             box-shadow: 0 0 15px rgba(13, 242, 157, 0.15);
             outline: none;
+        }
+
+        /* Prevent autofill styling override in Webkit/Blink browsers */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 1000px #080C14 inset !important;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.9) !important;
+            transition: background-color 5000s ease-in-out 0s;
         }
 
         .glass-btn {
@@ -205,8 +215,8 @@
                         <label for="account" class="text-[10px] font-bold text-white/50 tracking-[0.2em] uppercase pl-1 block">OPERATOR ID</label>
                         <div class="relative flex items-center group">
                             <span class="material-symbols-outlined absolute left-3.5 text-white/30 group-focus-within:text-neon-emerald transition-colors text-[20px]">badge</span>
-                            <input type="text" id="account" placeholder="Enter account or email" required onfocus="setActiveInput('account')"
-                                class="glass-input pl-11 pr-4 py-3.5 w-full rounded-2xl text-xs font-semibold text-white/90 placeholder-white/20 transition-all font-sans" />
+                            <input type="text" id="account" placeholder="Enter account or email" required onfocus="setActiveInput('account')" autocomplete="off"
+                                class="glass-input pl-11 pr-4 py-3.5 w-full rounded-2xl text-xs font-semibold text-white/90 placeholder-white/20 transition-all font-sans focus:ring-0 focus:outline-none" />
                         </div>
                     </div>
 
@@ -215,8 +225,8 @@
                         <label for="password" class="text-[10px] font-bold text-white/50 tracking-[0.2em] uppercase pl-1 block">SECURITY PIN</label>
                         <div class="relative flex items-center group">
                             <span class="material-symbols-outlined absolute left-3.5 text-white/30 group-focus-within:text-neon-emerald transition-colors text-[20px]">lock</span>
-                            <input type="password" id="password" placeholder="••••••••" required onfocus="setActiveInput('password')"
-                                class="glass-input pl-11 pr-12 py-3.5 w-full rounded-2xl text-xs font-semibold text-white/90 placeholder-white/20 transition-all tracking-wider font-mono" />
+                            <input type="password" id="password" placeholder="••••••••" required onfocus="setActiveInput('password')" autocomplete="new-password"
+                                class="glass-input pl-11 pr-12 py-3.5 w-full rounded-2xl text-xs font-semibold text-white/90 placeholder-white/20 transition-all tracking-wider font-mono focus:ring-0 focus:outline-none" />
                             <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 flex items-center justify-center text-white/30 hover:text-white/60 transition-colors">
                                 <span class="material-symbols-outlined text-[18px]" id="eye-icon">visibility</span>
                             </button>

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shift Open — IMAGYN POS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:   #0F172A;
+      --green:  #10B981;
+      --red:    #EF4444;
+      --amber:  #F59E0B;
+      --blue:   #3B82F6;
+      --border: #E2E8F0;
+      --bg:     #F8FAFC;
+      --white:  #FFFFFF;
+      --muted:  #64748B;
+      --sans:   'Plus Jakarta Sans', 'Inter', sans-serif;
+      --mono:   'IBM Plex Mono', 'Courier New', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--navy); display: flex; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+
+    .icon {
+      font-family: 'Material Symbols Outlined';
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block; vertical-align: middle; line-height: 1; user-select: none;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px; min-width: 220px; height: 100vh;
+      background: var(--navy); display: flex; flex-direction: column;
+      padding: 20px 14px; position: fixed; left: 0; top: 0; z-index: 100;
+    }
+    .sidebar-logo { display: flex; align-items: center; gap: 9px; padding: 0 6px; margin-bottom: 24px; }
+    .sidebar-logo .icon { color: var(--green); font-size: 22px; }
+    .logo-text { font-size: 14px; font-weight: 800; color: white; letter-spacing: -0.2px; }
+    .logo-tag  { font-size: 9px; font-weight: 700; color: rgba(16,185,129,0.75); letter-spacing: 2px; text-transform: uppercase; display: block; margin-top: -1px; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 11px; padding: 10px 10px;
+      border-radius: 8px; cursor: pointer; text-decoration: none;
+      color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 600;
+      transition: all 0.13s; margin-bottom: 2px;
+    }
+    .nav-item .icon { font-size: 19px; }
+    .nav-item.active { background: rgba(255,255,255,0.11); color: white; }
+    .nav-item.active .icon { color: var(--green); }
+    .nav-item.locked { opacity: 0.3; cursor: not-allowed; }
+
+    .sidebar-footer { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px; }
+    .op-chip { display: flex; align-items: center; gap: 9px; padding: 7px 8px; margin-bottom: 6px; }
+    .op-avatar {
+      width: 30px; height: 30px; border-radius: 50%; background: var(--green);
+      color: var(--navy); display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800; flex-shrink: 0;
+    }
+    .op-name { font-size: 12px; font-weight: 700; color: white; }
+    .op-sub  { font-size: 10px; color: rgba(255,255,255,0.38); }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 9px; padding: 7px 10px;
+      border-radius: 7px; cursor: pointer; font-size: 11px;
+      color: rgba(255,255,255,0.38); transition: all 0.13s; text-decoration: none;
+    }
+    .sidebar-link:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); }
+    .sidebar-link.danger { color: #FC8181; }
+    .sidebar-link.danger:hover { background: rgba(239,68,68,0.1); color: #FCA5A5; }
+    .shift-badge {
+      display: flex; align-items: center; gap: 5px; padding: 5px 10px;
+      background: rgba(245,158,11,0.15); border-radius: 6px; margin: 4px 6px 10px;
+      border: 1px solid rgba(245,158,11,0.2);
+    }
+    .shift-badge .icon { font-size: 14px; color: var(--amber); }
+    .shift-badge-text { font-size: 10px; font-weight: 700; color: #FCD34D; letter-spacing: 0.5px; text-transform: uppercase; }
+
+    /* ── Main ── */
+    .main { margin-left: 220px; display: flex; flex-direction: column; height: 100vh; min-height: 0; }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: 56px; background: white; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 22px; flex-shrink: 0;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 18px; }
+    .topbar-stat { display: flex; flex-direction: column; }
+    .tb-lbl { font-size: 10px; color: var(--muted); font-weight: 500; }
+    .tb-val { font-size: 13px; font-weight: 700; color: var(--navy); }
+    .tb-div { width: 1px; height: 26px; background: var(--border); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .tb-badge {
+      display: flex; align-items: center; gap: 5px; background: #FFFBEB;
+      padding: 4px 10px; border-radius: 7px; border: 1px solid rgba(245,158,11,0.25);
+      font-size: 11px; font-weight: 700; color: #92400E;
+    }
+    .tb-badge .icon { color: var(--amber); font-size: 15px; }
+
+    /* ── Workspace ── */
+    .workspace { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+    /* ── Left: Policy Panel ── */
+    .policy-panel {
+      width: 40%; min-width: 40%; border-right: 1px solid var(--border);
+      background: white; display: flex; flex-direction: column;
+      padding: 28px 24px; overflow-y: auto; gap: 20px;
+    }
+
+    .panel-eyebrow {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(16,185,129,0.08); color: var(--green);
+      border: 1px solid rgba(16,185,129,0.18); border-radius: 20px;
+      padding: 4px 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+    }
+    .panel-eyebrow .icon { font-size: 14px; }
+    .panel-title { font-size: 22px; font-weight: 800; color: var(--navy); margin-top: 6px; }
+    .panel-sub   { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.6; }
+
+    .policy-card {
+      background: #F8FAFC; border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px;
+    }
+    .policy-icon {
+      width: 36px; height: 36px; border-radius: 9px; background: white;
+      border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .policy-icon .icon { font-size: 18px; color: var(--navy); }
+    .policy-title { font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
+    .policy-desc  { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .policy-desc strong { color: var(--navy); font-weight: 700; }
+
+    .checklist-title {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .check-item {
+      display: flex; align-items: center; gap: 9px; padding: 7px 0;
+      border-bottom: 1px solid #F1F5F9; font-size: 12px; color: var(--navy);
+    }
+    .check-item:last-child { border-bottom: none; }
+    .check-item .icon { font-size: 16px; color: var(--green); }
+
+    /* ── Right: Form Panel ── */
+    .form-panel {
+      flex: 1; background: var(--bg); overflow-y: auto;
+      display: flex; flex-direction: column;
+    }
+
+    .form-inner { padding: 28px 32px; max-width: 540px; width: 100%; margin: 0 auto; }
+
+    .form-header { margin-bottom: 24px; }
+    .form-title  { font-size: 20px; font-weight: 800; color: var(--navy); }
+    .form-sub    { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* Float input */
+    .float-input-wrap {
+      background: white; border: 2px solid var(--border); border-radius: 12px;
+      display: flex; align-items: center; padding: 0 16px; gap: 10px;
+      transition: border-color 0.15s; margin-bottom: 10px;
+    }
+    .float-input-wrap:focus-within { border-color: var(--green); }
+    .float-prefix { font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--muted); flex-shrink: 0; }
+    .float-input {
+      flex: 1; border: none; outline: none; font-family: var(--mono);
+      font-size: 28px; font-weight: 700; color: var(--navy);
+      padding: 16px 0; background: transparent; text-align: right;
+    }
+
+    /* Quick amounts */
+    .quick-row { display: flex; gap: 8px; margin-bottom: 22px; }
+    .qa-btn {
+      flex: 1; height: 38px; background: white; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--navy);
+      cursor: pointer; transition: all 0.13s; font-family: var(--sans);
+    }
+    .qa-btn:hover  { border-color: #CBD5E1; background: #F8FAFC; }
+    .qa-btn.active { border-color: var(--green); background: rgba(16,185,129,0.06); color: #065F46; }
+    .qa-btn:active { transform: scale(0.96); }
+
+    /* Field */
+    .field-group  { margin-bottom: 16px; }
+    .field-label  { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 6px; display: block; }
+    .field-hint   { font-size: 10px; color: var(--muted); margin-top: 4px; }
+    .field-input, .field-textarea {
+      width: 100%; border: 1px solid var(--border); border-radius: 9px;
+      padding: 11px 14px; font-size: 13px; font-weight: 500; color: var(--navy);
+      font-family: var(--sans); outline: none; background: white; transition: border-color 0.13s;
+    }
+    .field-input:focus, .field-textarea:focus { border-color: var(--green); }
+    .field-input.pin { letter-spacing: 8px; font-family: var(--mono); font-size: 16px; }
+    .field-textarea { height: 72px; resize: none; }
+
+    /* Actions */
+    .form-actions { display: flex; gap: 10px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: all 0.13s; border: none; outline: none; height: 48px; padding: 0 20px;
+      font-family: var(--sans);
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn .icon { font-size: 18px; }
+    .btn-ghost { background: white; border: 1px solid var(--border); color: var(--navy); }
+    .btn-ghost:hover { background: #F8FAFC; }
+    .btn-green { background: var(--green); color: white; flex: 2; box-shadow: 0 4px 14px rgba(16,185,129,0.28); font-size: 14px; }
+    .btn-green:hover { filter: brightness(1.05); }
+
+    /* ── Success Overlay ── */
+    .success-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.7);
+      backdrop-filter: blur(6px); z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .success-overlay.open { opacity: 1; pointer-events: all; }
+    .success-card {
+      background: white; border-radius: 20px; padding: 36px; text-align: center;
+      max-width: 360px; width: 90%; box-shadow: 0 24px 60px rgba(0,0,0,0.2);
+      transform: scale(0.92); transition: transform 0.25s;
+    }
+    .success-overlay.open .success-card { transform: scale(1); }
+    .success-ico {
+      width: 72px; height: 72px; border-radius: 50%; background: #ECFDF5;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 18px;
+    }
+    .success-ico .icon { font-size: 36px; color: var(--green); }
+    .success-title { font-size: 20px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+    .success-sub   { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 20px; }
+    .progress-wrap { background: #F1F5F9; border-radius: 4px; height: 4px; overflow: hidden; margin-bottom: 10px; }
+    .progress-bar  { height: 100%; background: var(--green); border-radius: 4px; width: 0; transition: width 1.4s linear; }
+    .progress-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+  /* ── Shortcuts bar ── */
+  .shortcuts-bar {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 300;
+    background: rgba(255,255,255,0.88); backdrop-filter: blur(12px);
+    border: 1px solid rgba(203,213,225,0.9); border-radius: 40px;
+    padding: 7px 14px; display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.1), 0 2px 8px rgba(0,0,0,0.05);
+    white-space: nowrap; overflow-x: auto; max-width: 95vw;
+  }
+  .shortcuts-bar::-webkit-scrollbar { display: none; }
+  .sc-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: #94A3B8; text-transform: uppercase; padding-right: 8px; border-right: 1px solid #E2E8F0; margin-right: 2px; }
+  .sc-btn { padding: 5px 13px; border-radius: 20px; border: none; cursor: pointer; font-size: 10px; font-weight: 700; transition: all 0.13s; font-family: var(--sans); white-space: nowrap; }
+  .sc-btn:active { transform: scale(0.95); }
+  .sc-btn.green { background: #ECFDF5; border: 1px solid #6EE7B7; color: #065F46; }
+  .sc-btn.green:hover { background: #D1FAE5; }
+  .sc-btn.blue  { background: #EFF6FF; border: 1px solid #93C5FD; color: #1D4ED8; }
+  .sc-btn.blue:hover  { background: #DBEAFE; }
+  .sc-btn.amber { background: #FFFBEB; border: 1px solid #FCD34D; color: #92400E; }
+  .sc-btn.amber:hover { background: #FEF3C7; }
+  .sc-btn.ghost { background: #F8FAFC; border: 1px solid #E2E8F0; color: #64748B; }
+  .sc-btn.ghost:hover { background: #F1F5F9; color: #0F172A; }
+  </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="icon">point_of_sale</span>
+    <div>
+      <div class="logo-text">IMAGYN POS</div>
+      <span class="logo-tag">Enterprise Terminal</span>
+    </div>
+  </div>
+
+  <!-- Shift status indicator -->
+  <div class="shift-badge">
+    <span class="icon">timer_off</span>
+    <span class="shift-badge-text">Shift Not Started</span>
+  </div>
+
+  <nav>
+    <a class="nav-item locked">
+      <span class="icon">shopping_cart</span>Checkout
+      <span class="icon" style="font-size:14px;margin-left:auto;opacity:0.5">lock</span>
+    </a>
+    <a class="nav-item active" href="shift_open.html">
+      <span class="icon">timer</span>Shift Open
+    </a>
+    <a class="nav-item locked">
+      <span class="icon">payments</span>Cash Control
+      <span class="icon" style="font-size:14px;margin-left:auto;opacity:0.5">lock</span>
+    </a>
+    <a class="nav-item locked">
+      <span class="icon">lock_clock</span>Shift Close
+      <span class="icon" style="font-size:14px;margin-left:auto;opacity:0.5">lock</span>
+    </a>
+    <a class="nav-item" onclick="showToast('Settings locked — open shift first.','info')">
+      <span class="icon">settings</span>Settings
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="op-chip">
+      <div class="op-avatar" id="op-avatar">AS</div>
+      <div>
+        <div class="op-name" id="op-name">Adeel Saifee</div>
+        <div class="op-sub">POS-01 · Pre-Shift</div>
+      </div>
+    </div>
+    <a class="sidebar-link" onclick="showToast('Manager PIN: 1234','info')">
+      <span class="icon">help</span>Help Guide
+    </a>
+    <a class="sidebar-link danger" onclick="doLogout()">
+      <span class="icon">logout</span>Sign Out
+    </a>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-stat">
+        <span class="tb-lbl">Store</span>
+        <span class="tb-val">Imagyn Technologies</span>
+      </div>
+      <div class="topbar-stat">
+        <span class="tb-lbl">Location</span>
+        <span class="tb-val">Tariq Road, Karachi</span>
+      </div>
+      <div class="tb-div"></div>
+      <div class="topbar-stat">
+        <span class="tb-lbl">Terminal</span>
+        <span class="tb-val">POS-01</span>
+      </div>
+      <div class="topbar-stat">
+        <span class="tb-lbl">Date</span>
+        <span class="tb-val" id="date-display">2026-05-22</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="tb-badge">
+        <span class="icon">timer_off</span>
+        Shift Closed
+      </div>
+    </div>
+  </header>
+
+  <!-- Workspace -->
+  <div class="workspace">
+
+    <!-- ── Left: Shift Policies ── -->
+    <div class="policy-panel">
+      <div>
+        <div class="panel-eyebrow"><span class="icon">policy</span>Shift Policies</div>
+        <div class="panel-title">Before You Begin</div>
+        <div class="panel-sub">Review compliance rules before opening your shift. All declarations are logged for audit.</div>
+      </div>
+
+      <div class="policy-card">
+        <div class="policy-icon"><span class="icon">account_balance_wallet</span></div>
+        <div>
+          <div class="policy-title">Cash Drawer Limit</div>
+          <div class="policy-desc">Operating limit is <strong>PKR 25,000</strong>. Excess cash must be deposited before transactions resume.</div>
+        </div>
+      </div>
+
+      <div class="policy-card">
+        <div class="policy-icon"><span class="icon">security</span></div>
+        <div>
+          <div class="policy-title">Auto Safe-Drop Threshold</div>
+          <div class="policy-desc">System triggers a mandatory safe-drop alert at <strong>PKR 20,000</strong> to minimize counter risk.</div>
+        </div>
+      </div>
+
+      <div class="policy-card">
+        <div class="policy-icon"><span class="icon">assignment_ind</span></div>
+        <div>
+          <div class="policy-title">Identity & Accountability</div>
+          <div class="policy-desc">Credentials must match the physically present cashier. Sharing POS logins is a <strong>high-severity violation</strong>.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:4px">
+        <div class="checklist-title">Pre-Shift Checklist</div>
+        <div class="check-item"><span class="icon">check_circle</span>Physical cash counted &amp; verified</div>
+        <div class="check-item"><span class="icon">check_circle</span>Barcode scanner powered on</div>
+        <div class="check-item"><span class="icon">check_circle</span>Receipt printer has paper loaded</div>
+        <div class="check-item"><span class="icon">check_circle</span>Card terminal connected &amp; tested</div>
+        <div class="check-item"><span class="icon">check_circle</span>Product catalog synced (SQLite)</div>
+      </div>
+    </div>
+
+    <!-- ── Right: Open Shift Form ── -->
+    <div class="form-panel">
+      <div class="form-inner">
+        <div class="form-header">
+          <div class="form-title">Open New Shift</div>
+          <div class="form-sub">Declare your opening float cash to unlock all checkout operations.</div>
+        </div>
+
+        <!-- Read-only info -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+          <div class="field-group" style="margin-bottom:0; min-width: 0;">
+            <label class="field-label">Business Date</label>
+            <div style="height:42px;border:1px solid var(--border);border-radius:9px;background:#F8FAFC;padding:0 14px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted); overflow:hidden;">
+              <span class="icon" style="font-size:16px; flex-shrink: 0;">event</span>
+              <span id="date-field" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">2026-05-22</span>
+            </div>
+          </div>
+          <div class="field-group" style="margin-bottom:0; min-width: 0;">
+            <label class="field-label">Cashier</label>
+            <div style="height:42px;border:1px solid var(--border);border-radius:9px;background:#F8FAFC;padding:0 14px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted); overflow:hidden;">
+              <span class="icon" style="font-size:16px; flex-shrink: 0;">person</span>
+              <span id="cashier-field" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Adeel Saifee</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Opening Float -->
+        <div class="field-group">
+          <label class="field-label">Opening Cash Float</label>
+          <div class="float-input-wrap">
+            <span class="float-prefix">PKR</span>
+            <input class="float-input" type="text" id="float-input" value="5,000" autocomplete="off"/>
+          </div>
+          <div class="quick-row" id="quick-row">
+            <button class="qa-btn" onclick="setFloat(2000)">PKR 2,000</button>
+            <button class="qa-btn active" onclick="setFloat(5000)">PKR 5,000</button>
+            <button class="qa-btn" onclick="setFloat(10000)">PKR 10,000</button>
+          </div>
+        </div>
+
+        <!-- Manager Code -->
+        <div class="field-group">
+          <label class="field-label">Manager Approval Code <span style="font-size:9px;color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input class="field-input pin" type="password" id="mgr-code" maxlength="6" placeholder="••••" autocomplete="off"/>
+          <div class="field-hint">Required only if store policy mandates manager approval at shift start.</div>
+        </div>
+
+        <!-- Notes -->
+        <div class="field-group">
+          <label class="field-label">Shift Notes</label>
+          <textarea class="field-textarea" id="shift-notes" placeholder="Initial cash count notes, hardware status, or other relevant remarks..."></textarea>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <button class="btn btn-ghost" onclick="doLogout()">
+            <span class="icon">logout</span>Cancel
+          </button>
+          <button class="btn btn-green" id="open-shift-btn" onclick="openShift()">
+            <span class="icon">power_settings_new</span>
+            Open Shift &amp; Unlock POS
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- end workspace -->
+</main>
+
+<!-- ═══ SUCCESS OVERLAY ═══ -->
+<div class="success-overlay" id="success-overlay">
+  <div class="success-card">
+    <div class="success-ico"><span class="icon">check_circle</span></div>
+    <div class="success-title">Shift Opened!</div>
+    <div class="success-sub">POS-01 is now active. You are ready to process transactions.</div>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div class="progress-label">Redirecting to Checkout…</div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div id="toasts" style="position:fixed;bottom:22px;right:22px;z-index:400;display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
+
+<script>
+function showToast(msg, type='success') {
+  const s = document.getElementById('toasts');
+  const t = document.createElement('div');
+  const icons = { success:'check_circle', error:'cancel', info:'info' };
+  const bg = { success:'#10B981', error:'#EF4444', info:'#334155' };
+  t.style.cssText = `display:flex;align-items:center;gap:9px;padding:11px 14px;border-radius:10px;color:white;font-size:12px;font-weight:600;background:${bg[type]||'#334155'};box-shadow:0 6px 20px rgba(0,0,0,.14);transform:translateY(6px);opacity:0;transition:all .22s;max-width:300px;pointer-events:all;font-family:Inter,sans-serif`;
+  t.innerHTML = `<span style="font-family:'Material Symbols Outlined';font-size:17px">${icons[type]||'info'}</span><span>${msg}</span>`;
+  s.appendChild(t);
+  requestAnimationFrame(() => requestAnimationFrame(() => { t.style.transform='translateY(0)'; t.style.opacity='1'; }));
+  setTimeout(() => { t.style.transform='translateY(6px)'; t.style.opacity='0'; setTimeout(()=>t.remove(),280); }, 3500);
+}
+
+function syncParent() {
+  try {
+    const doc = window.parent.document;
+    doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+    const el = doc.getElementById('step-2');
+    if (el) el.classList.add('flow-step-active');
+    const url = doc.getElementById('simulator-url-display');
+    if (url) url.innerText = 'screens/shift_open.html';
+    const newTab = doc.getElementById('open-new-tab-btn');
+    if (newTab) newTab.href = 'screens/shift_open.html';
+  } catch(e) {}
+}
+
+// Float input
+const floatInput = document.getElementById('float-input');
+floatInput.addEventListener('input', function() {
+  let raw = this.value.replace(/[^0-9]/g,'');
+  if (raw) this.value = new Intl.NumberFormat('en-PK').format(raw);
+  else this.value = '';
+  // Deactivate all quick buttons when manually typed
+  document.querySelectorAll('.qa-btn').forEach(b => b.classList.remove('active'));
+});
+
+function setFloat(val) {
+  floatInput.value = new Intl.NumberFormat('en-PK').format(val);
+  document.querySelectorAll('.qa-btn').forEach(b => b.classList.remove('active'));
+  // Highlight the clicked button
+  event.target.classList.add('active');
+}
+
+function openShift() {
+  const raw = (floatInput.value || '').replace(/[^0-9]/g,'');
+  const floatVal = parseInt(raw) || 0;
+  if (floatVal <= 0) { showToast('Enter a valid opening float amount.','error'); return; }
+
+  sessionStorage.setItem('pos_shift_open','true');
+  sessionStorage.setItem('pos_shift_float', String(floatVal));
+  if (!sessionStorage.getItem('pos_cart')) sessionStorage.setItem('pos_cart','[]');
+
+  const overlay = document.getElementById('success-overlay');
+  overlay.classList.add('open');
+  setTimeout(() => {
+    document.getElementById('progress-bar').style.width = '100%';
+  }, 50);
+  setTimeout(() => { window.location.href = 'main_checkout.html'; }, 1600);
+}
+
+function doLogout() {
+  sessionStorage.clear();
+  localStorage.removeItem('terminal_operator');
+  window.location.href = 'terminal_login.html';
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  syncParent();
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('date-display').textContent = today;
+  document.getElementById('date-field').textContent   = today;
+
+  let opName = 'Adeel Saifee';
+  const opRaw = localStorage.getItem('terminal_operator');
+  if (opRaw) {
+    try {
+      const parsed = JSON.parse(opRaw);
+      opName = parsed.name || opRaw;
+      if (parsed.color) {
+        document.getElementById('op-avatar').style.background = parsed.color;
+      }
+    } catch(e) {
+      opName = opRaw;
+    }
+  }
+
+  document.getElementById('op-name').textContent     = opName;
+  document.getElementById('op-avatar').textContent   = opName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('cashier-field').textContent = opName;
+});
+</script>
+
+<div class="shortcuts-bar">
+  <span class="sc-label">Shortcuts</span>
+  <button class="sc-btn green" onclick="setFloat(5000)">⚡ Float ₨5,000</button>
+  <button class="sc-btn blue"  onclick="setFloat(10000)">💰 Float ₨10,000</button>
+  <button class="sc-btn amber" onclick="openShift()">▶ Open Shift</button>
+  <button class="sc-btn ghost" onclick="window.location.href='terminal_login.html'">← Login</button>
+  <button class="sc-btn ghost" onclick="window.location.href='main_checkout.html'">→ Checkout</button>
+</div>
+</body>
+</html>

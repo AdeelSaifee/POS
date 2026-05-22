@@ -1,47 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Shift Close — MartPOS</title>
+  <title>Shift Close — IMAGYN POS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
   <style>
     :root {
-      --bg:             #F5F7F7;
-      --white:          #FFFFFF;
-      --navy:           #202020;         /* Charcoal sidebar */
-      --navy-2:         #121212;
-      --green:          #35C5A6;         /* Action Green */
-      --green-dim:      #E6F9F5;
-      --green-dark:     #2BB093;
-      --green-glow:     0 0 20px rgba(53, 197, 166, 0.2);
-      --amber:          #F59E0B;
-      --amber-dim:      #FEF3C7;
-      --red:            #E1477A;
-      --red-dim:        #FDF1F5;
-      --blue:           #3B82F6;
-      --border:         #E5E5E5;
-      --border-2:       #D4D4D4;
-      --text:           #202020;
-      --text-muted:     #6B6B6B;
-      --text-dim:       #A3A3A3;
-      --sans:           'Manrope', sans-serif;
-      --heading:        'Manrope', sans-serif;
-      --mono:           'IBM Plex Mono', ui-monospace, monospace;
-      --surface:        #F5F7F7;
-      --surface-solid:  #F5F7F7;
-      --muted:          #6B6B6B;
+      --navy:   #0F172A;
+      --green:  #10B981;
+      --red:    #EF4444;
+      --amber:  #F59E0B;
+      --blue:   #3B82F6;
+      --border: #E2E8F0;
+      --bg:     #F8FAFC;
+      --white:  #FFFFFF;
+      --muted:  #64748B;
+      --sans:   'Plus Jakarta Sans', 'Inter', sans-serif;
+      --mono:   'IBM Plex Mono', 'Courier New', monospace;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; overflow: hidden; }
-    body { font-family: var(--sans); background: var(--bg); color: var(--text); display: flex; -webkit-font-smoothing: antialiased; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--navy); display: flex; }
 
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -53,71 +36,51 @@
       display: inline-block; vertical-align: middle; line-height: 1; user-select: none;
     }
 
-    /* ── Sidebar (Slim premium style) ── */
+    /* ── Sidebar ── */
     .sidebar {
-      width: 76px; min-width: 76px; height: 100vh;
-      background: #FFFFFF; border-right: 1px solid var(--border); display: flex; flex-direction: column;
-      align-items: center; padding: 20px 0; position: fixed; left: 0; top: 0; z-index: 100;
+      width: 220px; min-width: 220px; height: 100vh;
+      background: var(--navy); display: flex; flex-direction: column;
+      padding: 20px 14px; position: fixed; left: 0; top: 0; z-index: 100;
     }
-    .sidebar-brand {
-      margin-bottom: 24px; flex-shrink: 0;
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 9px;
+      padding: 0 6px; margin-bottom: 24px;
     }
-    .brand-circle {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: var(--green); display: flex; align-items: center; justify-content: center;
-    }
-    .brand-circle .icon {
-      color: #202020; font-size: 22px; font-variation-settings: 'FILL' 1;
-    }
-    .sidebar-nav {
-      flex: 1; display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center;
-    }
-    .nav-btn {
-      width: 44px; height: 44px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      text-decoration: none; transition: all 0.1s;
-      background: transparent; color: #7A7F85;
-      cursor: pointer; border: none; outline: none;
-    }
-    .nav-btn:hover {
-      background: #F5F7F7;
-      color: #111111;
-    }
-    .nav-btn.active {
-      background: #111111;
-      color: #FFFFFF;
-    }
-    .nav-btn.active .icon {
-      font-variation-settings: 'FILL' 1;
-    }
-    .nav-btn.locked {
-      opacity: 0.35;
-      cursor: not-allowed;
-    }
+    .sidebar-logo .icon { color: var(--green); font-size: 22px; }
+    .logo-text { font-size: 14px; font-weight: 800; color: white; letter-spacing: -0.2px; }
+    .logo-tag  { font-size: 9px; font-weight: 700; color: rgba(16,185,129,0.75); letter-spacing: 2px; text-transform: uppercase; display: block; margin-top: -1px; }
 
-    .sidebar-footer {
-      width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;
-      padding-top: 12px; border-top: 1px solid var(--border); flex-shrink: 0;
+    .nav-item {
+      display: flex; align-items: center; gap: 11px; padding: 10px 10px;
+      border-radius: 8px; cursor: pointer; text-decoration: none;
+      color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 600;
+      transition: all 0.13s; margin-bottom: 2px;
     }
-    .op-avatar-circle {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: #4F46E5;
-      color: #FFFFFF; display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 700; cursor: pointer;
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
+    .nav-item.active { background: rgba(255,255,255,0.11); color: white; }
+    .nav-item.active .icon { color: var(--green); }
+    .nav-item .icon { font-size: 19px; }
+
+    .sidebar-footer { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px; }
+    .op-chip { display: flex; align-items: center; gap: 9px; padding: 7px 8px; margin-bottom: 6px; }
+    .op-avatar {
+      width: 30px; height: 30px; border-radius: 50%; background: var(--green);
+      color: var(--navy); display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800; flex-shrink: 0;
     }
-    .logout-btn {
-      width: 44px; height: 44px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      text-decoration: none; color: #7A7F85;
-      transition: all 0.1s;
+    .op-name { font-size: 12px; font-weight: 700; color: white; }
+    .op-sub  { font-size: 10px; color: rgba(255,255,255,0.38); }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 9px; padding: 7px 10px;
+      border-radius: 7px; cursor: pointer; font-size: 11px;
+      color: rgba(255,255,255,0.38); transition: all 0.13s; text-decoration: none;
     }
-    .logout-btn:hover {
-      background: rgba(225,71,122,0.1);
-      color: var(--red);
-    }
+    .sidebar-link:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); }
+    .sidebar-link.danger { color: #FC8181; }
+    .sidebar-link.danger:hover { background: rgba(239,68,68,0.1); color: #FCA5A5; }
 
     /* ── Main layout ── */
-    .main { margin-left: 76px; display: flex; flex-direction: column; height: 100vh; min-height: 0; }
+    .main { margin-left: 220px; display: flex; flex-direction: column; height: 100vh; min-height: 0; }
 
     /* ── Topbar ── */
     .topbar {
@@ -146,7 +109,7 @@
     /* ── Left: Denomination Panel ── */
     .denom-panel {
       width: 42%; min-width: 42%; border-right: 1px solid var(--border);
-      background: var(--surface); display: flex; flex-direction: column; overflow: hidden;
+      background: #F8FAFC; display: flex; flex-direction: column; overflow: hidden;
     }
     .denom-header { padding: 18px 18px 0; flex-shrink: 0; }
     .panel-title { font-size: 15px; font-weight: 800; color: var(--navy); }
@@ -164,22 +127,22 @@
     .denom-type  { font-size: 9px; font-weight: 700; color: var(--muted); letter-spacing: 0.6px; text-transform: uppercase; margin-top: 1px; }
     .denom-ctrls { display: flex; align-items: center; gap: 7px; flex: 1; justify-content: center; }
     .denom-btn {
-      width: 28px; height: 28px; border-radius: 7px; background: var(--surface);
+      width: 28px; height: 28px; border-radius: 7px; background: #F1F5F9;
       border: 1px solid var(--border); display: flex; align-items: center;
-      justify-content: center; cursor: pointer; transition: all 0.1; flex-shrink: 0;
+      justify-content: center; cursor: pointer; transition: all 0.1s; flex-shrink: 0;
     }
     .denom-btn:hover { background: #E2E8F0; }
     .denom-btn:active { transform: scale(0.9); }
     .denom-btn .icon { font-size: 15px; color: var(--navy); }
     .denom-input {
       width: 52px; height: 30px; border: 1px solid var(--border); border-radius: 7px;
-      text-align: center; font-family: var(--sans); font-size: 13px; font-weight: 600;
-      color: var(--text); outline: none; transition: border-color 0.13s; background: var(--surface);
+      text-align: center; font-family: var(--mono); font-size: 13px; font-weight: 600;
+      color: var(--navy); outline: none; transition: border-color 0.13s; background: #FAFAFA;
     }
     .denom-input:focus { border-color: var(--green); background: white; }
     .denom-subtotal {
       flex: 0 0 82px; text-align: right;
-      font-family: var(--sans); font-size: 11px; font-weight: 600; color: var(--muted);
+      font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--muted);
     }
 
     .counted-card {
@@ -187,7 +150,7 @@
       padding: 14px 18px; flex-shrink: 0;
     }
     .counted-lbl { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.45); letter-spacing: 1.2px; text-transform: uppercase; }
-    .counted-amt { font-family: var(--sans); font-size: 26px; font-weight: 700; color: white; margin-top: 5px; }
+    .counted-amt { font-family: var(--mono); font-size: 26px; font-weight: 700; color: white; margin-top: 5px; }
 
     /* ── Right: Z-Report Panel ── */
     .zreport-panel {
@@ -207,11 +170,11 @@
       padding: 11px 13px;
     }
     .stat-lbl { font-size: 9px; font-weight: 700; color: var(--muted); letter-spacing: 0.7px; text-transform: uppercase; }
-    .stat-val { font-family: var(--sans); font-size: 18px; font-weight: 700; color: var(--navy); margin-top: 5px; }
-    .stat-val.green { color: #4E8A00; }
+    .stat-val { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--navy); margin-top: 5px; }
+    .stat-val.green { color: var(--green); }
     .stat-val.red   { color: var(--red); }
     .orders-card { display: flex; align-items: center; justify-content: space-between; }
-    .orders-num  { font-family: var(--sans); font-size: 24px; font-weight: 700; color: var(--navy); }
+    .orders-num  { font-family: var(--mono); font-size: 26px; font-weight: 800; color: var(--navy); }
 
     /* Reconciliation grid */
     .recon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -227,7 +190,7 @@
     .tender-name { font-size: 11px; font-weight: 600; color: var(--navy); }
     .tender-val  { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--navy); }
     .tender-pct  { font-size: 10px; color: var(--muted); margin-left: 4px; }
-    .bar-bg { height: 5px; background: var(--surface); border-radius: 3px; overflow: hidden; }
+    .bar-bg { height: 5px; background: #F1F5F9; border-radius: 3px; overflow: hidden; }
     .bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
 
     /* Cash recon rows */
@@ -237,14 +200,14 @@
     }
     .cr-row:last-child { border-bottom: none; }
     .cr-lbl { font-size: 11px; color: var(--muted); }
-    .cr-val { font-family: var(--sans); font-size: 12px; font-weight: 600; color: var(--navy); }
-    .cr-val.green { color: #4E8A00; }
+    .cr-val { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--navy); }
+    .cr-val.green { color: var(--green); }
     .cr-val.red   { color: var(--red); }
     .cr-val.blue  { color: var(--blue); }
     .cr-divider   { border: none; border-top: 1px dashed var(--border); margin: 4px 0; }
     .cr-row.bold .cr-lbl { font-weight: 700; color: var(--navy); font-size: 12px; }
     .cr-row.bold .cr-val { font-size: 13px; }
-    .variance-num { font-family: var(--sans); font-size: 20px; font-weight: 700; }
+    .variance-num { font-family: var(--mono); font-size: 20px; font-weight: 700; }
 
     /* Variance alert card */
     .var-card {
@@ -260,15 +223,15 @@
       font-family: var(--sans); outline: none; background: rgba(255,255,255,0.7);
     }
     .var-card textarea:focus { border-color: var(--green); }
-    .var-card.ok    { background: var(--green-dim); border-color: rgba(53,197,166,0.25); }
-    .var-card.ok    .icon { color: var(--green-dark); }
-    .var-card.ok    .var-card-title { color: #3F5E05; }
-    .var-card.ok    .var-card-desc  { color: #4D7207; }
-    .var-card.over  { background: var(--amber-dim); border-color: rgba(245,158,11,0.25); }
+    .var-card.ok    { background: #ECFDF5; border-color: rgba(16,185,129,0.2); }
+    .var-card.ok    .icon { color: var(--green); }
+    .var-card.ok    .var-card-title { color: #065F46; }
+    .var-card.ok    .var-card-desc  { color: #047857; }
+    .var-card.over  { background: #FFFBEB; border-color: rgba(245,158,11,0.25); }
     .var-card.over  .icon { color: var(--amber); }
     .var-card.over  .var-card-title { color: #92400E; }
     .var-card.over  .var-card-desc  { color: #B45309; }
-    .var-card.short { background: var(--red-dim); border-color: rgba(225,71,122,0.2); }
+    .var-card.short { background: #FEF2F2; border-color: rgba(239,68,68,0.2); }
     .var-card.short .icon { color: var(--red); }
     .var-card.short .var-card-title { color: #991B1B; }
     .var-card.short .var-card-desc  { color: #B91C1C; }
@@ -280,15 +243,15 @@
     }
     .btn {
       display: flex; align-items: center; justify-content: center; gap: 7px;
-      border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer;
+      border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer;
       transition: all 0.13s; border: none; outline: none; height: 46px; padding: 0 20px;
       font-family: var(--sans);
     }
     .btn:active { transform: scale(0.97); }
     .btn .icon { font-size: 18px; }
-    .btn-ghost { background: white; border: 1px solid var(--border); color: var(--text); flex: 1; }
-    .btn-ghost:hover { background: var(--surface); border-color: var(--border-2); }
-    .btn-danger { background: var(--red); color: white; flex: 2; box-shadow: 0 4px 14px rgba(225,71,122,0.22); }
+    .btn-ghost { background: white; border: 1px solid var(--border); color: var(--navy); flex: 1; }
+    .btn-ghost:hover { background: #F8FAFC; border-color: #CBD5E1; }
+    .btn-danger { background: var(--red); color: white; flex: 2; box-shadow: 0 4px 14px rgba(239,68,68,0.22); }
     .btn-danger:hover { filter: brightness(1.06); }
 
     /* ── Z-Report Receipt Modal ── */
@@ -330,8 +293,8 @@
     .ra-btn:active { transform: scale(0.97); }
     .ra-btn.primary { background: var(--navy); color: white; }
     .ra-btn.primary:hover { background: #1E293B; }
-    .ra-btn.secondary { background: var(--surface); color: var(--text); }
-    .ra-btn.secondary:hover { background: var(--border-2); }
+    .ra-btn.secondary { background: #F1F5F9; color: var(--navy); }
+    .ra-btn.secondary:hover { background: #E2E8F0; }
 
     /* Confirm modal */
     .confirm-wrap {
@@ -341,7 +304,7 @@
     }
     .overlay.open .confirm-wrap { transform: scale(1) translateY(0); opacity: 1; }
     .confirm-ico {
-      width: 48px; height: 48px; border-radius: 13px; background: #FDF1F5;
+      width: 48px; height: 48px; border-radius: 13px; background: #FEF2F2;
       display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
     }
     .confirm-ico .icon { color: var(--red); font-size: 24px; }
@@ -350,9 +313,9 @@
     .confirm-btns  { display: flex; gap: 9px; }
     .cb { flex: 1; height: 42px; border-radius: 9px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.13s; font-family: var(--sans); }
     .cb:active { transform: scale(0.97); }
-    .cb.cancel  { background: var(--surface); color: var(--text); }
-    .cb.cancel:hover { background: var(--border-2); }
-    .cb.proceed { background: var(--red); color: white; box-shadow: 0 4px 12px rgba(225,71,122,0.28); }
+    .cb.cancel  { background: #F1F5F9; color: var(--navy); }
+    .cb.cancel:hover { background: #E2E8F0; }
+    .cb.proceed { background: var(--red); color: white; box-shadow: 0 4px 12px rgba(239,68,68,0.28); }
     .cb.proceed:hover { filter: brightness(1.06); }
 
     /* ── Toast ── */
@@ -371,49 +334,69 @@
     .toast.error   { background: var(--red); }
     .toast.info    { background: #334155; }
     .toast .icon   { font-size: 17px; }
+
+  /* ── Shortcuts bar ── */
+  .shortcuts-bar {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 300;
+    background: rgba(255,255,255,0.88); backdrop-filter: blur(12px);
+    border: 1px solid rgba(203,213,225,0.9); border-radius: 40px;
+    padding: 7px 14px; display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.1), 0 2px 8px rgba(0,0,0,0.05);
+    white-space: nowrap; overflow-x: auto; max-width: 95vw;
+  }
+  .shortcuts-bar::-webkit-scrollbar { display: none; }
+  .sc-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: #94A3B8; text-transform: uppercase; padding-right: 8px; border-right: 1px solid #E2E8F0; margin-right: 2px; }
+  .sc-btn { padding: 5px 13px; border-radius: 20px; border: none; cursor: pointer; font-size: 10px; font-weight: 700; transition: all 0.13s; font-family: var(--sans); white-space: nowrap; }
+  .sc-btn:active { transform: scale(0.95); }
+  .sc-btn.green { background: #ECFDF5; border: 1px solid #6EE7B7; color: #065F46; }
+  .sc-btn.green:hover { background: #D1FAE5; }
+  .sc-btn.blue  { background: #EFF6FF; border: 1px solid #93C5FD; color: #1D4ED8; }
+  .sc-btn.blue:hover  { background: #DBEAFE; }
+  .sc-btn.amber { background: #FFFBEB; border: 1px solid #FCD34D; color: #92400E; }
+  .sc-btn.amber:hover { background: #FEF3C7; }
+  .sc-btn.ghost { background: #F8FAFC; border: 1px solid #E2E8F0; color: #64748B; }
+  .sc-btn.ghost:hover { background: #F1F5F9; color: #0F172A; }
   </style>
 </head>
 <body>
 
 <!-- ═══ SIDEBAR ═══ -->
 <aside class="sidebar">
-  <div class="sidebar-brand">
-    <div class="brand-circle">
-      <span class="icon">point_of_sale</span>
+  <div class="sidebar-logo">
+    <span class="icon">point_of_sale</span>
+    <div>
+      <div class="logo-text">IMAGYN POS</div>
+      <span class="logo-tag">Enterprise Terminal</span>
     </div>
   </div>
-
-  <nav class="sidebar-nav">
-    <button class="nav-btn" onclick="showToast('Dashboard managed by central server.','info')" title="Dashboard">
-      <span class="icon">dashboard</span>
-    </button>
-    <a class="nav-btn" href="main_checkout.html" title="Checkout">
-      <span class="icon">shopping_cart</span>
+  <nav>
+    <a class="nav-item" href="main_checkout.html">
+      <span class="icon">shopping_cart</span>Checkout
     </a>
-    <button class="nav-btn" onclick="showToast('Catalog managed by central server.','info')" title="Inventory">
-      <span class="icon">inventory_2</span>
-    </button>
-    <button class="nav-btn" onclick="showToast('Orders view managed by central server.','info')" title="Orders">
-      <span class="icon">receipt_long</span>
-    </button>
-    <a class="nav-btn active" href="shift_close.html" title="Z-Report">
-      <span class="icon">assessment</span>
+    <a class="nav-item active" href="shift_close.html">
+      <span class="icon">lock_clock</span>Shift Close
     </a>
-    <a class="nav-btn" href="cash_control.html" title="Cash Control">
-      <span class="icon">payments</span>
+    <a class="nav-item" href="cash_control.html">
+      <span class="icon">payments</span>Cash Control
     </a>
-    <a class="nav-btn" href="shift_open.html" title="Shift Open">
-      <span class="icon">group</span>
+    <a class="nav-item" onclick="showToast('Settings locked during shift.','info')">
+      <span class="icon">settings</span>Settings
     </a>
-    <button class="nav-btn" onclick="showToast('Settings managed by administrator.','info')" title="Settings">
-      <span class="icon">settings</span>
-    </button>
   </nav>
-
   <div class="sidebar-footer">
-    <div class="op-avatar-circle" id="op-avatar" onclick="showToast('Manager PIN: 1234','info')">AS</div>
-    <a class="logout-btn" href="terminal_login.html" title="Sign Out">
-      <span class="icon">logout</span>
+    <div class="op-chip">
+      <div class="op-avatar" id="op-avatar">AS</div>
+      <div>
+        <div class="op-name" id="op-name">Adeel Saifee</div>
+        <div class="op-sub">POS-01 · Shift Active</div>
+      </div>
+    </div>
+    <a class="sidebar-link" onclick="showToast('Manager PIN: 1234','info')">
+      <span class="icon">help</span>Help Guide
+    </a>
+    <a class="sidebar-link danger" onclick="doLogout()">
+      <span class="icon">logout</span>Sign Out
     </a>
   </div>
 </aside>
@@ -426,7 +409,7 @@
     <div class="topbar-left">
       <div class="topbar-stat">
         <span class="tb-lbl">Store</span>
-        <span class="tb-val">MartPOS Technologies</span>
+        <span class="tb-val">Imagyn Technologies</span>
       </div>
       <div class="topbar-stat">
         <span class="tb-lbl">Location</span>
@@ -593,7 +576,7 @@
     <div class="confirm-ico"><span class="icon">lock_clock</span></div>
     <div class="confirm-title" id="confirm-title">Close Shift &amp; Lock Terminal?</div>
     <div class="confirm-body"  id="confirm-body">
-      This will finalize all transactions, submit the Z-Report to the Fiscal Authority, and lock the terminal until next shift login.
+      This will finalize all transactions, submit the Z-Report to FBR, and lock the terminal until next shift login.
     </div>
     <div class="confirm-btns">
       <button class="cb cancel"  onclick="closeConfirm()">Cancel</button>
@@ -795,7 +778,7 @@ function updateVariance() {
   const varEl = document.getElementById('cr-variance');
 
   if (v === 0) {
-    varEl.textContent = 'Balanced'; varEl.style.color = '#4E8A00';
+    varEl.textContent = 'Balanced'; varEl.style.color = 'var(--green)';
     card.className = 'var-card ok'; icon.textContent = 'check_circle';
     title.textContent = 'Reconciled — Perfect Balance';
     desc.textContent  = 'Physical cash matches calculated drawer balance exactly. Ready to close shift.';
@@ -816,11 +799,14 @@ function updateVariance() {
 function openZReport() {
   const v   = countedCash - expectedCash;
   let opName = 'Adeel Saifee';
-  try {
-    const parsedOp = JSON.parse(localStorage.getItem('terminal_operator') || '{}');
-    if (parsedOp.name) opName = parsedOp.name;
-    else if (typeof parsedOp === 'string' && parsedOp.trim() !== '') opName = parsedOp;
-  } catch(e) {}
+  const opRaw = localStorage.getItem('terminal_operator');
+  if (opRaw) {
+    try {
+      opName = JSON.parse(opRaw).name || opRaw;
+    } catch(e) {
+      opName = opRaw;
+    }
+  }
   const now = new Date().toISOString().replace('T',' ').slice(0,16);
   const note= document.getElementById('var-note').value.trim() || 'N/A';
   const varTxt = v===0 ? 'BALANCED (PKR 0)' : v>0 ? `OVERAGE  +${fmt(v)}` : `SHORTAGE −${fmt(Math.abs(v))}`;
@@ -828,7 +814,7 @@ function openZReport() {
 
   document.getElementById('zreport-body').innerHTML = `
     <div class="receipt-ctr">
-      <div class="r-title">MartPOS TECHNOLOGIES</div>
+      <div class="r-title">IMAGYN TECHNOLOGIES</div>
       <div class="r-sub">Tariq Road Branch, Karachi</div>
       <div class="r-sub">NTN: 1234567-8 · STRN: PKR-T1234567</div>
     </div>
@@ -868,9 +854,9 @@ function openZReport() {
       <div style="border-top:1px solid #000;width:80px;padding-top:3px;text-align:center;font-size:9px">MANAGER</div>
     </div>
     <div class="r-footer">
-      <div class="r-bold">FISCAL COMPLIANCE Z-REPORT</div>
-      <div>Ref: COMP-ZREP-KHI-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-POS01</div>
-      <div style="margin-top:3px">MartPOS · MartPOS Technologies Pvt. Ltd.</div>
+      <div class="r-bold">FBR FISCAL Z-REPORT</div>
+      <div>Ref: FBR-ZREP-KHI-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-POS01</div>
+      <div style="margin-top:3px">IMAGYN POS · Imagyn Technologies Pvt. Ltd.</div>
     </div>
   `;
   document.getElementById('zreport-overlay').classList.add('open');
@@ -889,7 +875,7 @@ function openConfirmClose() {
     b.textContent = `A cash variance of ${fmt(Math.abs(v))} ${v>0?'overage':'shortage'} will be recorded and submitted to store management. Proceed?`;
   } else {
     t.textContent = 'Close Shift & Lock Terminal?';
-    b.textContent = 'This will finalize all transactions, submit the Z-Report to the Fiscal Authority, and lock the terminal until next shift login.';
+    b.textContent = 'This will finalize all transactions, submit the Z-Report to FBR, and lock the terminal until next shift login.';
   }
   document.getElementById('confirm-overlay').classList.add('open');
 }
@@ -916,31 +902,32 @@ window.addEventListener('DOMContentLoaded', () => {
   setInterval(updateClock, 20000);
 
   let opName = 'Adeel Saifee';
-  let opInitials = 'AS';
-  let opColor = '#4F46E5';
-  try {
-    const parsedOp = JSON.parse(localStorage.getItem('terminal_operator') || '{}');
-    if (parsedOp.name) {
-      opName = parsedOp.name;
-      opInitials = parsedOp.initials || parsedOp.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
-      opColor = parsedOp.color || '#4F46E5';
-    } else if (typeof parsedOp === 'string' && parsedOp.trim() !== '') {
-      opName = parsedOp;
-      opInitials = parsedOp.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  const opRaw = localStorage.getItem('terminal_operator');
+  if (opRaw) {
+    try {
+      const parsed = JSON.parse(opRaw);
+      opName = parsed.name || opRaw;
+      if (parsed.color) {
+        document.getElementById('op-avatar').style.background = parsed.color;
+      }
+    } catch(e) {
+      opName = opRaw;
     }
-  } catch (e) {}
-
-  const opNameEl = document.getElementById('op-name');
-  if (opNameEl) opNameEl.textContent = opName;
-  const opAvatarEl = document.getElementById('op-avatar');
-  if (opAvatarEl) {
-    opAvatarEl.textContent = opInitials;
-    opAvatarEl.style.backgroundColor = opColor;
   }
+  document.getElementById('op-name').textContent   = opName;
+  document.getElementById('op-avatar').textContent = opName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
 
   renderDenoms();
   loadMetrics();
 });
 </script>
+
+<div class="shortcuts-bar">
+  <span class="sc-label">Shortcuts</span>
+  <button class="sc-btn green" onclick="openZReport()">📊 Z-Report</button>
+  <button class="sc-btn amber" onclick="openConfirmClose()">🔒 Close Shift</button>
+  <button class="sc-btn ghost" onclick="window.location.href='cash_control.html'">← Cash Control</button>
+  <button class="sc-btn ghost" onclick="window.location.href='main_checkout.html'">← Checkout</button>
+</div>
 </body>
 </html>

@@ -1,132 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MartPOS — Payment</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<title>IMAGYN POS — Payment</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet"/>
 <style>
   :root {
-    --bg:             #F5F7F7;
-    --white:          #FFFFFF;
-    --navy:           #202020;         /* Charcoal sidebar */
-    --navy-2:         #121212;
-    --green:          #35C5A6;         /* Action Green */
-    --green-dim:      #E6F9F5;
-    --green-dark:     #2BB093;
-    --green-glow:     0 0 20px rgba(53, 197, 166, 0.25);
-    --amber:          #F59E0B;
-    --amber-dim:      #FEF3C7;
-    --red:            #E1477A;
-    --red-dim:        #FDF1F5;
-    --blue:           #3B82F6;
-    --blue-dim:       #EFF6FF;
-    --purple:         #7C3AED;
-    --purple-dim:     #F5F3FF;
-    --border:         #E5E5E5;
-    --border-2:       #D4D4D4;
-    --text:           #202020;
-    --text-muted:     #6B6B6B;
-    --text-dim:       #A3A3A3;
-    --sans:           'Manrope', sans-serif;
-    --heading:        'Manrope', sans-serif;
-    --mono:           'IBM Plex Mono', ui-monospace, monospace;
-    --surface:        #F5F7F7;
-    --surface-solid:  #F5F7F7;
-    --muted:          #6B6B6B;
-    /* compatibility aliases */
-    --green-l:        #E6F9F5;
-    --red-l:          #FDF1F5;
-    --amber-l:        #FEF3C7;
+    --navy:   #0F172A;
+    --navy-2: #1E293B;
+    --green:  #10B981;
+    --green-l:#ECFDF5;
+    --red:    #EF4444;
+    --red-l:  #FEF2F2;
+    --amber:  #F59E0B;
+    --blue:   #3B82F6;
+    --border: #E2E8F0;
+    --bg:     #F8FAFC;
+    --white:  #FFFFFF;
+    --text:   #0F172A;
+    --muted:  #64748B;
+    --sans:   'Plus Jakarta Sans', 'Inter', ui-sans-serif, sans-serif;
+    --mono:   'IBM Plex Mono', ui-monospace, monospace;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height:100%; margin:0; padding:0; overflow:hidden; }
   body { font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px; -webkit-font-smoothing:antialiased; }
-  
-  .icon {
-    font-family: 'Material Symbols Outlined';
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    display: inline-flex; align-items: center; justify-content: center; line-height: 1; user-select: none;
-  }
-  .icon.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; display:inline-flex; align-items:center; vertical-align:middle; line-height:1; }
+  .fill { font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24; }
 
-  /* ── Sidebar (Slim premium style) ── */
-  .sidebar {
-    width: 76px; min-width: 76px; height: 100vh;
-    background: #FFFFFF; border-right: 1px solid var(--border); display: flex; flex-direction: column;
-    align-items: center; padding: 20px 0; position: fixed; left: 0; top: 0; z-index: 100;
+  /* SIDEBAR */
+  #sidebar {
+    position:fixed; left:0; top:0; bottom:0; width:220px;
+    background:var(--navy); display:flex; flex-direction:column; z-index:50;
+    border-right:1px solid rgba(255,255,255,0.07);
   }
-  .sidebar-brand {
-    margin-bottom: 24px; flex-shrink: 0;
-  }
-  .brand-circle {
-    width: 44px; height: 44px; border-radius: 50%;
-    background: var(--green); display: flex; align-items: center; justify-content: center;
-  }
-  .brand-circle .icon {
-    color: #202020; font-size: 22px; font-variation-settings: 'FILL' 1;
-  }
-  .sidebar-nav {
-    flex: 1; display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center;
-  }
-  .nav-btn {
-    width: 44px; height: 44px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    text-decoration: none; transition: all 0.1s;
-    background: transparent; color: #7A7F85;
-    cursor: pointer; border: none; outline: none;
-  }
-  .nav-btn:hover {
-    background: #F5F7F7;
-    color: #111111;
-  }
-  .nav-btn.active {
-    background: #111111;
-    color: #FFFFFF;
-  }
-  .nav-btn.active .icon {
-    font-variation-settings: 'FILL' 1;
-  }
-  .nav-btn.locked {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-
-  .sidebar-footer {
-    width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;
-    padding-top: 12px; border-top: 1px solid var(--border); flex-shrink: 0;
-  }
-  .op-avatar-circle {
-    width: 38px; height: 38px; border-radius: 50%;
-    background: #4F46E5;
-    color: #FFFFFF; display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700; cursor: pointer;
-  }
-  .logout-btn {
-    width: 44px; height: 44px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    text-decoration: none; color: #7A7F85;
-    transition: all 0.1s;
-  }
-  .logout-btn:hover {
-    background: rgba(225,71,122,0.1);
-    color: var(--red);
-  }
+  .sidebar-logo { padding:20px 16px 16px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:10px; }
+  .sidebar-logo-icon { width:34px; height:34px; border-radius:9px; background:var(--green); display:flex; align-items:center; justify-content:center; }
+  nav a { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; margin:2px 8px; color:rgba(255,255,255,0.55); font-size:13px; font-weight:500; text-decoration:none; transition:all .15s; width:calc(100% - 16px); }
+  nav a:hover { color:white; background:rgba(255,255,255,.07); }
+  nav a.active { color:white; background:rgba(16,185,129,.18); font-weight:600; }
+  nav a.active .material-symbols-outlined { color:var(--green); }
 
   /* TOPBAR */
   #topbar { height:56px; background:white; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; flex-shrink:0; }
   .tb-meta { display:flex; flex-direction:column; }
-  .tb-meta span:first-child { font-size:10px; color:var(--muted); font-weight: 500; }
+  .tb-meta span:first-child { font-size:10px; color:var(--muted); }
   .tb-meta span:last-child  { font-size:13px; font-weight:700; }
 
   /* LAYOUT */
-  #content  { margin-left:76px; display:flex; flex-direction:column; height:100vh; }
+  #content  { margin-left:220px; display:flex; flex-direction:column; height:100vh; }
   #workspace { flex:1; display:flex; overflow:hidden; }
 
   /* ORDER SUMMARY (LEFT) */
@@ -147,18 +71,18 @@
   }
   .order-line-name { flex:1; font-weight:600; color:var(--text); }
   .order-line-qty { font-size:11px; color:var(--muted); font-weight:600; min-width:28px; text-align:center; }
-  .order-line-total { font-weight:700; font-family:var(--sans); color:var(--text); min-width:72px; text-align:right; }
+  .order-line-total { font-weight:700; font-family:var(--mono); color:var(--text); min-width:72px; text-align:right; }
 
-  .totals-block { padding:12px 16px; border-top:1px solid var(--border); background:var(--surface); }
+  .totals-block { padding:12px 16px; border-top:1px solid var(--border); background:#FAFBFC; }
   .tot-row { display:flex; justify-content:space-between; font-size:12px; padding:3px 0; }
   .tot-row .l { color:var(--muted); }
-  .tot-row .v { font-weight:600; font-family:var(--sans); }
+  .tot-row .v { font-weight:600; font-family:var(--mono); }
   .grand-block {
     display:flex; justify-content:space-between; align-items:center;
-    background:var(--navy); padding:11px 14px; border-radius:12px; margin-top:8px;
+    background:var(--navy); padding:11px 14px; border-radius:10px; margin-top:8px;
   }
   .grand-label { font-size:11px; font-weight:700; color:rgba(255,255,255,.5); letter-spacing:.1em; text-transform:uppercase; }
-  .grand-amount { font-size:22px; font-weight:800; color:white; font-family:var(--sans); letter-spacing:-.02em; }
+  .grand-amount { font-size:22px; font-weight:800; color:white; font-family:var(--mono); letter-spacing:-.02em; }
 
   /* PAYMENT PANEL (RIGHT) */
   #payment-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
@@ -170,10 +94,10 @@
     flex-shrink:0;
   }
   .due-label { font-size:11px; font-weight:700; color:rgba(255,255,255,.5); letter-spacing:.12em; text-transform:uppercase; margin-bottom:4px; }
-  .due-amount { font-size:40px; font-weight:700; color:white; font-family:var(--sans); letter-spacing:-.03em; line-height:1; }
+  .due-amount { font-size:40px; font-weight:900; color:white; font-family:var(--mono); letter-spacing:-.03em; line-height:1; }
   #status-badge {
     padding:6px 14px; border-radius:20px; font-size:11px; font-weight:700;
-    background:var(--green-dim); color:#4E8A00; border:1px solid rgba(53, 197, 166, 0.3);
+    background:rgba(16,185,129,.15); color:var(--green); border:1px solid rgba(16,185,129,.3);
     letter-spacing:.06em; text-transform:uppercase; white-space:nowrap;
   }
 
@@ -184,15 +108,15 @@
   }
   .tender-tab {
     display:flex; flex-direction:column; align-items:center; gap:5px;
-    padding:10px 16px; border-radius:12px; border:1px solid var(--border-2);
+    padding:10px 16px; border-radius:10px; border:2px solid var(--border);
     cursor:pointer; transition:all .15s; background:white; flex:1;
   }
-  .tender-tab .material-symbols-outlined { font-size:22px; color:var(--text-muted); }
-  .tender-tab span.label { font-size:11px; font-weight:700; color:var(--text-muted); }
-  .tender-tab.active { border-color:var(--green); background:var(--green-dim); }
-  .tender-tab.active .material-symbols-outlined { color:#4E8A00; }
-  .tender-tab.active span.label { color:#4E8A00; }
-  .tender-tab:hover:not(.active) { border-color:var(--text); background:var(--surface); }
+  .tender-tab .material-symbols-outlined { font-size:22px; color:var(--muted); }
+  .tender-tab span.label { font-size:11px; font-weight:700; color:var(--muted); }
+  .tender-tab.active { border-color:var(--green); background:var(--green-l); }
+  .tender-tab.active .material-symbols-outlined { color:var(--green); }
+  .tender-tab.active span.label { color:#065F46; }
+  .tender-tab:hover:not(.active) { border-color:#94A3B8; background:var(--bg); }
 
   /* PAYMENT BODY */
   #payment-body { flex:1; display:flex; overflow:hidden; }
@@ -202,26 +126,26 @@
   #cash-side::-webkit-scrollbar { width:0; }
 
   .amount-display {
-    background:white; border:1px solid var(--border-2); border-radius:12px;
+    background:white; border:2px solid var(--border); border-radius:12px;
     padding:12px 16px; display:flex; align-items:center; gap:10px;
   }
-  .amount-currency { font-size:16px; font-weight:700; color:var(--text-muted); font-family:var(--sans); }
+  .amount-currency { font-size:16px; font-weight:700; color:var(--muted); font-family:var(--mono); }
   .amount-value {
-    flex:1; font-size:28px; font-weight:700; color:var(--text); font-family:var(--sans);
+    flex:1; font-size:28px; font-weight:800; color:var(--text); font-family:var(--mono);
     border:none; outline:none; background:transparent; text-align:right;
     letter-spacing:-.02em;
   }
   .amount-clear {
-    width:34px; height:34px; border-radius:8px; background:var(--surface); border:1px solid var(--border-2);
+    width:34px; height:34px; border-radius:8px; background:var(--bg); border:1px solid var(--border);
     display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .12s;
   }
-  .amount-clear:hover { background:var(--border); }
+  .amount-clear:hover { background:#E2E8F0; }
 
   .quick-amounts { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
   .qa-btn {
-    height:40px; border-radius:9px; border:1px solid var(--border-2);
+    height:40px; border-radius:9px; border:1.5px solid var(--border);
     background:white; font-size:12px; font-weight:700; cursor:pointer;
-    font-family:var(--sans); transition:all .12s; color:var(--text);
+    font-family:var(--mono); transition:all .12s; color:var(--text);
   }
   .qa-btn:hover { border-color:var(--navy); background:var(--navy); color:white; }
   .qa-btn:active { transform:scale(.96); }
@@ -229,64 +153,31 @@
   /* Numpad */
   #numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
   .np-btn {
-    height:52px; border-radius:12px; border:1px solid var(--border-2);
-    background:white; font-size:20px; font-weight:600; cursor:pointer;
-    font-family:var(--sans); transition:all .1s; color:var(--text);
+    height:52px; border-radius:10px; border:1.5px solid var(--border);
+    background:white; font-size:20px; font-weight:700; cursor:pointer;
+    font-family:var(--mono); transition:all .1s; color:var(--text);
     display:flex; align-items:center; justify-content:center;
   }
-  .np-btn:hover { background:var(--surface); border-color:var(--text); }
+  .np-btn:hover { background:var(--bg); border-color:#94A3B8; }
   .np-btn:active { transform:scale(.94); }
-  .np-btn.clear-btn { font-size:12px; font-family:var(--sans); font-weight:700; color:var(--red); background:var(--red-dim); border-color:rgba(225,71,122,0.2); }
-  .np-btn.clear-btn:hover { background: #FEE2E2; border-color: var(--red); color: var(--red); }
-  .np-btn.exact-btn { font-size:12px; font-family:var(--sans); font-weight:700; color:#4E8A00; background:var(--green-dim); border-color:rgba(53, 197, 166, 0.3); }
-  .np-btn.exact-btn:hover { background: #E6F9C5; border-color: var(--green-dark); color: #4E8A00; }
-
-  /* Method cards & action buttons */
-  .method-card {
-    background: white; border: 1px solid var(--border-2); border-radius: 12px; padding: 20px;
-  }
-  .icon-wrapper-blue {
-    width: 48px; height: 48px; border-radius: 12px; background: var(--blue-dim); display: flex; align-items: center; justify-content: center;
-  }
-  .icon-wrapper-purple {
-    width: 48px; height: 48px; border-radius: 12px; background: var(--purple-dim); display: flex; align-items: center; justify-content: center;
-  }
-  .pay-method-btn {
-    width: 100%; height: 48px; color: white; border: none; border-radius: 10px;
-    font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center;
-    justify-content: center; gap: 8px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .pay-method-btn.card-btn {
-    background: var(--navy);
-  }
-  .pay-method-btn.card-btn:hover {
-    background: var(--navy-2);
-  }
-  .pay-method-btn.wallet-btn {
-    background: var(--purple);
-  }
-  .pay-method-btn.wallet-btn:hover {
-    background: #6D28D9;
-  }
-  .pay-method-btn:active {
-    transform: scale(0.98);
-  }
+  .np-btn.clear-btn { font-size:11px; font-family:var(--sans); font-weight:700; color:var(--red); background:var(--red-l); border-color:#FECACA; }
+  .np-btn.exact-btn { font-size:11px; font-family:var(--sans); font-weight:700; color:var(--green); background:var(--green-l); border-color:#BBF7D0; }
 
   /* CHANGE DISPLAY + COMPLETE BUTTON SIDE */
   #change-side { width:260px; padding:16px 16px 16px 0; display:flex; flex-direction:column; gap:10px; flex-shrink:0; }
 
   .change-card {
-    background:white; border:1px solid var(--border-2); border-radius:12px; padding:16px;
+    background:white; border:1.5px solid var(--border); border-radius:12px; padding:16px;
     display:flex; flex-direction:column; gap:12px;
   }
   .change-row { display:flex; justify-content:space-between; align-items:center; font-size:12px; }
-  .change-row .l { color:var(--text-muted); }
-  .change-row .v { font-weight:700; font-family:var(--sans); }
-  .change-row.highlight .v { font-size:22px; font-weight:700; color:#4E8A00; }
+  .change-row .l { color:var(--muted); }
+  .change-row .v { font-weight:700; font-family:var(--mono); }
+  .change-row.highlight .v { font-size:22px; font-weight:800; color:var(--green); }
   .change-row.over .v    { color:var(--red); }
 
   .card-tender-info {
-    background:white; border:1px solid var(--border-2); border-radius:12px; padding:16px;
+    background:white; border:1.5px solid var(--border); border-radius:12px; padding:16px;
   }
 
   #complete-btn {
@@ -296,99 +187,117 @@
     flex-shrink:0;
   }
   #complete-btn.ready {
-    background:var(--green); color:#202020;
-    box-shadow:0 6px 20px rgba(53, 197, 166, 0.25);
+    background:var(--green); color:white;
+    box-shadow:0 6px 20px rgba(16,185,129,.35);
   }
-  #complete-btn.ready:hover { background:var(--green-dark); box-shadow:0 8px 28px rgba(53, 197, 166, 0.35); }
-  #complete-btn:disabled { background:#F1F5F9; color:#94A3B8; cursor:not-allowed; border:1px solid var(--border-2); box-shadow:none; }
+  #complete-btn.ready:hover { background:#059669; box-shadow:0 8px 28px rgba(16,185,129,.45); }
+  #complete-btn:disabled { background:#E2E8F0; color:#94A3B8; cursor:not-allowed; box-shadow:none; }
   #complete-btn:active:not(:disabled) { transform:scale(.98); }
 
   #back-btn {
-    height:40px; border-radius:12px; border:1px solid var(--border-2);
-    background:white; color:var(--text-muted); cursor:pointer; font-size:13px; font-weight:600;
+    height:40px; border-radius:10px; border:1.5px solid var(--border);
+    background:white; color:var(--muted); cursor:pointer; font-size:13px; font-weight:600;
     display:flex; align-items:center; justify-content:center; gap:6px; transition:all .15s;
     flex-shrink:0;
   }
-  #back-btn:hover { border-color:var(--text); background:var(--surface); }
+  #back-btn:hover { border-color:#94A3B8; background:var(--bg); }
 
   /* RECEIPT MODAL */
   .modal-bg {
-    position:fixed; inset:0; background:rgba(32,32,32,0.6); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    position:fixed; inset:0; background:rgba(15,23,42,.65); backdrop-filter:blur(4px);
     z-index:300; display:none; align-items:center; justify-content:center;
   }
-  .receipt-modal { background:white; border-radius:24px; width:460px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.15); border:1px solid var(--border); }
+  .receipt-modal { background:white; border-radius:16px; width:460px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.2); }
   .receipt-hdr { background:var(--green); padding:16px 20px; display:flex; align-items:center; justify-content:space-between; }
-  .receipt-hdr h3 { color:#202020; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; margin:0; font-family:var(--sans); }
+  .receipt-hdr h3 { color:white; font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; margin:0; }
   .receipt-body { padding:20px; }
   .receipt-paper {
     font-family:'Courier New', monospace; font-size:12px; line-height:1.7;
-    background:white; border:1px dashed var(--border-2); border-radius:12px; padding:16px;
+    background:white; border:1px dashed #CBD5E1; border-radius:6px; padding:16px;
     margin-bottom:16px; white-space:pre;
   }
   .receipt-actions { display:flex; gap:8px; }
   .r-btn {
-    flex:1; height:44px; border-radius:12px; border:1px solid var(--border-2);
-    background:var(--surface); font-size:13px; font-weight:600; cursor:pointer;
+    flex:1; height:44px; border-radius:9px; border:1.5px solid var(--border);
+    background:var(--bg); font-size:13px; font-weight:600; cursor:pointer;
     display:flex; align-items:center; justify-content:center; gap:6px; transition:all .15s;
-    color:var(--text);
   }
-  .r-btn:hover { border-color:var(--text); background:white; }
+  .r-btn:hover { border-color:#94A3B8; background:white; }
   .r-btn.primary { background:var(--navy); color:white; border-color:var(--navy); }
   .r-btn.primary:hover { background:var(--navy-2); }
 
   /* TOAST */
   #toast-w { position:fixed; bottom:20px; right:20px; z-index:500; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
-  .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; color:white; font-size:13px; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,.15); transform:translateY(8px); opacity:0; transition:all .25s cubic-bezier(.16,1,.3,1); pointer-events:auto; max-width:300px; }
+  .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; color:white; font-size:13px; font-weight:500; box-shadow:0 8px 24px rgba(0,0,0,.15); transform:translateY(8px); opacity:0; transition:all .25s cubic-bezier(.16,1,.3,1); pointer-events:auto; max-width:300px; }
   .toast.show { transform:translateY(0); opacity:1; }
-  .toast.success { background:#35C5A6; }
-  .toast.error   { background:#E1477A; }
-  .toast.info    { background:var(--navy); }
+  .toast.success { background:#064E3B; }
+  .toast.error   { background:#7F1D1D; }
+  .toast.info    { background:var(--navy-2); }
+
+  /* ── Shortcuts bar ── */
+  .shortcuts-bar {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 300;
+    background: rgba(255,255,255,0.88); backdrop-filter: blur(12px);
+    border: 1px solid rgba(203,213,225,0.9); border-radius: 40px;
+    padding: 7px 14px; display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.1), 0 2px 8px rgba(0,0,0,0.05);
+    white-space: nowrap; overflow-x: auto; max-width: 95vw;
+  }
+  .shortcuts-bar::-webkit-scrollbar { display: none; }
+  .sc-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: #94A3B8; text-transform: uppercase; padding-right: 8px; border-right: 1px solid #E2E8F0; margin-right: 2px; }
+  .sc-btn { padding: 5px 13px; border-radius: 20px; border: none; cursor: pointer; font-size: 10px; font-weight: 700; transition: all 0.13s; font-family: var(--sans); white-space: nowrap; }
+  .sc-btn:active { transform: scale(0.95); }
+  .sc-btn.green { background: #ECFDF5; border: 1px solid #6EE7B7; color: #065F46; }
+  .sc-btn.green:hover { background: #D1FAE5; }
+  .sc-btn.blue  { background: #EFF6FF; border: 1px solid #93C5FD; color: #1D4ED8; }
+  .sc-btn.blue:hover  { background: #DBEAFE; }
+  .sc-btn.amber { background: #FFFBEB; border: 1px solid #FCD34D; color: #92400E; }
+  .sc-btn.amber:hover { background: #FEF3C7; }
+  .sc-btn.ghost { background: #F8FAFC; border: 1px solid #E2E8F0; color: #64748B; }
+  .sc-btn.ghost:hover { background: #F1F5F9; color: #0F172A; }
 </style>
 </head>
 <body>
 
 <!-- SIDEBAR -->
-<aside class="sidebar">
-  <div class="sidebar-brand">
-    <div class="brand-circle">
-      <span class="icon">point_of_sale</span>
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">
+      <span class="material-symbols-outlined fill" style="color:white;font-size:18px;">point_of_sale</span>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:800;color:white;letter-spacing:-.02em;">IMAGYN POS</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.4);font-weight:500;">Imagyn Technologies</div>
     </div>
   </div>
-
-  <nav class="sidebar-nav">
-    <button class="nav-btn" onclick="showToast('Dashboard managed by central server.','info')" title="Dashboard">
-      <span class="icon">dashboard</span>
-    </button>
-    <a class="nav-btn active" href="main_checkout.html" title="Checkout">
-      <span class="icon">shopping_cart</span>
+  <nav style="flex:1;padding:8px 0;">
+    <a href="main_checkout.html">
+      <span class="material-symbols-outlined" style="font-size:20px;">shopping_cart</span>Checkout
     </a>
-    <button class="nav-btn" onclick="showToast('Catalog managed by central server.','info')" title="Inventory">
-      <span class="icon">inventory_2</span>
-    </button>
-    <button class="nav-btn" onclick="showToast('Orders view managed by central server.','info')" title="Orders">
-      <span class="icon">receipt_long</span>
-    </button>
-    <a class="nav-btn" href="shift_close.html" title="Z-Report">
-      <span class="icon">assessment</span>
+    <a href="#" onclick="window.location.href='shift_close.html';return false;">
+      <span class="material-symbols-outlined" style="font-size:20px;">schedule</span>Shift
     </a>
-    <a class="nav-btn" href="cash_control.html" title="Cash Control">
-      <span class="icon">payments</span>
+    <a href="cash_control.html">
+      <span class="material-symbols-outlined" style="font-size:20px;">payments</span>Cash Control
     </a>
-    <a class="nav-btn" href="shift_open.html" title="Shift Open">
-      <span class="icon">group</span>
+    <a href="shift_close.html">
+      <span class="material-symbols-outlined" style="font-size:20px;">assessment</span>Z-Report
     </a>
-    <button class="nav-btn" onclick="showToast('Settings managed by administrator.','info')" title="Settings">
-      <span class="icon">settings</span>
-    </button>
   </nav>
-
-  <div class="sidebar-footer">
-    <div class="op-avatar-circle" id="op-avatar" onclick="showToast('Manager PIN: 1234','info')">AS</div>
-    <a class="logout-btn" href="terminal_login.html" title="Sign Out">
-      <span class="icon">logout</span>
+  <div style="border-top:1px solid rgba(255,255,255,.08);padding:12px 8px 8px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0;" id="op-avatar">AS</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="op-name">Operator</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);">POS-01</div>
+      </div>
+    </div>
+    <a href="terminal_login.html" style="color:rgba(239,68,68,.8);">
+      <span class="material-symbols-outlined" style="font-size:18px;">logout</span>Sign Out
     </a>
   </div>
-</aside>
+</nav>
 
 <!-- CONTENT -->
 <div id="content">
@@ -396,7 +305,7 @@
   <!-- TOPBAR -->
   <div id="topbar">
     <div style="display:flex;align-items:center;gap:20px;">
-      <div class="tb-meta"><span>Store</span><span>MartPOS Technologies</span></div>
+      <div class="tb-meta"><span>Store</span><span>Imagyn Technologies</span></div>
       <div style="width:1px;height:28px;background:var(--border);"></div>
       <div class="tb-meta"><span>Terminal</span><span id="tb-terminal">POS-01</span></div>
       <div style="width:1px;height:28px;background:var(--border);"></div>
@@ -515,10 +424,10 @@
 
           <!-- Card view -->
           <div id="view-card" style="display:none;">
-            <div class="method-card">
+            <div style="background:white;border:1.5px solid var(--border);border-radius:12px;padding:20px;">
               <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-                <div class="icon-wrapper-blue">
-                  <span class="icon fill" style="font-size:24px;color:var(--blue);">contactless</span>
+                <div style="width:48px;height:48px;border-radius:12px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;">
+                  <span class="material-symbols-outlined fill" style="font-size:24px;color:var(--blue);">contactless</span>
                 </div>
                 <div>
                   <div style="font-size:14px;font-weight:700;">Card Terminal</div>
@@ -535,7 +444,7 @@
                   <span style="color:var(--green);font-weight:600;">Connected</span>
                 </div>
               </div>
-              <button onclick="simulateCardPay()" class="pay-method-btn card-btn">
+              <button onclick="simulateCardPay()" style="width:100%;height:48px;background:var(--navy);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
                 <span class="material-symbols-outlined" style="font-size:18px;">wifi_tethering</span>
                 Trigger Pinpad Payment
               </button>
@@ -544,10 +453,10 @@
 
           <!-- Wallet view -->
           <div id="view-wallet" style="display:none;">
-            <div class="method-card">
+            <div style="background:white;border:1.5px solid var(--border);border-radius:12px;padding:20px;">
               <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-                <div class="icon-wrapper-purple">
-                  <span class="icon fill" style="font-size:24px;color:var(--purple);">qr_code_scanner</span>
+                <div style="width:48px;height:48px;border-radius:12px;background:#F5F3FF;display:flex;align-items:center;justify-content:center;">
+                  <span class="material-symbols-outlined fill" style="font-size:24px;color:#7C3AED;">qr_code_scanner</span>
                 </div>
                 <div>
                   <div style="font-size:14px;font-weight:700;">Mobile Wallet</div>
@@ -556,7 +465,7 @@
               </div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Customer Phone</label>
               <input type="text" id="wallet-phone" value="+92 300 1234567" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;margin-bottom:12px;" />
-              <button onclick="simulateWalletPay()" class="pay-method-btn wallet-btn">
+              <button onclick="simulateWalletPay()" style="width:100%;height:48px;background:#7C3AED;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
                 <span class="material-symbols-outlined" style="font-size:18px;">send_to_mobile</span>
                 Push Payment Request
               </button>
@@ -681,7 +590,6 @@ function toast(msg, type='success') {
   requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
 }
-const showToast = toast;
 
 function syncParent(idx) {
   try {
@@ -706,17 +614,10 @@ window.addEventListener('DOMContentLoaded', () => {
   try {
     const op = JSON.parse(localStorage.getItem('terminal_operator') || '{}');
     if (op.name) {
-      const opNameEl = document.getElementById('op-name');
-      if (opNameEl) opNameEl.textContent = op.name;
-      
-      const opAvatarEl = document.getElementById('op-avatar');
-      if (opAvatarEl) {
-        opAvatarEl.textContent = op.initials || op.name.slice(0,2).toUpperCase();
-        if (op.color) opAvatarEl.style.background = op.color;
-      }
-      
-      const heroCashierEl = document.getElementById('hero-cashier');
-      if (heroCashierEl) heroCashierEl.textContent = 'Cashier: ' + op.name.split(' ')[0];
+      document.getElementById('op-name').textContent = op.name;
+      document.getElementById('op-avatar').textContent = op.initials || op.name.slice(0,2).toUpperCase();
+      if (op.color) document.getElementById('op-avatar').style.background = op.color;
+      document.getElementById('hero-cashier').textContent = 'Cashier: ' + op.name.split(' ')[0];
     }
   } catch(e) {}
 
@@ -920,9 +821,9 @@ function completeTransaction() {
   sessionStorage.setItem('pos_last_receipt', rcpt);
   const badge = document.getElementById('status-badge');
   badge.textContent = 'PAID ✓';
-  badge.style.background = 'rgba(53,197,166,.2)';
+  badge.style.background = 'rgba(16,185,129,.2)';
   badge.style.color = 'var(--green)';
-  badge.style.borderColor = 'rgba(53,197,166,.4)';
+  badge.style.borderColor = 'rgba(16,185,129,.4)';
 }
 
 function buildReceipt() {
@@ -943,8 +844,8 @@ function buildReceipt() {
   const grand = sub + tax;
   const change = Math.max(0, cashInputVal - grand);
   const tendered = activeTender === 'cash' ? cashInputVal : grand;
-  return `        MartPOS
-        MartPOS Technologies
+  return `        IMAGYN POS
+        Imagyn Technologies
         Tariq Road, Karachi
 ${line}
 Date: ${dstr}        Time: ${tstr}
@@ -961,7 +862,7 @@ TOTAL DUE:                      ${fmtN(grand).padStart(8)}
 Cash Tendered:                  ${fmtN(tendered).padStart(8)}
 Change Due:                      ${fmtN(change).padStart(8)}
 ${line}
-Payment: ${activeTender.toUpperCase().padEnd(20)}  COMP #${Math.random().toString(36).slice(2,10).toUpperCase()}
+Payment: ${activeTender.toUpperCase().padEnd(20)}  FBR #${Math.random().toString(36).slice(2,10).toUpperCase()}
 ${line}
    Thank you for shopping with us!
    Please retain this receipt.
@@ -979,5 +880,13 @@ const spinStyle = document.createElement('style');
 spinStyle.textContent = '@keyframes spin { to { transform:rotate(360deg); } }';
 document.head.appendChild(spinStyle);
 </script>
+
+<div class="shortcuts-bar">
+  <span class="sc-label">Shortcuts</span>
+  <button class="sc-btn green" onclick="selectTender('cash');setExact()">💵 Pay Cash (Exact)</button>
+  <button class="sc-btn blue"  onclick="selectTender('card');simulateCardPay()">💳 Pay Card</button>
+  <button class="sc-btn ghost" onclick="window.location.href='main_checkout.html'">← Checkout</button>
+  <button class="sc-btn ghost" onclick="window.location.href='shift_close.html'">→ Close Shift</button>
+</div>
 </body>
 </html>

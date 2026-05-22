@@ -382,6 +382,10 @@ Response DTO (JSON) travels back up the same path → screen renders authoritati
 
 ## 20. Honest gaps & assumptions
 
+- **Technical Dependency Baseline:**
+  - **WebView2 SDK:** `Microsoft.Web.WebView2` v1.0.2903.40.
+  - **Runtime Baseline:** Microsoft Edge WebView2 Evergreen Runtime.
+  - **Deployment:** The runtime must be installed or bootstrapped on all terminal machines. The application should verify runtime presence during startup.
 - **POS.Api `Sync/` is empty** — the central ingest endpoint must be built before Phase 6 completes.
 - **POS.Desktop.Hardware is empty** — all device interfaces are net-new (Phase 7).
 - **Catalog seeding** from the API isn't implemented; Phase 4 uses a minimal local seed so offline checkout works before sync exists.

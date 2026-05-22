@@ -355,30 +355,131 @@
         }
     </style>
 <script>
-        document.getElementById('openShiftBtn').addEventListener('click', function() {
-            const overlay = document.getElementById('successOverlay');
-            const card = overlay.querySelector('div');
+        function syncParentSidebar(stepIndex) {
+            if (window.parent && typeof window.parent.document !== 'undefined') {
+                const doc = window.parent.document;
+                
+                // Update active step styling
+                const stepEl = doc.getElementById('step-' + stepIndex);
+                if (stepEl) {
+                    doc.querySelectorAll('.flow-step').forEach(step => {
+                        step.classList.remove('flow-step-active');
+                    });
+                    stepEl.classList.add('flow-step-active');
+                }
+                
+                // Update URL display
+                const urlDisplay = doc.getElementById('simulator-url-display');
+                if (urlDisplay) {
+                    const filename = window.location.pathname.split('/').pop();
+                    urlDisplay.innerText = 'screens/' + filename;
+                }
+                
+                // Update open new tab button
+                const openNewTabBtn = doc.getElementById('open-new-tab-btn');
+                if (openNewTabBtn) {
+                    const filename = window.location.pathname.split('/').pop();
+                    openNewTabBtn.href = 'screens/' + filename;
+                }
+            }
+        }
+
+        // Initialize state and sidebar on load
+        document.addEventListener('DOMContentLoaded', function() {
+            syncParentSidebar(2);
+
+            const isShiftOpen = sessionStorage.getItem('pos_shift_open') === 'true';
             
-            overlay.classList.remove('opacity-0', 'pointer-events-none');
-            overlay.classList.add('opacity-100');
-            card.classList.remove('scale-90');
-            card.classList.add('scale-100');
+            // Dynamic operator name
+            const opStr = localStorage.getItem('terminal_operator');
+            let opName = "Adeel";
+            if (opStr) {
+                try {
+                    const op = JSON.parse(opStr);
+                    opName = op.name;
+                    // Update user name in top right
+                    const headerOp = document.querySelector('header span.font-label-md');
+                    if (headerOp) headerOp.textContent = opName;
+                    
+                    // Update cashier label
+                    const cashierLabel = document.querySelector('.bg-surface-dim\\/40.px-4.py-3.rounded-lg.text-on-surface-variant.font-label-md:nth-of-type(1)');
+                    const cashierDivs = document.querySelectorAll('.bg-surface-dim\\/40.px-4.py-3');
+                    if (cashierDivs && cashierDivs[1]) {
+                        cashierDivs[1].innerHTML = `<span class="material-symbols-outlined text-[18px]">person</span> ${opName}`;
+                    }
+                } catch(e) {}
+            }
 
-            setTimeout(() => {
-                // Simulation of redirect
-                window.location.reload();
-            }, 2000);
-        });
+            // Update top bar status if open
+            if (isShiftOpen) {
+                const statusBadge = document.querySelector('header .bg-tertiary-fixed');
+                if (statusBadge) {
+                    statusBadge.className = "bg-secondary-container/30 text-on-secondary-container px-3 py-1 rounded-full flex items-center gap-2";
+                    statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span><span class="font-label-sm text-label-sm uppercase tracking-wide">Shift Status: Open</span>`;
+                }
+            }
 
-        // Numeric input formatting simulation
-        const floatInput = document.querySelector('input[value="5,000"]');
-        floatInput.addEventListener('input', function(e) {
-            let val = e.target.value.replace(/[^0-9]/g, '');
-            if (val) {
-                e.target.value = new Intl.NumberFormat('en-PK').format(val);
+            // Bind sidebar buttons
+            const navButtons = document.querySelectorAll('aside nav button');
+            if (navButtons.length >= 6) {
+                const checkoutBtn = navButtons[0];
+                const shiftBtn = navButtons[1];
+                const cashCtrlBtn = navButtons[2];
+                const catalogBtn = navButtons[3];
+                const reportsBtn = navButtons[4];
+                const settingsBtn = navButtons[5];
+
+                // If shift is open, enable checkout and cash control
+                if (isShiftOpen) {
+                    checkoutBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+                    const lockIcon = checkoutBtn.querySelector('.ml-auto');
+                    if (lockIcon) lockIcon.remove();
+                    checkoutBtn.addEventListener('click', () => window.location.href = 'main_checkout.html');
+                    
+                    cashCtrlBtn.addEventListener('click', () => window.location.href = 'cash_control.html');
+                } else {
+                    checkoutBtn.addEventListener('click', () => alert('Please open your shift first!'));
+                    cashCtrlBtn.addEventListener('click', () => alert('Please open your shift first!'));
+                }
+
+                // Shift goes to shift_close if open, else shift_open
+                shiftBtn.addEventListener('click', () => {
+                    if (sessionStorage.getItem('pos_shift_open') === 'true') {
+                        window.location.href = 'shift_close.html';
+                    } else {
+                        window.location.href = 'shift_open.html';
+                    }
+                });
+
+                // Catalog goes to checkout if open
+                catalogBtn.addEventListener('click', () => {
+                    if (sessionStorage.getItem('pos_shift_open') === 'true') {
+                        window.location.href = 'main_checkout.html';
+                    } else {
+                        alert('Please open your shift first!');
+                    }
+                });
+            }
+
+            // Bind sidebar logout & bottom cancel button
+            const logoutBtn = document.querySelector('aside button.text-error');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', doLogout);
+            }
+            const cancelBtn = document.querySelector('form button[type="button"]');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', doLogout);
+            }
+
+            function doLogout() {
+                sessionStorage.clear();
+                localStorage.removeItem('terminal_operator');
+                window.location.href = 'terminal_login.html';
             }
         });
 
+        const floatInput = document.querySelector('input[type="text"]');
+        
         // Suggestion buttons
         document.querySelectorAll('.flex.gap-3.pt-2 button').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -390,9 +491,45 @@
                 this.className = "px-4 py-2 border-2 border-secondary bg-secondary-container/10 text-on-secondary-container rounded-lg font-label-md shadow-sm";
                 
                 // Update input
-                const amount = this.innerText.replace('PKR ', '');
-                floatInput.value = amount;
+                const amount = this.innerText.replace('PKR ', '').replace(/,/g, '');
+                floatInput.value = new Intl.NumberFormat('en-PK').format(amount);
             });
+        });
+
+        // Numeric input formatting
+        floatInput.addEventListener('input', function(e) {
+            let val = e.target.value.replace(/[^0-9]/g, '');
+            if (val) {
+                e.target.value = new Intl.NumberFormat('en-PK').format(val);
+            }
+        });
+
+        document.getElementById('openShiftBtn').addEventListener('click', function() {
+            // Read float value
+            const rawFloat = floatInput.value.replace(/[^0-9]/g, '');
+            const floatVal = parseFloat(rawFloat) || 5000;
+
+            // Save to sessionStorage
+            sessionStorage.setItem('pos_shift_open', 'true');
+            sessionStorage.setItem('pos_shift_float', floatVal);
+            
+            // Initialize empty cart if not already present
+            if (!sessionStorage.getItem('pos_cart')) {
+                sessionStorage.setItem('pos_cart', JSON.stringify([]));
+            }
+
+            // Show success overlay
+            const overlay = document.getElementById('successOverlay');
+            const card = overlay.querySelector('div');
+            
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            overlay.classList.add('opacity-100');
+            card.classList.remove('scale-90');
+            card.classList.add('scale-100');
+
+            setTimeout(() => {
+                window.location.href = 'main_checkout.html';
+            }, 1500);
         });
     </script>
 </body></html>

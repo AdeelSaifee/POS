@@ -1,347 +1,595 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
-
+<html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>IMAGYN POS • Terminal Login</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "obsidian": "#06080F",
-                        "console-dark": "#0B0F19",
-                        "neon-emerald": "#0DF29D",
-                        "neon-cyan": "#0DCAF0",
-                        "slate-glass": "rgba(15, 23, 42, 0.45)"
-                    },
-                    fontFamily: {
-                        sans: ['Outfit', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace']
-                    }
-                }
-            }
-        }
-    </script>
+    <title>IMAGYN POS • Operator Login</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
     <style>
+        :root {
+            --bg: #06090F;
+            --surface: rgba(12, 20, 38, 0.65);
+            --surface-solid: #0C1426;
+            --border: rgba(255, 255, 255, 0.07);
+            --border-active: #10B981;
+            --green: #10B981;
+            --green-dim: rgba(16, 185, 129, 0.12);
+            --green-glow: 0 0 20px rgba(16, 185, 129, 0.25);
+            --text: rgba(255, 255, 255, 0.92);
+            --text-muted: rgba(255, 255, 255, 0.45);
+            --text-dim: rgba(255, 255, 255, 0.25);
+            --sans: 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
+            --mono: 'IBM Plex Mono', ui-monospace, monospace;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body {
-            font-family: 'Outfit', sans-serif;
-            background-color: #04060A;
-            background-image: 
-                radial-gradient(circle at 5% 5%, rgba(13, 242, 157, 0.04) 0%, transparent 40%),
-                radial-gradient(circle at 95% 95%, rgba(13, 202, 240, 0.04) 0%, transparent 40%);
-            overflow: hidden;
-        }
-
-        .cyber-grid {
-            background-size: 32px 32px;
+            font-family: var(--sans);
+            background-color: var(--bg);
             background-image:
-                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-        }
-
-        /* Glassmorphism styling */
-        .glass-panel {
-            background: rgba(10, 14, 26, 0.6);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-        }
-
-        .glass-input {
-            background: rgba(255, 255, 255, 0.03) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .glass-input:focus {
-            background: rgba(255, 255, 255, 0.05) !important;
-            border-color: #0DF29D !important;
-            box-shadow: 0 0 15px rgba(13, 242, 157, 0.15);
-            outline: none;
-        }
-
-        /* Prevent autofill styling override in Webkit/Blink browsers */
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover, 
-        input:-webkit-autofill:focus, 
-        input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 1000px #080C14 inset !important;
-            -webkit-text-fill-color: rgba(255, 255, 255, 0.9) !important;
-            transition: background-color 5000s ease-in-out 0s;
-        }
-
-        .glass-btn {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.2s ease;
-        }
-
-        .glass-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-1px);
-        }
-
-        .glass-btn:active {
-            transform: translateY(1px);
-        }
-
-        .keypad-btn {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+                radial-gradient(ellipse at 10% 0%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 90% 100%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+            min-height: 100vh;
+            overflow: hidden;
+            color: var(--text);
             user-select: none;
         }
 
-        .keypad-btn:hover {
-            background: rgba(13, 242, 157, 0.06);
-            border-color: rgba(13, 242, 157, 0.3);
-            color: #0DF29D;
-            box-shadow: 0 0 10px rgba(13, 242, 157, 0.1);
+        /* Subtle grid overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+            background-size: 36px 36px;
+            pointer-events: none;
+            z-index: 0;
         }
 
-        .keypad-btn:active {
-            transform: scale(0.95);
-            background: rgba(13, 242, 157, 0.12);
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+        /* Glass panel */
+        .glass {
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
         }
 
-        .neon-glow-btn {
-            background: linear-gradient(135deg, #0DF29D 0%, #0DCAF0 100%);
-            box-shadow: 0 4px 20px rgba(13, 242, 157, 0.25);
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        /* Operator card */
+        .op-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1.5px solid rgba(255, 255, 255, 0.07);
+            border-radius: 16px;
+            padding: 14px 12px;
+            cursor: pointer;
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-height: 96px;
+            position: relative;
+            overflow: hidden;
         }
-
-        .neon-glow-btn:hover {
-            box-shadow: 0 6px 28px rgba(13, 242, 157, 0.4);
+        .op-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            opacity: 0;
+            background: radial-gradient(circle at center, rgba(16,185,129,0.08) 0%, transparent 70%);
+            transition: opacity 0.2s;
+        }
+        .op-card:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.055);
             transform: translateY(-1px);
-            filter: brightness(1.05);
+        }
+        .op-card:hover::after { opacity: 1; }
+        .op-card:active { transform: scale(0.97); }
+        .op-card.selected {
+            border-color: var(--green) !important;
+            background: var(--green-dim) !important;
+            box-shadow: var(--green-glow);
+        }
+        .op-card.selected::after { opacity: 1; }
+        .op-card.manager-card {
+            border-color: rgba(245, 158, 11, 0.2);
         }
 
-        .neon-glow-btn:active {
-            transform: translateY(1px);
+        /* Avatar */
+        .op-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.02em;
+            flex-shrink: 0;
+            color: white;
+        }
+
+        /* PIN keypad button */
+        .pin-key {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 58px;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: var(--mono);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .pin-key:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+        .pin-key:active {
+            transform: scale(0.94);
+            background: rgba(16, 185, 129, 0.12);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+        .pin-key.clear-key {
+            color: rgba(248, 113, 113, 0.8);
+            font-size: 11px;
+            font-family: var(--sans);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+        }
+        .pin-key.back-key { color: rgba(255,255,255,0.6); }
+
+        /* PIN dot */
+        .pin-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            transition: all 0.15s ease;
+            background: transparent;
+        }
+        .pin-dot.filled {
+            background: var(--green);
+            border-color: var(--green);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+            transform: scale(1.1);
+        }
+
+        /* Login button */
+        .login-btn {
+            background: linear-gradient(135deg, #10B981, #0EA5E9);
+            color: #fff;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 14px;
+            height: 52px;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .login-btn.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .login-btn.active:hover {
+            box-shadow: 0 6px 28px rgba(16, 185, 129, 0.4);
+            transform: translateY(-1px);
+            filter: brightness(1.06);
+        }
+        .login-btn.active:active { transform: scale(0.98); }
+
+        /* Empty operator state */
+        .op-empty-state {
+            border: 1.5px dashed rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 20px 16px;
+            text-align: center;
+        }
+
+        /* Selected operator badge */
+        .selected-op-badge {
+            background: var(--green-dim);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Transition overlay */
+        #login-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #login-overlay.show {
+            opacity: 1;
+            pointer-events: all;
         }
     </style>
 </head>
-
-<body class="flex items-center justify-center min-h-screen p-4 md:p-6 relative select-none">
-    <!-- Background Grid overlay -->
-    <div class="absolute inset-0 cyber-grid z-0"></div>
-
-    <!-- Background Ambient Neon Flares -->
-    <div class="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-neon-emerald/5 blur-[120px] z-0 animate-pulse" style="animation-duration: 8s;"></div>
-    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-neon-cyan/5 blur-[120px] z-0 animate-pulse" style="animation-duration: 10s;"></div>
-
-    <!-- Main Next-Gen Terminal Container -->
-    <div class="w-full max-w-5xl glass-panel rounded-[32px] overflow-hidden flex flex-col md:flex-row h-auto md:h-[640px] z-10 shadow-[0_30px_80px_rgba(0,0,0,0.6)] border border-white/[0.08] relative">
-        
-        <!-- Left Side: Interactive Keypad Node -->
-        <div class="w-full md:w-[48%] p-8 flex flex-col justify-between bg-black/35 border-b md:border-b-0 md:border-r border-white/[0.06] relative">
-            
-            <!-- Terminal Header -->
-            <div class="flex items-center justify-between z-10 mb-6 md:mb-0">
-                <div class="flex flex-col">
-                    <span class="text-[10px] font-bold tracking-[0.25em] text-white/40 uppercase">TERMINAL CONSOLE</span>
-                    <span class="text-sm font-semibold tracking-wide text-white/90">POS-01</span>
-                </div>
-                <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-neon-emerald/10 border border-neon-emerald/20 text-[9px] font-bold tracking-wider text-neon-emerald">
-                    <span class="w-1.5 h-1.5 rounded-full bg-neon-emerald animate-pulse"></span>
-                    <span>SYSTEM ONLINE</span>
-                </div>
+<body class="flex flex-col h-screen">
+    <!-- Transition overlay -->
+    <div id="login-overlay">
+        <div style="text-align:center;">
+            <div style="width:48px;height:48px;border-radius:50%;background:var(--green-dim);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                <span class="material-symbols-outlined fill" style="color:var(--green);font-size:24px;">check_circle</span>
             </div>
-
-            <!-- PIN Pad display area (Touch screen optimized) -->
-            <div class="my-auto py-6 flex flex-col items-center justify-center z-10">
-                <span class="text-[11px] font-bold tracking-widest text-white/40 uppercase mb-4">Touch Entry Console</span>
-                
-                <!-- PIN Keypad Grid -->
-                <div class="grid grid-cols-3 gap-3 w-full max-w-[270px]">
-                    <button type="button" onclick="pressKey('1')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">1</button>
-                    <button type="button" onclick="pressKey('2')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">2</button>
-                    <button type="button" onclick="pressKey('3')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">3</button>
-                    
-                    <button type="button" onclick="pressKey('4')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">4</button>
-                    <button type="button" onclick="pressKey('5')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">5</button>
-                    <button type="button" onclick="pressKey('6')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">6</button>
-                    
-                    <button type="button" onclick="pressKey('7')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">7</button>
-                    <button type="button" onclick="pressKey('8')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">8</button>
-                    <button type="button" onclick="pressKey('9')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">9</button>
-                    
-                    <button type="button" onclick="pressKey('clear')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-xs font-semibold text-rose-400 hover:text-rose-300">CLEAR</button>
-                    <button type="button" onclick="pressKey('0')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center text-lg font-bold text-white/90 font-mono">0</button>
-                    <button type="button" onclick="pressKey('backspace')" class="keypad-btn h-14 w-full rounded-2xl flex items-center justify-center">
-                        <span class="material-symbols-outlined text-[20px] text-white/70">backspace</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Operational Metadata ticker -->
-            <div class="flex items-center justify-between text-[9px] font-medium text-white/30 z-10 mt-6 md:mt-0 font-mono tracking-wider">
-                <span>HOST ID: IMAGYN-DESKTOP-POS01</span>
-                <span>SECURE CONNECTED</span>
-            </div>
-
+            <p style="color:var(--text);font-weight:700;font-size:15px;" id="overlay-msg">Authenticating…</p>
+            <p style="color:var(--text-muted);font-size:12px;margin-top:4px;">Opening shift dashboard</p>
         </div>
-
-        <!-- Right Side: Immersive Input Form -->
-        <div class="w-full md:w-[52%] p-8 md:p-12 flex flex-col justify-between bg-[#080C14]/40 relative">
-            
-            <!-- Logo area -->
-            <div class="flex items-center justify-center md:justify-start mb-6 md:mb-0">
-                <!-- White Logo Card (Minimalist, exact height, rounded-xl) -->
-                <div class="bg-white px-5 py-3 rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.4)] border border-white/5 flex items-center justify-center w-44 h-12 transition-transform duration-300 hover:scale-[1.02]">
-                    <img src="logo.png" alt="Imagyn Technologies" class="max-h-6 object-contain" onerror="this.src='../../logo.png'"/>
-                </div>
-            </div>
-
-            <!-- Immersive Form panel -->
-            <div class="my-auto w-full max-w-sm mx-auto py-4">
-                <!-- Welcome Headers -->
-                <div class="mb-8 text-center md:text-left">
-                    <h2 class="text-3xl font-extrabold text-white tracking-tight leading-tight">Welcome back</h2>
-                    <p class="text-xs text-white/40 mt-1.5">Configure access parameters to open operator shift.</p>
-                </div>
-
-                <!-- Credential Input Form -->
-                <form id="login-form" class="space-y-5">
-                    <!-- Operator ID/Email field -->
-                    <div class="space-y-1.5">
-                        <label for="account" class="text-[10px] font-bold text-white/50 tracking-[0.2em] uppercase pl-1 block">OPERATOR ID</label>
-                        <div class="relative flex items-center group">
-                            <span class="material-symbols-outlined absolute left-3.5 text-white/30 group-focus-within:text-neon-emerald transition-colors text-[20px]">badge</span>
-                            <input type="text" id="account" placeholder="Enter account or email" required onfocus="setActiveInput('account')" autocomplete="off"
-                                class="glass-input pl-11 pr-4 py-3.5 w-full rounded-2xl text-xs font-semibold text-white/90 placeholder-white/20 transition-all font-sans focus:ring-0 focus:outline-none" />
-                        </div>
-                    </div>
-
-                    <!-- Passcode/PIN input field -->
-                    <div class="space-y-1.5">
-                        <label for="password" class="text-[10px] font-bold text-white/50 tracking-[0.2em] uppercase pl-1 block">SECURITY PIN</label>
-                        <div class="relative flex items-center group">
-                            <span class="material-symbols-outlined absolute left-3.5 text-white/30 group-focus-within:text-neon-emerald transition-colors text-[20px]">lock</span>
-                            <input type="password" id="password" placeholder="••••••••" required onfocus="setActiveInput('password')" autocomplete="new-password"
-                                class="glass-input pl-11 pr-12 py-3.5 w-full rounded-2xl text-xs font-semibold text-white/90 placeholder-white/20 transition-all tracking-wider font-mono focus:ring-0 focus:outline-none" />
-                            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 flex items-center justify-center text-white/30 hover:text-white/60 transition-colors">
-                                <span class="material-symbols-outlined text-[18px]" id="eye-icon">visibility</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Modern Action button with subtle neon hover shadow -->
-                    <button type="submit" id="submit-btn" class="w-full neon-glow-btn text-black font-extrabold py-3.5 rounded-2xl text-xs tracking-[0.15em] uppercase font-sans mt-3 flex items-center justify-center">
-                        INITIALIZE SHIFT
-                    </button>
-                </form>
-            </div>
-
-            <!-- Footer Metadata metadata layout -->
-            <div class="flex flex-col sm:flex-row items-center justify-between text-[9px] text-white/30 font-medium border-t border-white/[0.05] pt-5 mt-6 md:mt-0 gap-2 font-sans tracking-widest">
-                <span class="text-white/40">BRANCH: MAIN OUTLET</span>
-                <span class="hidden sm:inline text-white/10">•</span>
-                <span>IMAGYN PLATFORM V8.4</span>
-            </div>
-
-        </div>
-
     </div>
 
-    <!-- Scripting for PIN-pad touch interactivity and login flow -->
+    <!-- ── TOP STATUS BAR ─────────────────────────────────── -->
+    <header class="relative z-10 flex items-center justify-between px-6 py-3 border-b" style="border-color:var(--border); background: rgba(6,9,15,0.8); backdrop-filter: blur(12px);">
+        <div class="flex items-center gap-4">
+            <!-- Logo -->
+            <div style="background:white; border-radius:10px; padding:5px 12px; height:34px; display:flex; align-items:center; justify-content:center;">
+                <img src="logo.png" alt="IMAGYN POS" style="max-height:20px; object-fit:contain;" onerror="this.parentElement.innerHTML='<span style=\'color:#0F3A7D;font-weight:800;font-size:13px;font-family:var(--sans);letter-spacing:-0.02em;\'>IMAGYN POS</span>'" />
+            </div>
+            <div style="width:1px;height:20px;background:var(--border);"></div>
+            <div style="display:flex;flex-direction:column;gap:1px;">
+                <span style="font-size:10px;font-weight:600;letter-spacing:0.18em;color:var(--text-muted);text-transform:uppercase;" id="header-branch">Main Branch</span>
+                <span style="font-size:12px;font-weight:700;color:var(--text);font-family:var(--mono);" id="header-terminal">POS-01</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <div style="font-family:var(--mono);font-size:13px;color:var(--text-muted);" id="live-clock">--:--:--</div>
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;display:block;"></span>
+                <span style="font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--green);text-transform:uppercase;">SYSTEM ONLINE</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── MAIN CONTENT ──────────────────────────────────── -->
+    <main class="relative z-10 flex flex-1 overflow-hidden" style="gap:0;">
+
+        <!-- LEFT: Operator Selection (58%) -->
+        <div class="flex flex-col" style="width:58%;padding:24px 20px 20px 24px;border-right:1px solid var(--border);">
+            <div style="margin-bottom:20px;">
+                <h2 style="font-size:15px;font-weight:700;color:var(--text);margin:0 0 4px;">Select Operator</h2>
+                <p style="font-size:12px;color:var(--text-muted);margin:0;">Tap your name, then enter your PIN to begin.</p>
+            </div>
+
+            <!-- Operator Grid 2×3 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;" id="operator-grid">
+                <!-- Operator cards injected by JS -->
+            </div>
+
+            <!-- Bottom meta -->
+            <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:between;gap:12px;">
+                <span style="font-size:10px;color:var(--text-dim);font-family:var(--mono);flex:1;">TERMINAL: <span id="footer-terminal">IMAGYN-POS-01</span></span>
+                <span style="font-size:10px;color:var(--text-dim);font-family:var(--mono);" id="footer-date">--</span>
+            </div>
+        </div>
+
+        <!-- RIGHT: PIN Entry (42%) -->
+        <div class="flex flex-col" style="width:42%;padding:24px 24px 20px 20px;">
+
+            <!-- Selected Operator Display -->
+            <div style="margin-bottom:18px;min-height:64px;display:flex;align-items:center;">
+                <!-- Empty state (default) -->
+                <div class="op-empty-state w-full" id="op-empty-state">
+                    <span class="material-symbols-outlined" style="color:var(--text-dim);font-size:22px;display:block;margin-bottom:6px;">person_pin</span>
+                    <p style="font-size:12px;color:var(--text-dim);margin:0;">No operator selected</p>
+                    <p style="font-size:11px;color:var(--text-dim);margin:3px 0 0;opacity:0.7;">Select a name from the left panel</p>
+                </div>
+                <!-- Selected operator badge (hidden until selection) -->
+                <div class="selected-op-badge w-full" id="op-selected-state" style="display:none;">
+                    <div id="selected-op-avatar" class="op-avatar" style="width:36px;height:36px;font-size:12px;background:#10B981;flex-shrink:0;"></div>
+                    <div style="flex:1;min-width:0;">
+                        <p style="font-size:13px;font-weight:700;color:var(--text);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="selected-op-name">—</p>
+                        <p style="font-size:11px;color:rgba(16,185,129,0.9);margin:2px 0 0;font-weight:600;" id="selected-op-role">—</p>
+                    </div>
+                    <button onclick="clearOperator()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;border-radius:6px;line-height:0;" title="Change operator">
+                        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PIN Dots Display -->
+            <div style="margin-bottom:20px;">
+                <p style="font-size:10px;font-weight:600;letter-spacing:0.18em;color:var(--text-muted);text-transform:uppercase;margin:0 0 10px;text-align:center;">Security PIN</p>
+                <div style="display:flex;align-items:center;justify-content:center;gap:14px;" id="pin-dots">
+                    <div class="pin-dot" id="dot-0"></div>
+                    <div class="pin-dot" id="dot-1"></div>
+                    <div class="pin-dot" id="dot-2"></div>
+                    <div class="pin-dot" id="dot-3"></div>
+                    <div class="pin-dot" id="dot-4" style="display:none;"></div>
+                    <div class="pin-dot" id="dot-5" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- PIN Keypad -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:1;align-content:start;">
+                <button class="pin-key" onclick="pinPress('1')">1</button>
+                <button class="pin-key" onclick="pinPress('2')">2</button>
+                <button class="pin-key" onclick="pinPress('3')">3</button>
+                <button class="pin-key" onclick="pinPress('4')">4</button>
+                <button class="pin-key" onclick="pinPress('5')">5</button>
+                <button class="pin-key" onclick="pinPress('6')">6</button>
+                <button class="pin-key" onclick="pinPress('7')">7</button>
+                <button class="pin-key" onclick="pinPress('8')">8</button>
+                <button class="pin-key" onclick="pinPress('9')">9</button>
+                <button class="pin-key clear-key" onclick="pinPress('clear')">CLEAR</button>
+                <button class="pin-key" onclick="pinPress('0')">0</button>
+                <button class="pin-key back-key" onclick="pinPress('back')">
+                    <span class="material-symbols-outlined" style="font-size:20px;">backspace</span>
+                </button>
+            </div>
+
+            <!-- Login Button -->
+            <div style="margin-top:14px;">
+                <button class="login-btn" id="login-btn" onclick="doLogin()">
+                    <span style="display:flex;align-items:center;justify-content:center;gap:8px;">
+                        <span class="material-symbols-outlined" style="font-size:18px;">login</span>
+                        Open Shift
+                    </span>
+                </button>
+                <p style="text-align:center;font-size:10px;color:var(--text-dim);margin:8px 0 0;font-family:var(--mono);">IMAGYN POS Platform · v1.0</p>
+            </div>
+        </div>
+    </main>
+
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            15% { transform: translateX(-5px); }
+            30% { transform: translateX(5px); }
+            45% { transform: translateX(-4px); }
+            60% { transform: translateX(4px); }
+            75% { transform: translateX(-2px); }
+            90% { transform: translateX(2px); }
+        }
+        .shake { animation: shake 0.4s ease; }
+    </style>
+
     <script>
-        // Track the actively focused input field so keypad works with both fields!
-        let activeInputId = 'account';
+        // ── Operators data ──
+        const operators = [
+            { id: 'OP001', name: 'Adeel Saifee',  role: 'Sr. Cashier',  color: '#2563EB', initials: 'AS' },
+            { id: 'OP002', name: 'Ahmed Khan',     role: 'Cashier',       color: '#7C3AED', initials: 'AK' },
+            { id: 'OP003', name: 'Sara Ahmed',     role: 'Cashier',       color: '#DB2777', initials: 'SA' },
+            { id: 'OP004', name: 'Bilal Hassan',   role: 'Cashier',       color: '#D97706', initials: 'BH' },
+            { id: 'MGR01', name: 'Nadia Mirza',    role: 'Manager',       color: '#059669', initials: 'NM', isManager: true },
+            { id: 'MGR02', name: 'Usman Ali',      role: 'Supervisor',    color: '#64748B', initials: 'UA', isManager: true },
+        ];
 
-        function setActiveInput(id) {
-            activeInputId = id;
+        let selectedOp = null;
+        let pinValue   = '';
+        const MAX_PIN  = 6;
+
+        // ── Render operator grid ──
+        function renderOperators() {
+            const grid = document.getElementById('operator-grid');
+            grid.innerHTML = '';
+            operators.forEach(op => {
+                const card = document.createElement('div');
+                card.className = 'op-card' + (op.isManager ? ' manager-card' : '');
+                card.id = 'op-' + op.id;
+                card.onclick = () => selectOperator(op);
+                card.innerHTML = `
+                    <div class="op-avatar" style="background:${op.color};">
+                        ${op.initials}
+                    </div>
+                    <div style="text-align:center;">
+                        <p style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.9);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;">${op.name}</p>
+                        <p style="font-size:10px;color:${op.isManager ? '#F59E0B' : 'rgba(255,255,255,0.45)'};margin:2px 0 0;font-weight:600;">${op.role}</p>
+                    </div>
+                    ${selectedOp && selectedOp.id === op.id ? '<div style="position:absolute;top:6px;right:6px;"><span class="material-symbols-outlined fill" style="font-size:14px;color:var(--green);">check_circle</span></div>' : ''}
+                `;
+                grid.appendChild(card);
+            });
         }
 
-        // Set 'account' as default active input on startup
-        document.getElementById('account').focus();
+        // ── Select operator ──
+        function selectOperator(op) {
+            selectedOp = op;
+            pinValue = '';
+            updatePinDots();
+            updateLoginBtn();
 
-        // Keypad action handler
-        function pressKey(val) {
-            const input = document.getElementById(activeInputId);
-            if (!input) return;
+            // Update grid highlighting
+            document.querySelectorAll('.op-card').forEach(c => c.classList.remove('selected'));
+            const card = document.getElementById('op-' + op.id);
+            if (card) card.classList.add('selected');
 
+            // Show selected state on right panel
+            document.getElementById('op-empty-state').style.display  = 'none';
+            document.getElementById('op-selected-state').style.display = '';
+
+            const avatarEl = document.getElementById('selected-op-avatar');
+            avatarEl.textContent  = op.initials;
+            avatarEl.style.background = op.color;
+            document.getElementById('selected-op-name').textContent = op.name;
+            document.getElementById('selected-op-role').textContent  = op.role;
+
+            // Add checkmark to card (re-render is too heavy, do it inline)
+            const existing = card.querySelector('.check-overlay');
+            if (!existing) {
+                const chk = document.createElement('div');
+                chk.className = 'check-overlay';
+                chk.style.cssText = 'position:absolute;top:6px;right:6px;';
+                chk.innerHTML = '<span class="material-symbols-outlined fill" style="font-size:14px;color:var(--green);font-variation-settings:\'FILL\' 1">check_circle</span>';
+                card.appendChild(chk);
+            }
+        }
+
+        // ── Clear operator ──
+        function clearOperator() {
+            selectedOp = null;
+            pinValue = '';
+            updatePinDots();
+            updateLoginBtn();
+            document.querySelectorAll('.op-card').forEach(c => {
+                c.classList.remove('selected');
+                const chk = c.querySelector('.check-overlay');
+                if (chk) chk.remove();
+            });
+            document.getElementById('op-empty-state').style.display  = '';
+            document.getElementById('op-selected-state').style.display = 'none';
+        }
+
+        // ── PIN press ──
+        function pinPress(val) {
             if (val === 'clear') {
-                input.value = '';
-            } else if (val === 'backspace') {
-                input.value = input.value.slice(0, -1);
+                pinValue = '';
+            } else if (val === 'back') {
+                pinValue = pinValue.slice(0, -1);
             } else {
-                input.value += val;
+                if (pinValue.length >= MAX_PIN) return;
+                pinValue += val;
             }
-            
-            // Dispatch input event so validation registers it
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            input.focus();
+            updatePinDots();
+            updateLoginBtn();
         }
 
-        // Password visibility toggler
-        function togglePasswordVisibility() {
-            const passwordInput = document.getElementById('password');
-            const eyeIcon = document.getElementById('eye-icon');
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                eyeIcon.textContent = 'visibility_off';
-            } else {
-                passwordInput.type = 'password';
-                eyeIcon.textContent = 'visibility';
+        // ── Update PIN dot display ──
+        function updatePinDots() {
+            for (let i = 0; i < MAX_PIN; i++) {
+                const dot = document.getElementById('dot-' + i);
+                if (!dot) continue;
+                dot.classList.toggle('filled', i < pinValue.length);
             }
         }
 
-        // Initialize and persist configuration details in Local Cache
-        const terminalConfig = {
-            terminalId: 'POS-01',
-            branch: 'Main Branch',
-            version: 'V8.4',
-            companyName: 'Imagyn Technologies',
-            lastSync: new Date().toISOString()
-        };
-        localStorage.setItem('terminal_config', JSON.stringify(terminalConfig));
+        // ── Update login button state ──
+        function updateLoginBtn() {
+            const btn = document.getElementById('login-btn');
+            const ready = selectedOp !== null && pinValue.length >= 4;
+            btn.classList.toggle('active', ready);
+        }
 
-        // Submit form transition simulation
-        document.getElementById('login-form').addEventListener('submit', function(e) {
-            e.preventDefault();
+        // ── Login ──
+        function doLogin() {
+            if (!selectedOp || pinValue.length < 4) return;
 
-            const submitBtn = document.getElementById('submit-btn');
-            const accountInput = document.getElementById('account');
-            const passwordInput = document.getElementById('password');
+            const btn = document.getElementById('login-btn');
+            btn.style.opacity = '0.7';
+            btn.style.pointerEvents = 'none';
+            btn.innerHTML = '<span style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 0.8s linear infinite"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Authenticating…</span>';
 
-            // Prevent repeated submission & lock fields
-            submitBtn.disabled = true;
-            accountInput.disabled = true;
-            passwordInput.disabled = true;
-
-            // Render glowing neon loading indicator
-            submitBtn.style.background = 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
-            submitBtn.style.color = 'white';
-            submitBtn.innerHTML = `
-                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                ESTABLISHING SECURE SESSION...
-            `;
-
-            // Cache Operator Information
             const operator = {
-                name: accountInput.value,
-                role: accountInput.value.toLowerCase().includes('admin') ? 'MANAGER' : 'CASHIER',
+                id: selectedOp.id,
+                name: selectedOp.name,
+                role: selectedOp.role,
+                color: selectedOp.color,
+                initials: selectedOp.initials,
                 loginTime: new Date().toISOString()
             };
             localStorage.setItem('terminal_operator', JSON.stringify(operator));
 
-            // Simulating high-speed secure token verification
+            const config = JSON.parse(localStorage.getItem('terminal_config') || '{}');
+            if (!config.terminalId) {
+                config.terminalId = 'POS-01';
+                config.branch = 'Main Branch';
+                config.version = 'V1.0';
+                localStorage.setItem('terminal_config', JSON.stringify(config));
+            }
+
+            // Show overlay
             setTimeout(() => {
-                window.location.href = 'shift_open.html';
-            }, 1200);
+                const overlay = document.getElementById('login-overlay');
+                document.getElementById('overlay-msg').textContent = `Welcome, ${selectedOp.name}`;
+                overlay.classList.add('show');
+                setTimeout(() => {
+                    window.location.href = 'shift_open.html';
+                }, 900);
+            }, 700);
+        }
+
+        // ── Clock ──
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').textContent =
+                now.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ── Footer date ──
+        document.getElementById('footer-date').textContent = new Date().toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        // ── Load config ──
+        const cfg = JSON.parse(localStorage.getItem('terminal_config') || '{}');
+        if (cfg.terminalId) document.getElementById('header-terminal').textContent = cfg.terminalId;
+        if (cfg.branch)     document.getElementById('header-branch').textContent   = cfg.branch;
+        if (cfg.terminalId) document.getElementById('footer-terminal').textContent = `IMAGYN-${cfg.terminalId}`;
+
+        // ── Keyboard support ──
+        document.addEventListener('keydown', e => {
+            if (e.key >= '0' && e.key <= '9') pinPress(e.key);
+            else if (e.key === 'Backspace') pinPress('back');
+            else if (e.key === 'Escape')    pinPress('clear');
+            else if (e.key === 'Enter')     doLogin();
+        });
+
+        // ── Spin animation ──
+        const spinStyle = document.createElement('style');
+        spinStyle.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+        document.head.appendChild(spinStyle);
+
+        // ── Parent iframe sync ──
+        function syncParentSidebar(stepIndex) {
+            if (window.parent && typeof window.parent.document !== 'undefined') {
+                try {
+                    const doc = window.parent.document;
+                    doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+                    const stepEl = doc.getElementById('step-' + stepIndex);
+                    if (stepEl) stepEl.classList.add('flow-step-active');
+                    const urlDisplay = doc.getElementById('simulator-url-display');
+                    if (urlDisplay) urlDisplay.innerText = 'screens/terminal_login.html';
+                } catch(e) {}
+            }
+        }
+
+        // ── Init ──
+        document.addEventListener('DOMContentLoaded', () => {
+            renderOperators();
+            syncParentSidebar(1);
+            // Clear any stale session
+            sessionStorage.removeItem('pos_shift_open');
         });
     </script>
 </body>
-
 </html>

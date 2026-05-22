@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Checkout Activity Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 40px;
+            background-color: #f8f9fa;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            max-width: 1200px;
+            width: 100%;
+        }
+        h1 {
+            margin-top: 0;
+            color: #08427b;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+        .description {
+            margin-bottom: 30px;
+            line-height: 1.6;
+            color: #666;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>POS Checkout & Sync Activity Diagram</h1>
+        <p class="description">
+            This flowchart tracks a transaction from a barcode scan to successful synchronization with the Central API, 
+            highlighting the critical local persistence transaction and the resilient offline-first path.
+        </p>
+        <div class="mermaid">
+flowchart TD
+    classDef ui fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef local fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef cloud fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef critical fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#c62828
+    classDef offline fill:#eceff1,stroke:#607d8b,stroke-width:2px,stroke-dasharray: 5 5
+
+    subgraph UI ["Cashier UI"]
+        Scan("1. Barcode Scan Event"):::ui
+        Cart("3. Item Added to Cart (Price/Tax Calculated via Local CatalogVersion)"):::ui
+        Pay("4. Payment Tendered (Cash/Card)"):::ui
+    end
+
+    subgraph Local ["Local POS Backend / SQLite"]
+        Lookup("2. Product Lookup in Local SQLite Cache"):::local
+        HW("5. IPosHardwareGateway kicks Drawer/Printer"):::local
+        Commit("6. CRITICAL: Commit Order, Payments, Inventory & Outbox in Single SQLite Transaction"):::critical
+        SyncCheck{"7. Sync Orchestrator: Network Online?"}:::local
+        Wait("Offline Path: Data safely waits in SyncOutbox"):::offline
+        Batch("8. Sync Path: Batch Order into Gzip Chunk"):::local
+        Acked("12. Update Local SyncOutbox to 'Acked'"):::local
+    end
+
+    subgraph Cloud ["Central API / Cloud"]
+        Receive("9. Receive Gzip Chunk"):::cloud
+        Dedup("10. Deduplicate via IdempotencyKey"):::cloud
+        Apply("11. Apply to SQL Server & Return Ack"):::cloud
+    end
+
+    Scan --> Lookup
+    Lookup --> Cart
+    Cart --> Pay
+    Pay --> HW
+    HW --> Commit
+    Commit --> SyncCheck
+    
+    SyncCheck -->|"No"| Wait
+    SyncCheck -->|"Yes"| Batch
+    
+    Wait -.->|"Network Restored"| Batch
+    
+    Batch -->|"HTTP/2 Push"| Receive
+    Receive --> Dedup
+    Dedup --> Apply
+    Apply -->|"Ack Response"| Acked
+        </div>
+    </div>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</body>
+</html>

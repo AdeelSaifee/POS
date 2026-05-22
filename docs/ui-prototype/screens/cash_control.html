@@ -1,307 +1,909 @@
 <!DOCTYPE html>
-
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Cash Control - Imtiaz POS</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Cash Control - Imtiaz POS</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
-                    "colors": {
-                        "surface-secondary": "#F8FAFC",
-                        "background": "#f9f9ff",
+                    colors: {
+                        "primary": "#0F172A",
+                        "secondary": "#10B981",
+                        "accent": "#3B82F6",
+                        "warning": "#F59E0B",
+                        "danger": "#EF4444",
+                        "darkBg": "#0B0F19",
+                        "darkCard": "#111827",
+                        "darkBorder": "#1F2937",
                         "border-subtle": "#E2E8F0",
-                        "on-primary-container": "#7c839b",
-                        "tertiary-fixed-dim": "#ffb95f",
-                        "on-surface": "#111c2d",
-                        "inverse-primary": "#bec6e0",
-                        "error-container": "#ffdad6",
-                        "text-secondary": "#64748B",
-                        "secondary-fixed": "#6ffbbe",
-                        "on-surface-variant": "#45464d",
-                        "surface": "#f9f9ff",
-                        "on-secondary-container": "#00714d",
-                        "border-input": "#CBD5E1",
-                        "primary-fixed": "#dae2fd",
-                        "surface-tint": "#565e74",
-                        "surface-container-low": "#f0f3ff",
-                        "on-primary": "#ffffff",
-                        "on-background": "#111c2d",
-                        "primary": "#000000",
-                        "tertiary": "#000000",
-                        "secondary": "#006c49",
-                        "secondary-container": "#6cf8bb",
-                        "on-error-container": "#93000a",
+                        "surface-secondary": "#F8FAFC",
                         "surface-main": "#FFFFFF",
-                        "danger": "#EF4444"
+                        "text-secondary": "#64748B",
+                        "emerald-pos": "#10B981",
+                        "on-background": "#111c2d"
                     },
-                    "borderRadius": {
+                    borderRadius: {
                         "DEFAULT": "0.25rem",
                         "lg": "0.5rem",
                         "xl": "0.75rem",
                         "full": "9999px"
                     },
-                    "spacing": {
+                    spacing: {
                         "touch-target-min": "44px",
                         "margin": "16px",
-                        "gutter": "16px",
-                        "sidebar-width": "240px"
+                        "gutter": "16px"
                     },
-                    "fontFamily": {
-                        "label-sm": ["Inter"],
-                        "body-lg": ["Inter"],
-                        "headline-lg": ["Inter"],
-                        "body-md": ["Inter"],
-                        "headline-md": ["Inter"],
-                        "display-numeric": ["Inter"],
-                        "label-md": ["Inter"]
-                    },
-                    "fontSize": {
-                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
-                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
-                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                        "display-numeric": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                        "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "600"}]
+                    fontFamily: {
+                        sans: ["Inter", "sans-serif"]
                     }
                 },
             },
         }
     </script>
-<style>
-        body { font-family: 'Inter', sans-serif; }
+    <style>
+        body { font-family: 'Inter', sans-serif; overflow: hidden; }
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
         }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #E2E8F0;
+            border-radius: 10px;
+        }
+        /* Styling for a realistic receipt */
+        .receipt-paper {
+            font-family: 'Courier New', Courier, monospace;
+            background: #ffffff;
+            color: #000000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-radius: 4px;
+            position: relative;
+        }
+        .receipt-paper::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background-image: linear-gradient(135deg, transparent 4px, #ffffff 4px), linear-gradient(-135deg, transparent 4px, #ffffff 4px);
+            background-size: 8px 8px;
+            background-repeat: repeat-x;
+        }
+        .tab-active {
+            border-bottom-color: #10B981;
+            color: #10B981;
+            background-color: rgba(16, 185, 129, 0.05);
+        }
     </style>
 </head>
-<body class="bg-background text-on-background h-screen overflow-hidden">
-<!-- Side Navigation Bar -->
-<aside class="fixed left-0 top-0 h-full w-[240px] bg-primary-container dark:bg-primary-container border-r border-border-subtle dark:border-outline-variant flex flex-col h-full py-6 px-3 z-50">
-<div class="mb-8 px-4">
-<h1 class="font-headline-md text-headline-md font-bold text-on-primary-container">Imtiaz Superstore</h1>
-<p class="font-label-sm text-label-sm text-on-primary-container opacity-70">Tariq Road Branch</p>
-</div>
-<nav class="flex-1 space-y-2">
-<!-- Nav Item: Checkout -->
-<a class="flex items-center gap-3 px-4 py-3 text-on-primary-container hover:text-on-primary hover:bg-primary dark:hover:bg-surface-tint transition-colors duration-200 cursor-pointer active:opacity-80 rounded-lg" href="#">
-<span class="material-symbols-outlined">shopping_cart</span>
-<span class="font-label-md text-label-md">Checkout</span>
-</a>
-<!-- Nav Item: Shift -->
-<a class="flex items-center gap-3 px-4 py-3 text-on-primary-container hover:text-on-primary hover:bg-primary dark:hover:bg-surface-tint transition-colors duration-200 cursor-pointer active:opacity-80 rounded-lg" href="#">
-<span class="material-symbols-outlined">schedule</span>
-<span class="font-label-md text-label-md">Shift</span>
-</a>
-<!-- Nav Item: Cash Control (ACTIVE) -->
-<a class="flex items-center gap-3 px-4 py-3 bg-secondary dark:bg-secondary-container text-on-secondary dark:text-on-secondary-container rounded-lg cursor-pointer active:opacity-80" href="#">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
-<span class="font-label-md text-label-md">Cash Control</span>
-</a>
-<!-- Nav Item: Catalog -->
-<a class="flex items-center gap-3 px-4 py-3 text-on-primary-container hover:text-on-primary hover:bg-primary dark:hover:bg-surface-tint transition-colors duration-200 cursor-pointer active:opacity-80 rounded-lg" href="#">
-<span class="material-symbols-outlined">inventory_2</span>
-<span class="font-label-md text-label-md">Catalog</span>
-</a>
-<!-- Nav Item: Reports -->
-<a class="flex items-center gap-3 px-4 py-3 text-on-primary-container hover:text-on-primary hover:bg-primary dark:hover:bg-surface-tint transition-colors duration-200 cursor-pointer active:opacity-80 rounded-lg" href="#">
-<span class="material-symbols-outlined">analytics</span>
-<span class="font-label-md text-label-md">Reports</span>
-</a>
-<!-- Nav Item: Settings -->
-<a class="flex items-center gap-3 px-4 py-3 text-on-primary-container hover:text-on-primary hover:bg-primary dark:hover:bg-surface-tint transition-colors duration-200 cursor-pointer active:opacity-80 rounded-lg" href="#">
-<span class="material-symbols-outlined">settings</span>
-<span class="font-label-md text-label-md">Settings</span>
-</a>
-</nav>
-<div class="mt-auto px-4 py-4 bg-white/5 rounded-xl border border-white/10">
-<div class="flex items-center gap-3">
-<img alt="Cashier Avatar" class="w-10 h-10 rounded-full border border-secondary-fixed" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpo1Na-i4JG0p_Mq8D8bh25rGK4KS-MvTGH33ggFMmEwlhJod-udKsMPLWxhc3-c7tK6eSgmlNpErjiQLSlzRvAtQsYPmUzYldxUmugIX-T6BLWSg6_bfv-bs7ZSDQdEqo5yCSUeF9EeFLyaO6ufz0fmIP0GoJpmMAyJYbyjTKVzyQImbxc2Wwf7K3Nwh0jbk5QqZuarabQ7810KFMJDSGbTy6UcVfuz3RMQ6Way7AOCOz-prg_2GOvPoboUXjx_qn6_9TUD3bzJHX"/>
-<div>
-<p class="font-label-md text-label-md text-on-primary">Adeel</p>
-<p class="font-label-sm text-label-sm text-secondary-fixed">POS-01</p>
-</div>
-</div>
-</div>
+<body class="bg-[#f9f9ff] text-on-surface h-screen flex overflow-hidden">
+
+<!-- Side Navigation Shell -->
+<aside class="flex flex-col h-full w-[240px] py-6 px-4 border-r border-border-subtle bg-primary z-50 fixed left-0 top-0 text-white">
+    <div class="mb-8 px-4 flex items-center gap-2">
+        <span class="material-symbols-outlined text-secondary text-2xl">point_of_sale</span>
+        <span class="text-lg font-bold tracking-tight text-white">Imtiaz Retail</span>
+    </div>
+    <nav class="flex-grow space-y-2">
+        <!-- Sidebar Navigation links -->
+        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="main_checkout.html">
+            <span class="material-symbols-outlined">shopping_cart</span>
+            <span class="text-sm font-semibold">Checkout</span>
+        </a>
+        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="shift_close.html">
+            <span class="material-symbols-outlined">person_pin_circle</span>
+            <span class="text-sm font-semibold">Shift Control</span>
+        </a>
+        <a class="flex items-center gap-4 text-white bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="cash_control.html">
+            <span class="material-symbols-outlined text-secondary">payments</span>
+            <span class="text-sm font-semibold">Cash Control</span>
+        </a>
+        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="main_checkout.html">
+            <span class="material-symbols-outlined">inventory_2</span>
+            <span class="text-sm font-semibold">Catalog</span>
+        </a>
+        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="shift_close.html">
+            <span class="material-symbols-outlined">assessment</span>
+            <span class="text-sm font-semibold">Z-Report</span>
+        </a>
+        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" onclick="showHelpToast('Settings are disabled in prototype.')">
+            <span class="material-symbols-outlined">settings</span>
+            <span class="text-sm font-semibold">Settings</span>
+        </a>
+    </nav>
+    <div class="mt-auto border-t border-gray-700 pt-4 space-y-2">
+        <div class="flex items-center gap-3 px-4 py-2 mb-4">
+            <div class="w-8 h-8 rounded-full bg-secondary text-primary flex items-center justify-center text-xs font-bold" id="operator-initials">AS</div>
+            <div class="overflow-hidden">
+                <p class="text-sm font-semibold truncate text-white" id="operator-name">System Operator</p>
+                <p class="text-xs text-gray-400 truncate">POS-01 · Shift Active</p>
+            </div>
+        </div>
+        <a class="flex items-center gap-4 text-gray-400 hover:text-white px-4 py-2 hover:bg-white/5 transition-all text-xs rounded-lg" onclick="showHelpToast('Manager PIN is 1234')">
+            <span class="material-symbols-outlined text-[18px]">help</span>
+            <span>Help Guide</span>
+        </a>
+        <a class="flex items-center gap-4 text-danger hover:bg-red-500/10 px-4 py-2 transition-all text-xs rounded-lg" onclick="doLogout()">
+            <span class="material-symbols-outlined text-[18px]">logout</span>
+            <span>Sign Out</span>
+        </a>
+    </div>
 </aside>
-<!-- Top App Bar -->
-<header class="fixed top-0 right-0 left-[240px] h-[64px] bg-surface-main border-b border-border-subtle flex items-center justify-between px-6 z-40">
-<div class="flex items-center gap-6">
-<span class="font-headline-md text-headline-md font-bold text-primary">POS Terminal</span>
-<div class="h-6 w-px bg-border-subtle"></div>
-<div class="flex gap-4">
-<div class="flex flex-col">
-<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Terminal</span>
-<span class="font-label-md text-label-md text-on-surface">T-084</span>
-</div>
-<div class="flex flex-col">
-<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Shift Status</span>
-<span class="flex items-center gap-1.5 font-label-md text-label-md text-secondary">
-<span class="w-2 h-2 rounded-full bg-secondary"></span>
-                        Open (Morning)
-                    </span>
-</div>
-<div class="flex flex-col">
-<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider">Business Date</span>
-<span class="font-label-md text-label-md text-on-surface">2026-05-19</span>
-</div>
-</div>
-</div>
-<div class="flex items-center gap-4">
-<div class="flex items-center gap-2 px-3 py-1.5 bg-surface-secondary rounded-lg border border-border-subtle">
-<span class="material-symbols-outlined text-text-secondary text-[20px]">wifi</span>
-<span class="material-symbols-outlined text-text-secondary text-[20px]">sync</span>
-<span class="material-symbols-outlined text-danger text-[20px]">notifications</span>
-</div>
-<button class="px-4 py-2 bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:opacity-90 transition-all">
-                End Shift
-            </button>
-</div>
-</header>
-<!-- Main Workspace Content -->
-<main class="fixed inset-0 top-[64px] left-[240px] p-6 overflow-hidden flex gap-6">
-<!-- Left Column: Current Cash Summary (40%) -->
-<section class="w-[40%] flex flex-col gap-6">
-<div class="flex flex-col gap-2">
-<h2 class="font-headline-md text-headline-md text-on-surface">Current Cash Summary</h2>
-<p class="font-body-md text-body-md text-text-secondary">Real-time drawer balance and sales metrics.</p>
-</div>
-<!-- Warning Banner -->
-<div class="bg-error-container border border-error/20 p-4 rounded-xl flex items-start gap-4 animate-pulse">
-<span class="material-symbols-outlined text-danger text-[32px]">warning</span>
-<div>
-<p class="font-label-md text-label-md text-on-error-container">Safe Drop Required!</p>
-<p class="font-body-md text-body-md text-on-error-container opacity-80">Current cash exceeds PKR 20,000 threshold. Please perform a safe drop immediately to minimize risk.</p>
-</div>
-</div>
-<!-- Summary Cards Bento Grid -->
-<div class="grid grid-cols-2 gap-4">
-<div class="p-5 bg-surface-main border border-border-subtle rounded-xl flex flex-col gap-1">
-<span class="font-label-sm text-label-sm text-text-secondary uppercase">Opening Float</span>
-<span class="font-headline-lg text-headline-lg text-on-surface">PKR 5,000</span>
-</div>
-<div class="p-5 bg-surface-main border border-border-subtle rounded-xl flex flex-col gap-1">
-<span class="font-label-sm text-label-sm text-text-secondary uppercase">Net Cash Sales</span>
-<span class="font-headline-lg text-headline-lg text-secondary">PKR 18,500</span>
-</div>
-<div class="p-5 bg-surface-main border border-border-subtle rounded-xl flex flex-col gap-1">
-<span class="font-label-sm text-label-sm text-text-secondary uppercase">Safe Drops Made</span>
-<span class="font-headline-lg text-headline-lg text-text-secondary">PKR 0</span>
-</div>
-<div class="p-5 bg-primary-container text-on-primary-container rounded-xl flex flex-col gap-1 border border-primary">
-<span class="font-label-sm text-label-sm opacity-70 uppercase">Drawer Balance</span>
-<span class="font-headline-lg text-headline-lg text-white">PKR 23,500</span>
-</div>
-</div>
-<!-- Decorative Visual for Cash Status -->
-<div class="mt-auto relative h-48 bg-slate-100 rounded-xl overflow-hidden border border-border-subtle group">
-<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="A professional top-down photograph of organized banknotes and coins on a modern minimalist desk background. The lighting is clean and bright, reflecting a high-end corporate financial atmosphere. Subtle cool blue tones and sharp focus on textures of the currency create a systematic and operational mood. The aesthetic is extremely clean and orderly." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6MnkZyrkeywjnBOkfxnYul9Ge8kEkP-QGUWYFfMBVrJvG2CEp6Ka-MT6anIWe7O8EB_HqI7VlrbvO65NixStC6TVt8Wa40A7Lnd3TuteOqh_sao3amD1G3sJqpPRoJtjrhFxiBhkYbGFy9YdKRoDaJSolvVZwE0Bzn23n6pum28rLW1l2p7IJQin6qy9ZCGAgMiltMsYtl3CY8p9isCV4IUkdiuwtN0J-3C2StiQQe5fAVKOjNgu68DGpztcXRtxlMXIFL0EgfP31"/>
-<div class="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent flex flex-col justify-end p-4">
-<p class="text-white font-label-md text-label-md">Drawer Integrity: Verified</p>
-<p class="text-white/60 font-label-sm text-label-sm">Last Sync: 2 minutes ago</p>
-</div>
-</div>
-</section>
-<!-- Right Column: Cash Entry & Safe Drop Form (60%) -->
-<section class="w-[60%] bg-surface-main border border-border-subtle rounded-xl flex flex-col overflow-hidden shadow-sm">
-<div class="p-6 border-b border-border-subtle bg-surface-secondary/50">
-<h2 class="font-headline-md text-headline-md text-on-surface">Cash Entry &amp; Safe Drop</h2>
-<p class="font-body-md text-body-md text-text-secondary">Record cash withdrawals (Safe Drops) or cash injections (Petty Cash/Float addition).</p>
-</div>
-<!-- Form Tabs -->
-<div class="flex border-b border-border-subtle">
-<button class="flex-1 py-4 font-label-md text-label-md text-secondary border-b-2 border-secondary bg-secondary-container/10">
+
+<!-- Main Content Canvas -->
+<main class="flex-grow ml-[240px] flex flex-col h-screen relative">
+    
+    <!-- Top Status Bar -->
+    <header class="flex justify-between items-center h-16 px-6 w-full bg-white border-b border-border-subtle shrink-0">
+        <div class="flex items-center gap-6">
+            <div class="flex flex-col">
+                <span class="text-xs text-text-secondary">Store</span>
+                <span class="text-sm font-semibold text-primary">Imtiaz Superstore</span>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-xs text-text-secondary">Location</span>
+                <span class="text-sm font-semibold text-primary">Tariq Road, Karachi</span>
+            </div>
+            <div class="h-8 w-px bg-border-subtle"></div>
+            <div class="flex flex-col">
+                <span class="text-xs text-text-secondary">Terminal</span>
+                <span class="text-sm font-semibold text-primary">POS-01</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-border-subtle">
+                <span class="material-symbols-outlined text-secondary text-lg">schedule</span>
+                <span class="text-sm font-semibold text-on-surface" id="current-date-display">2026-05-22</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+                <span class="text-xs font-semibold text-text-secondary">Shift Connected</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Content Scrollable Wrapper -->
+    <div class="flex-grow flex overflow-hidden">
+        
+        <!-- Left Column: Current Cash Summary (40%) -->
+        <section class="w-[40%] flex flex-col gap-6 p-6 border-r border-border-subtle bg-slate-50 overflow-y-auto custom-scrollbar">
+            <div class="flex flex-col gap-1">
+                <h2 class="text-xl font-extrabold text-primary tracking-tight">Current Cash Summary</h2>
+                <p class="text-xs text-text-secondary">Real-time drawer balance and sales metrics.</p>
+            </div>
+            
+            <!-- Warning Banner -->
+            <div id="drawer-warning-banner" class="bg-error-container border border-danger/20 p-4 rounded-xl flex items-start gap-3 transition-all duration-300">
+                <span class="material-symbols-outlined text-danger text-[28px] shrink-0" id="warning-banner-icon">warning</span>
+                <div>
+                    <p class="text-sm font-bold text-on-error-container text-red-800" id="warning-banner-title">Safe Drop Required!</p>
+                    <p class="text-xs text-on-error-container opacity-90 text-red-700 mt-0.5 font-medium leading-relaxed" id="warning-banner-desc">Current cash exceeds PKR 20,000 threshold. Please perform a safe drop immediately to minimize terminal risk.</p>
+                </div>
+            </div>
+
+            <!-- Summary Cards Bento Grid -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-4 bg-white border border-border-subtle rounded-xl flex flex-col gap-0.5 shadow-sm hover:shadow transition-all duration-200">
+                    <span class="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Opening Float</span>
+                    <span class="text-lg font-black text-primary font-mono mt-1" id="float-card-val">PKR 5,000</span>
+                </div>
+                <div class="p-4 bg-white border border-border-subtle rounded-xl flex flex-col gap-0.5 shadow-sm hover:shadow transition-all duration-200">
+                    <span class="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Net Cash Sales</span>
+                    <span class="text-lg font-black text-secondary font-mono mt-1" id="cash-sales-card-val">PKR 0</span>
+                </div>
+                <div class="p-4 bg-white border border-border-subtle rounded-xl flex flex-col gap-0.5 shadow-sm hover:shadow transition-all duration-200">
+                    <span class="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Safe Drops Made</span>
+                    <span class="text-lg font-black text-text-secondary font-mono mt-1" id="safe-drops-card-val">PKR 0</span>
+                </div>
+                <div class="p-4 bg-primary text-white rounded-xl flex flex-col gap-0.5 shadow-md shadow-slate-900/10 hover:shadow-lg transition-all duration-200 border border-slate-800">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Drawer Balance</span>
+                    <span class="text-xl font-black text-white font-mono mt-1" id="drawer-bal-card-val">PKR 5,000</span>
+                </div>
+            </div>
+
+            <!-- Decorative Visual for Cash Status -->
+            <div class="relative h-44 bg-slate-100 rounded-xl overflow-hidden border border-border-subtle group mt-auto shrink-0 shadow-inner">
+                <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Organized banknotes and coins on a modern store desk background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6MnkZyrkeywjnBOkfxnYul9Ge8kEkP-QGUWYFfMBVrJvG2CEp6Ka-MT6anIWe7O8EB_HqI7VlrbvO65NixStC6TVt8Wa40A7Lnd3TuteOqh_sao3amD1G3sJqpPRoJtjrhFxiBhkYbGFy9YdKRoDaJSolvVZwE0Bzn23n6pum28rLW1l2p7IJQin6qy9ZCGAgMiltMsYtl3CY8p9isCV4IUkdiuwtN0J-3C2StiQQe5fAVKOjNgu68DGpztcXRtxlMXIFL0EgfP31"/>
+                <div class="absolute inset-0 bg-gradient-to-t from-primary/95 to-transparent flex flex-col justify-end p-4">
+                    <p class="text-white font-bold text-sm tracking-wide">Drawer Audit Integrity: Verified</p>
+                    <p class="text-white/60 text-xs mt-0.5">Automated tracking synced with FBR Server</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Cash Entry & Safe Drop Form (60%) -->
+        <section class="w-[60%] bg-white flex flex-col overflow-hidden shadow-sm h-full">
+            
+            <!-- Form Tabs -->
+            <div class="flex border-b border-border-subtle bg-slate-50 shrink-0">
+                <button id="tab-drop" onclick="switchTab('drop')" class="flex-1 py-4 font-bold text-sm text-center border-b-2 transition-all tab-active flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">payments</span>
                     Safe Drop / Drawer Cash Out
                 </button>
-<button class="flex-1 py-4 font-label-md text-label-md text-text-secondary hover:bg-surface-secondary transition-colors">
+                <button id="tab-inject" onclick="switchTab('inject')" class="flex-1 py-4 font-bold text-sm text-center border-b-2 border-transparent text-text-secondary hover:bg-slate-100 transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">price_change</span>
                     Float Addition / Petty Cash In
                 </button>
-</div>
-<div class="flex-1 p-8 overflow-y-auto space-y-8">
-<!-- Amount Entry -->
-<div class="space-y-4">
-<label class="font-label-md text-label-md text-on-surface">Amount to Remove</label>
-<div class="relative">
-<span class="absolute left-6 top-1/2 -translate-y-1/2 font-headline-lg text-headline-lg text-text-secondary">PKR</span>
-<input class="w-full h-[80px] pl-24 pr-6 text-display-numeric font-display-numeric bg-surface-secondary border-2 border-border-input rounded-xl focus:border-secondary focus:ring-0 transition-all text-right" type="text" value="15,000"/>
-</div>
-<div class="flex gap-3">
-<button class="flex-1 py-3 border border-border-subtle rounded-lg font-label-md text-label-md hover:bg-surface-secondary transition-colors">PKR 5,000</button>
-<button class="flex-1 py-3 border border-border-subtle rounded-lg font-label-md text-label-md hover:bg-surface-secondary transition-colors">PKR 10,000</button>
-<button class="flex-1 py-3 border-2 border-secondary bg-secondary-container/20 text-secondary rounded-lg font-label-md text-label-md">PKR 15,000</button>
-</div>
-</div>
-<div class="grid grid-cols-2 gap-6">
-<!-- Reason Selection -->
-<div class="space-y-2">
-<label class="font-label-md text-label-md text-on-surface">Reason</label>
-<select class="w-full h-11 border-border-input rounded-lg font-body-md focus:border-secondary focus:ring-0">
-<option selected="">Safe Drop to Main Vault</option>
-<option>Shift Change Withdrawal</option>
-<option>Mid-Day Clearing</option>
-<option>Emergency Safe Drop</option>
-</select>
-</div>
-<!-- Manager Verification -->
-<div class="space-y-2">
-<label class="font-label-md text-label-md text-on-surface flex items-center justify-between">
-                            Manager Verification
-                            <span class="text-[10px] uppercase text-danger font-bold">Required</span>
-</label>
-<input class="w-full h-11 border-border-input rounded-lg font-body-md focus:border-secondary focus:ring-0 tracking-widest" placeholder="Enter PIN" type="password" value="****"/>
-</div>
-</div>
-<!-- Remarks -->
-<div class="space-y-2">
-<label class="font-label-md text-label-md text-on-surface">Remarks</label>
-<textarea class="w-full h-24 border-border-input rounded-lg font-body-md focus:border-secondary focus:ring-0 resize-none p-4" placeholder="Add any additional notes for the finance team..."></textarea>
-</div>
-</div>
-<!-- Footer Actions -->
-<div class="p-6 border-t border-border-subtle flex gap-4 bg-surface-secondary/30">
-<button class="px-8 py-4 border border-border-subtle text-text-secondary font-label-md text-label-md rounded-lg hover:bg-white transition-all active:scale-[0.98]">
-                    Cancel / Go Back
+            </div>
+
+            <!-- Form Content Wrapper -->
+            <div class="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar" id="form-container">
+                
+                <!-- Active Content Grid (Forms + Touch Keypad) -->
+                <div class="grid grid-cols-12 gap-6">
+                    
+                    <!-- Left Input Fields (7 columns) -->
+                    <div class="col-span-12 lg:col-span-7 space-y-5">
+                        
+                        <!-- Dynamic Title -->
+                        <div>
+                            <h3 class="text-base font-extrabold text-primary" id="form-title">Perform Cash Drawer Withdrawal</h3>
+                            <p class="text-xs text-text-secondary mt-0.5" id="form-desc">Safely drop excess on-counter cash into the secure primary store vault.</p>
+                        </div>
+
+                        <!-- Amount input -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary" id="amt-label">Amount to Remove</label>
+                            <div class="relative flex items-center">
+                                <span class="absolute left-4 text-lg font-bold text-text-secondary font-mono">PKR</span>
+                                <input id="cash-amount" readonly class="w-full text-2xl font-extrabold font-mono pl-14 pr-12 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-secondary transition-all text-left bg-slate-50" type="text" value="0"/>
+                                <button onclick="clearAmount()" class="absolute right-3 w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-text-secondary flex items-center justify-center active:scale-95 transition-all">
+                                    <span class="material-symbols-outlined text-[18px]">backspace</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Preset suggest tiles -->
+                            <div class="flex gap-2.5 pt-1.5" id="preset-container">
+                                <button onclick="setAmount(5000)" class="flex-1 py-2.5 border border-border-subtle rounded-xl text-xs font-bold hover:bg-slate-50 transition-all text-primary active:scale-95 duration-100 bg-white">PKR 5,000</button>
+                                <button onclick="setAmount(10000)" class="flex-1 py-2.5 border border-border-subtle rounded-xl text-xs font-bold hover:bg-slate-50 transition-all text-primary active:scale-95 duration-100 bg-white">PKR 10,000</button>
+                                <button onclick="setAmount(15000)" class="flex-1 py-2.5 border border-border-subtle rounded-xl text-xs font-bold hover:bg-slate-50 transition-all text-primary active:scale-95 duration-100 bg-white">PKR 15,000</button>
+                            </div>
+                        </div>
+
+                        <!-- Double Fields Row -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- Reason Selection -->
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary">Reason Code</label>
+                                <select id="cash-reason" class="w-full h-11 border-slate-200 rounded-xl text-xs font-bold text-primary focus:border-secondary focus:ring-0 bg-white">
+                                    <option value="Vault Drop" selected>Safe Drop to Main Vault</option>
+                                    <option value="Shift Change">Shift Change Withdrawal</option>
+                                    <option value="Mid-Day Clear">Mid-Day Clearing</option>
+                                    <option value="Emergency Drop">Emergency Safe Drop</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Manager PIN Verification -->
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary flex justify-between">
+                                    Manager PIN
+                                    <span class="text-[9px] text-danger font-extrabold uppercase shrink-0">Required</span>
+                                </label>
+                                <input id="manager-pin" class="w-full h-11 border-slate-200 rounded-xl text-sm font-black tracking-widest text-center focus:border-secondary focus:ring-0 bg-white" placeholder="••••" type="password" maxlength="4"/>
+                            </div>
+                        </div>
+
+                        <!-- Remarks -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary">Remarks / Explanation</label>
+                            <textarea id="cash-remarks" class="w-full h-20 border-slate-200 rounded-xl text-xs p-3 focus:border-secondary focus:ring-0 resize-none bg-white" placeholder="Add additional cash tracking notes here..."></textarea>
+                        </div>
+
+                    </div>
+
+                    <!-- Right numeric keypad (5 columns) -->
+                    <div class="col-span-12 lg:col-span-5 flex flex-col justify-between">
+                        <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 grid grid-cols-3 gap-2 h-full">
+                            <button onclick="pressNumKey('1')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">1</button>
+                            <button onclick="pressNumKey('2')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">2</button>
+                            <button onclick="pressNumKey('3')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">3</button>
+                            
+                            <button onclick="pressNumKey('4')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">4</button>
+                            <button onclick="pressNumKey('5')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">5</button>
+                            <button onclick="pressNumKey('6')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">6</button>
+                            
+                            <button onclick="pressNumKey('7')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">7</button>
+                            <button onclick="pressNumKey('8')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">8</button>
+                            <button onclick="pressNumKey('9')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">9</button>
+                            
+                            <button onclick="pressNumKey('C')" class="h-12 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-xs font-bold text-danger flex items-center justify-center active:scale-95 duration-100">Clear</button>
+                            <button onclick="pressNumKey('0')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">0</button>
+                            <button onclick="pressNumKey('00')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-primary flex items-center justify-center active:scale-95 duration-100">00</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Ledger Table at bottom of viewport -->
+                <div class="pt-6 border-t border-slate-100">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-text-secondary mb-3 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px] text-primary">history</span>
+                        Cash Movement History Ledger
+                    </h3>
+                    <div class="border border-border-subtle rounded-xl overflow-hidden shadow-sm">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-border-subtle text-[10px] font-bold text-text-secondary uppercase">
+                                    <th class="p-3">Reference/ID</th>
+                                    <th class="p-3">Time</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Reason / Details</th>
+                                    <th class="p-3 text-right">Amount</th>
+                                    <th class="p-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border-subtle" id="ledger-rows">
+                                <!-- Dynamically loaded cash events will print here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="p-4 border-t border-border-subtle flex gap-4 bg-slate-50 shrink-0">
+                <button onclick="window.location.href='main_checkout.html'" class="px-5 py-3 border border-slate-200 text-text-secondary font-bold text-xs rounded-xl hover:bg-white transition-all active:scale-95 flex items-center justify-center gap-1 bg-white">
+                    <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                    Back to POS
                 </button>
-<button class="flex-1 py-4 bg-secondary text-on-secondary font-headline-md text-headline-md rounded-lg shadow-lg shadow-secondary/20 hover:brightness-110 transition-all flex items-center justify-center gap-2 active:scale-[0.99]">
-<span class="material-symbols-outlined">print</span>
-                    Submit Safe Drop &amp; Print Receipt
+                <button id="submit-btn" onclick="submitCashAction()" class="flex-1 py-3 bg-secondary text-white font-bold text-sm rounded-xl shadow-lg shadow-secondary/15 hover:brightness-110 transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
+                    <span class="material-symbols-outlined text-[18px]">print</span>
+                    <span id="submit-btn-text">Submit Safe Drop & Print Receipt</span>
                 </button>
-</div>
-</section>
+            </div>
+        </section>
+    </div>
 </main>
-<!-- Interactive micro-interactions -->
+
+<!-- Thermal Receipt Modal Overlay (Hidden by Default) -->
+<div id="receipt-modal" class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-sm transform scale-95 opacity-0 transition-all duration-300 flex flex-col items-center">
+        
+        <!-- Printed Slip -->
+        <div class="w-full receipt-paper p-6 flex flex-col select-text">
+            <div class="text-center space-y-1 mb-4">
+                <h3 class="text-sm font-extrabold tracking-wider uppercase font-mono" id="rec-header">CASH DRAWER RECEIPT</h3>
+                <p class="text-[11px] font-mono">Tariq Road Branch, Karachi</p>
+                <p class="text-[11px] font-mono">Tel: +92 21 111 468 429</p>
+                <p class="text-[10px] font-mono border-t border-dashed border-black pt-1 mt-1">OPERATIONAL RECORDS ONLY</p>
+            </div>
+            
+            <div class="border-t border-b border-dashed border-black py-2.5 text-[11px] space-y-1 font-mono mb-4">
+                <div class="flex justify-between">
+                    <span>Reference ID:</span>
+                    <span id="rec-id" class="font-bold">DRP-48293-19</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Date/Time:</span>
+                    <span id="rec-datetime">2026-05-22 14:40</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Type:</span>
+                    <span id="rec-type" class="font-bold">SAFE DROP</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Operator:</span>
+                    <span id="rec-operator">Adeel</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Manager Auth:</span>
+                    <span>VERIFIED (1234)</span>
+                </div>
+            </div>
+
+            <!-- Receipt Breakdown -->
+            <div class="text-[11.5px] font-mono space-y-2 mb-4">
+                <div class="flex justify-between">
+                    <span>Action Amount:</span>
+                    <span id="rec-amount" class="font-bold text-sm">PKR 15,000</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Reason:</span>
+                    <span id="rec-reason" class="text-right">Safe Drop to Main Vault</span>
+                </div>
+                <div class="flex justify-between border-t border-black pt-2">
+                    <span>New Drawer Balance:</span>
+                    <span id="rec-drawer-balance" class="font-bold">PKR 8,500</span>
+                </div>
+            </div>
+
+            <div class="border-t border-dashed border-black pt-3 pb-1 text-center text-[10px] font-mono">
+                <p class="font-bold" id="rec-footer-text">SECURE DRAWER TRANSACTION SLIP</p>
+                <p class="text-[8px] text-gray-500 mt-1">Antigravity Audit Engine</p>
+            </div>
+        </div>
+
+        <!-- Start New Transaction CTA -->
+        <button onclick="closeReceiptModal()" class="mt-6 w-full py-3 bg-secondary hover:bg-secondary/90 text-white rounded-xl font-bold text-xs shadow-xl flex items-center justify-center gap-2 active:scale-95 duration-150">
+            <span class="material-symbols-outlined text-[16px]">check_circle</span>
+            Close and Return
+        </button>
+    </div>
+</div>
+
+<!-- Active Global Toast Notification Wrapper -->
+<div id="toast-wrapper" class="fixed bottom-6 right-6 z-50 flex flex-col pointer-events-none"></div>
+
 <script>
-        document.querySelectorAll('button, a').forEach(elem => {
-            elem.addEventListener('click', function(e) {
-                const ripple = document.createElement('div');
-                ripple.classList.add('ripple');
-                this.appendChild(ripple);
-                setTimeout(() => ripple.remove(), 600);
+    // State management
+    let activeTab = 'drop'; // drop or inject
+    let amountStr = '0';
+    
+    // Toast helper
+    function showToast(message, type = 'success') {
+        const wrapper = document.getElementById('toast-wrapper');
+        const toast = document.createElement('div');
+        toast.className = `p-4 mb-2 rounded-xl text-white shadow-xl flex items-center gap-3 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto max-w-sm ${
+            type === 'success' ? 'bg-secondary' : type === 'error' ? 'bg-danger' : 'bg-amber-500'
+        }`;
+        
+        const icon = type === 'success' ? 'check_circle' : type === 'error' ? 'cancel' : 'warning';
+        
+        toast.innerHTML = `
+            <span class="material-symbols-outlined">${icon}</span>
+            <span class="text-xs font-semibold">${message}</span>
+        `;
+        
+        wrapper.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.remove('translate-y-2', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+        }, 10);
+        
+        setTimeout(() => {
+            toast.classList.remove('translate-y-0', 'opacity-100');
+            toast.classList.add('translate-y-2', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function showHelpToast(msg) {
+        showToast(msg, 'info');
+    }
+
+    function fmt(val) {
+        return 'PKR ' + new Intl.NumberFormat('en-PK').format(val);
+    }
+
+    function syncParentSidebar(stepIndex) {
+        if (window.parent && typeof window.parent.document !== 'undefined') {
+            const doc = window.parent.document;
+            const stepEl = doc.getElementById('step-' + stepIndex);
+            if (stepEl) {
+                doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+                stepEl.classList.add('flow-step-active');
+            }
+            const urlDisplay = doc.getElementById('simulator-url-display');
+            if (urlDisplay) {
+                const filename = window.location.pathname.split('/').pop();
+                urlDisplay.innerText = 'screens/' + filename;
+            }
+            const openNewTabBtn = doc.getElementById('open-new-tab-btn');
+            if (openNewTabBtn) {
+                const filename = window.location.pathname.split('/').pop();
+                openNewTabBtn.href = 'screens/' + filename;
+            }
+        }
+    }
+
+    // Load metrics and refresh the view
+    function updateMetrics() {
+        // 1. Opening Float
+        const openingFloat = parseFloat(sessionStorage.getItem('pos_shift_float')) || 5000;
+        document.getElementById('float-card-val').textContent = fmt(openingFloat);
+
+        // 2. Net Cash Sales
+        const completedTransactions = JSON.parse(sessionStorage.getItem('pos_completed_transactions') || '[]');
+        const cashSales = completedTransactions
+            .filter(t => t.tender === 'Cash')
+            .reduce((sum, t) => sum + t.total, 0);
+        document.getElementById('cash-sales-card-val').textContent = fmt(cashSales);
+
+        // 3. Safe Drops Made
+        const safeDrops = JSON.parse(sessionStorage.getItem('pos_safe_drops') || '[]');
+        const safeDropsTotal = safeDrops
+            .filter(d => d.type === 'withdraw')
+            .reduce((sum, d) => sum + d.amount, 0);
+        
+        // Add potential cash influxes
+        const floatAdditionsTotal = safeDrops
+            .filter(d => d.type === 'deposit')
+            .reduce((sum, d) => sum + d.amount, 0);
+
+        document.getElementById('safe-drops-card-val').textContent = fmt(safeDropsTotal);
+
+        // 4. Current Balance
+        const currentBalance = openingFloat + cashSales - safeDropsTotal + floatAdditionsTotal;
+        document.getElementById('drawer-bal-card-val').textContent = fmt(currentBalance);
+
+        // Warning banner dynamic toggling
+        const banner = document.getElementById('drawer-warning-banner');
+        const icon = document.getElementById('warning-banner-icon');
+        const title = document.getElementById('warning-banner-title');
+        const desc = document.getElementById('warning-banner-desc');
+
+        if (currentBalance > 20000) {
+            banner.className = "bg-error-container border border-danger/20 p-4 rounded-xl flex items-start gap-3 transition-all duration-300 animate-pulse";
+            icon.textContent = "warning";
+            icon.className = "material-symbols-outlined text-danger text-[28px] shrink-0";
+            title.textContent = "Safe Drop Required!";
+            title.className = "text-sm font-bold text-red-800";
+            desc.textContent = "Current cash exceeds PKR 20,000 threshold. Please perform a safe drop immediately to minimize counter risk.";
+            desc.className = "text-xs text-red-700 mt-0.5 font-medium leading-relaxed";
+        } else {
+            banner.className = "bg-emerald-50 border border-secondary/20 p-4 rounded-xl flex items-start gap-3 transition-all duration-300";
+            icon.textContent = "check_circle";
+            icon.className = "material-symbols-outlined text-secondary text-[28px] shrink-0";
+            title.textContent = "Drawer Balance Secured";
+            title.className = "text-sm font-bold text-emerald-800";
+            desc.textContent = `Drawer cash level is ${fmt(currentBalance)}, well within the safe operational limit (under PKR 20,000).`;
+            desc.className = "text-xs text-emerald-700 mt-0.5 font-medium leading-relaxed";
+        }
+
+        // Render Ledger logs
+        renderLedgerTable(openingFloat, completedTransactions, safeDrops);
+    }
+
+    function renderLedgerTable(floatVal, transactions, drops) {
+        const tbody = document.getElementById('ledger-rows');
+        tbody.innerHTML = '';
+
+        // Collect all items with a normalized timestamp
+        const ledgerEvents = [];
+
+        // 1. Initial Float
+        ledgerEvents.push({
+            id: 'INIT-SHIFT',
+            timeStr: 'Shift Start',
+            type: 'Float Initial',
+            desc: 'Declared Terminal Opening Cash',
+            amount: floatVal,
+            sign: '+',
+            status: 'Verified',
+            color: 'text-primary'
+        });
+
+        // 2. Completed cash transactions
+        transactions.forEach(t => {
+            if (t.tender === 'Cash') {
+                ledgerEvents.push({
+                    id: t.id,
+                    timeStr: t.timestamp || 'Active',
+                    type: 'Cash Sale',
+                    desc: `Cart Order Checkout (${t.items.length} items)`,
+                    amount: t.total,
+                    sign: '+',
+                    status: 'Settled',
+                    color: 'text-secondary font-semibold'
+                });
+            }
+        });
+
+        // 3. Safe drops
+        drops.forEach(d => {
+            const isWithdraw = d.type === 'withdraw';
+            ledgerEvents.push({
+                id: d.id,
+                timeStr: d.time || 'Completed',
+                type: isWithdraw ? 'Safe Drop' : 'Float Add',
+                desc: d.remarks || d.reason,
+                amount: d.amount,
+                sign: isWithdraw ? '-' : '+',
+                status: 'Authorized',
+                color: isWithdraw ? 'text-danger font-semibold' : 'text-accent font-semibold'
             });
         });
-    </script>
-<style>
-        .ripple {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            transform: scale(0);
-            animation: ripple-effect 0.6s linear;
-            pointer-events: none;
+
+        if (ledgerEvents.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="p-6 text-center text-text-secondary font-medium">No drawer operations logged in this shift.</td>
+                </tr>
+            `;
+            return;
         }
-        @keyframes ripple-effect {
-            to { transform: scale(15); opacity: 0; }
+
+        // Display rows (newest on top, keeping Initial Float pinned or chronological)
+        // Let's sort them so INIT-SHIFT is first, then rest sorted chronologically/reverse order
+        const list = [ledgerEvents[0], ...ledgerEvents.slice(1).reverse()];
+
+        list.forEach(ev => {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-50 transition-colors";
+            
+            let statusBadge = '';
+            if (ev.status === 'Verified' || ev.status === 'Settled') {
+                statusBadge = `<span class="bg-emerald-50 text-secondary border border-secondary/20 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">${ev.status}</span>`;
+            } else {
+                statusBadge = `<span class="bg-slate-100 text-primary border border-slate-200 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">${ev.status}</span>`;
+            }
+
+            tr.innerHTML = `
+                <td class="p-3 font-mono font-bold text-primary">${ev.id}</td>
+                <td class="p-3 text-text-secondary">${ev.timeStr}</td>
+                <td class="p-3 font-bold text-primary">${ev.type}</td>
+                <td class="p-3 text-text-secondary truncate max-w-[200px]">${ev.desc}</td>
+                <td class="p-3 text-right font-mono ${ev.color}">${ev.sign}${fmt(ev.amount)}</td>
+                <td class="p-3">${statusBadge}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Switch Form tabs
+    function switchTab(tab) {
+        activeTab = tab;
+        const dropBtn = document.getElementById('tab-drop');
+        const injectBtn = document.getElementById('tab-inject');
+
+        const title = document.getElementById('form-title');
+        const desc = document.getElementById('form-desc');
+        const amtLabel = document.getElementById('amt-label');
+        const submitBtnText = document.getElementById('submit-btn-text');
+
+        // Presets container rebuild
+        const presetContainer = document.getElementById('preset-container');
+
+        if (tab === 'drop') {
+            dropBtn.className = "flex-1 py-4 font-bold text-sm text-center border-b-2 transition-all tab-active flex items-center justify-center gap-2";
+            injectBtn.className = "flex-1 py-4 font-bold text-sm text-center border-b-2 border-transparent text-text-secondary hover:bg-slate-100 transition-all flex items-center justify-center gap-2";
+            
+            title.textContent = "Perform Cash Drawer Withdrawal";
+            desc.textContent = "Safely drop excess on-counter cash into the secure primary store vault.";
+            amtLabel.textContent = "Amount to Remove";
+            submitBtnText.textContent = "Submit Safe Drop & Print Receipt";
+
+            presetContainer.innerHTML = `
+                <button onclick="setAmount(5000)" class="flex-1 py-2.5 border border-border-subtle rounded-xl text-xs font-bold hover:bg-slate-50 transition-all text-primary active:scale-95 duration-100 bg-white">PKR 5,000</button>
+                <button onclick="setAmount(10000)" class="flex-1 py-2.5 border border-border-subtle rounded-xl text-xs font-bold hover:bg-slate-50 transition-all text-primary active:scale-95 duration-100 bg-white">PKR 10,000</button>
+                <button onclick="setAmount(15000)" class="flex-1 py-2.5 border border-border-subtle rounded-xl text-xs font-bold hover:bg-slate-50 transition-all text-primary active:scale-95 duration-100 bg-white">PKR 15,000</button>
+            `;
+
+            // Reason select dropdown rebuild
+            const reasonSelect = document.getElementById('cash-reason');
+            reasonSelect.innerHTML = `
+                <option value="Vault Drop" selected>Safe Drop to Main Vault</option>
+                <option value="Shift Change">Shift Change Withdrawal</option>
+                <option value="Mid-Day Clear">Mid-Day Clearing</option>
+                <option value="Emergency Drop">Emergency Safe Drop</option>
+            `;
+        } else {
+            dropBtn.className = "flex-1 py-4 font-bold text-sm text-center border-b-2 border-transparent text-text-secondary hover:bg-slate-100 transition-all flex items-center justify-center gap-2";
+            injectBtn.className = "flex-1 py-4 font-bold text-sm text-center border-b-2 transition-all tab-active flex items-center justify-center gap-2";
+
+            title.textContent = "Declare Float / Cash Injection";
+            desc.textContent = "Inject change float, coin packages, or supplementary cash float to the counter.";
+            amtLabel.textContent = "Amount to Deposit";
+            submitBtnText.textContent = "Submit Cash Injection & Print Receipt";
+
+            presetContainer.innerHTML = `
+                <button onclick="setAmount(2000)" class="flex-1 py-2.5 border border-border-subtle rounded-xl text-xs font-bold hover:bg-slate-50 transition-all text-primary active:scale-95 duration-100 bg-white">PKR 2,000</button>
+                <button onclick="setAmount(5000)" class="flex-1 py-2.5 border border-border-subtle rounded-xl text-xs font-bold hover:bg-slate-50 transition-all text-primary active:scale-95 duration-100 bg-white">PKR 5,000</button>
+                <button onclick="setAmount(10000)" class="flex-1 py-2.5 border border-border-subtle rounded-xl text-xs font-bold hover:bg-slate-50 transition-all text-primary active:scale-95 duration-100 bg-white">PKR 10,000</button>
+            `;
+
+            const reasonSelect = document.getElementById('cash-reason');
+            reasonSelect.innerHTML = `
+                <option value="Float Top-up" selected>Float change injection</option>
+                <option value="Petty Cash In">Petty Cash Inbound</option>
+                <option value="Refill Coins">Coin replenishment</option>
+            `;
         }
-    </style>
-</body></html>
+
+        clearAmount();
+    }
+
+    let focusedInputId = 'cash-amount';
+
+    function updateFocusHighlight() {
+        const cashAmountInput = document.getElementById('cash-amount');
+        const managerPinInput = document.getElementById('manager-pin');
+        if (!cashAmountInput || !managerPinInput) return;
+        
+        if (focusedInputId === 'manager-pin') {
+            managerPinInput.classList.add('border-secondary', 'ring-2', 'ring-secondary/20');
+            managerPinInput.classList.remove('border-slate-200');
+            
+            cashAmountInput.classList.remove('border-secondary', 'ring-2', 'ring-secondary/20');
+            cashAmountInput.classList.add('border-slate-200');
+        } else {
+            cashAmountInput.classList.add('border-secondary', 'ring-2', 'ring-secondary/20');
+            cashAmountInput.classList.remove('border-slate-200');
+            
+            managerPinInput.classList.remove('border-secondary', 'ring-2', 'ring-secondary/20');
+            managerPinInput.classList.add('border-slate-200');
+        }
+    }
+
+    // Touch screen key press
+    function pressNumKey(key) {
+        if (focusedInputId === 'manager-pin') {
+            const pinInput = document.getElementById('manager-pin');
+            if (key === 'C') {
+                pinInput.value = '';
+                return;
+            }
+            if (pinInput.value.length < 4) {
+                pinInput.value += key;
+            }
+        } else {
+            if (key === 'C') {
+                clearAmount();
+                return;
+            }
+
+            if (amountStr === '0') {
+                amountStr = '';
+            }
+
+            if (amountStr.length < 9) {
+                amountStr += key;
+                const parsed = parseFloat(amountStr) || 0;
+                document.getElementById('cash-amount').value = new Intl.NumberFormat('en-PK').format(parsed);
+            }
+        }
+    }
+
+    function clearAmount() {
+        amountStr = '0';
+        document.getElementById('cash-amount').value = '0';
+    }
+
+    function setAmount(val) {
+        amountStr = String(val);
+        document.getElementById('cash-amount').value = new Intl.NumberFormat('en-PK').format(val);
+        focusedInputId = 'cash-amount';
+        updateFocusHighlight();
+    }
+
+    // Execute Cash drop or Cash injection
+    function submitCashAction() {
+        const val = parseFloat(amountStr) || 0;
+        if (val <= 0) {
+            showToast('Please enter a valid cash amount', 'error');
+            return;
+        }
+
+        // Check if drawer has enough cash for drop
+        const openingFloat = parseFloat(sessionStorage.getItem('pos_shift_float')) || 5000;
+        const completedTransactions = JSON.parse(sessionStorage.getItem('pos_completed_transactions') || '[]');
+        const cashSales = completedTransactions
+            .filter(t => t.tender === 'Cash')
+            .reduce((sum, t) => sum + t.total, 0);
+        const safeDrops = JSON.parse(sessionStorage.getItem('pos_safe_drops') || '[]');
+        const safeDropsTotal = safeDrops
+            .filter(d => d.type === 'withdraw')
+            .reduce((sum, d) => sum + d.amount, 0);
+        const floatAdditionsTotal = safeDrops
+            .filter(d => d.type === 'deposit')
+            .reduce((sum, d) => sum + d.amount, 0);
+
+        const currentBalance = openingFloat + cashSales - safeDropsTotal + floatAdditionsTotal;
+
+        if (activeTab === 'drop' && val > currentBalance) {
+            showToast(`Amount exceeds current drawer balance (${fmt(currentBalance)})!`, 'error');
+            return;
+        }
+
+        // Validate manager pin
+        const pin = document.getElementById('manager-pin').value;
+        if (pin !== '1234') {
+            showToast('Invalid Manager Verification PIN!', 'error');
+            return;
+        }
+
+        // Pushing recorded action to sessionStorage
+        const isWithdraw = activeTab === 'drop';
+        const actionRef = (isWithdraw ? 'DRP-' : 'INJ-') + Math.floor(100000 + Math.random() * 900000);
+        
+        const newEvent = {
+            id: actionRef,
+            type: isWithdraw ? 'withdraw' : 'deposit',
+            amount: val,
+            reason: document.getElementById('cash-reason').value,
+            time: new Date().toLocaleTimeString('en-US', {hour12: false}).slice(0,5),
+            remarks: document.getElementById('cash-remarks').value || (isWithdraw ? 'Drawer Cash withdrawal' : 'Supplementary float addition')
+        };
+
+        safeDrops.push(newEvent);
+        sessionStorage.setItem('pos_safe_drops', JSON.stringify(safeDrops));
+
+        // Clear values
+        document.getElementById('manager-pin').value = '';
+        document.getElementById('cash-remarks').value = '';
+        clearAmount();
+
+        // Recalculate
+        updateMetrics();
+
+        // Print thermal receipt for transaction
+        populateReceipt(newEvent, currentBalance + (isWithdraw ? -val : val));
+    }
+
+    // Modal thermal receipts
+    function populateReceipt(ev, newBal) {
+        const isWithdraw = ev.type === 'withdraw';
+        document.getElementById('rec-header').textContent = isWithdraw ? 'CASH DRAWER WITHDRAWAL' : 'CASH DRAWER INJECTION';
+        document.getElementById('rec-id').textContent = ev.id;
+        
+        const now = new Date().toISOString().replace('T', ' ').slice(0, 16);
+        document.getElementById('rec-datetime').textContent = now;
+        
+        document.getElementById('rec-type').textContent = isWithdraw ? 'SAFE DROP / WITHDRAW' : 'FLOAT ADD / DEPOSIT';
+        document.getElementById('rec-operator').textContent = localStorage.getItem('terminal_operator') || 'Adeel';
+        document.getElementById('rec-amount').textContent = fmt(ev.amount);
+        document.getElementById('rec-reason').textContent = ev.reason;
+        document.getElementById('rec-drawer-balance').textContent = fmt(newBal);
+        
+        document.getElementById('rec-footer-text').textContent = isWithdraw ? 'SECURE DRAWER SAFE DROP VERIFIED' : 'SECURE FLOAT DEPOSIT RECONCILED';
+
+        // Modal triggers
+        const modal = document.getElementById('receipt-modal');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.querySelector('div').classList.remove('scale-95', 'opacity-0');
+            modal.querySelector('div').classList.add('scale-100', 'opacity-100');
+        }, 10);
+
+        showToast(isWithdraw ? 'Safe drop logged successfully!' : 'Float addition completed!', 'success');
+    }
+
+    function closeReceiptModal() {
+        const modal = document.getElementById('receipt-modal');
+        modal.querySelector('div').classList.remove('scale-100', 'opacity-100');
+        modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+    }
+
+    // Window on loads
+    window.addEventListener('DOMContentLoaded', () => {
+        syncParentSidebar(5);
+
+        // Fetch Cashier and dates
+        const operatorName = localStorage.getItem('terminal_operator') || 'Adeel';
+        document.getElementById('operator-name').textContent = operatorName;
+        document.getElementById('operator-initials').textContent = operatorName.split(' ').map(n=>n[0]).join('').toUpperCase();
+        document.getElementById('current-date-display').textContent = new Date().toISOString().split('T')[0];
+
+        // Focus & keypad routing listeners
+        const cashAmountInput = document.getElementById('cash-amount');
+        const managerPinInput = document.getElementById('manager-pin');
+
+        if (cashAmountInput && managerPinInput) {
+            cashAmountInput.addEventListener('focus', () => { focusedInputId = 'cash-amount'; updateFocusHighlight(); });
+            cashAmountInput.addEventListener('click', () => { focusedInputId = 'cash-amount'; updateFocusHighlight(); });
+            managerPinInput.addEventListener('focus', () => { focusedInputId = 'manager-pin'; updateFocusHighlight(); });
+            managerPinInput.addEventListener('click', () => { focusedInputId = 'manager-pin'; updateFocusHighlight(); });
+        }
+
+        // Initialize focus highlight
+        updateFocusHighlight();
+
+        // Trigger updates
+        updateMetrics();
+    });
+
+    function doLogout() {
+        sessionStorage.clear();
+        localStorage.removeItem('terminal_operator');
+        window.location.href = 'terminal_login.html';
+    }
+</script>
+</body>
+</html>

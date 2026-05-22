@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Terminal Provisioning - R Technologies POS</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "brand-navy": "#0F3A7D", // Deep Navy
+                        "brand-navy-800": "#0A2859", // Darker Navy
+                        "brand-slate": "#4A5568", // Gray text
+                        "brand-gray": "#7F8C8D", // Light Gray text
+                        "emerald-neon": "#0A7A2B", // Enterprise Green
+                        "fluent-blue": "#0F3A7D", // Primary actions
+                        "fluent-error": "#E11D48", // Error red
+                        "fluent-success": "#0A7A2B" // Success green
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F4F6F8;
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+        }
+
+        .cyber-grid {
+            background-size: 24px 24px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+        }
+
+        .state-transition {
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Tactile button active feedback */
+        .btn-touch {
+            transition: all 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .btn-touch:active {
+            transform: scale(0.95);
+        }
+
+        .fade-enter {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.99) translateY(4px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Console log auto scroll styling */
+        .log-console::-webkit-scrollbar {
+            width: 4px;
+        }
+        .log-console::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        .log-console::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 md:p-6 overflow-x-hidden">
+    
+    <!-- Main Card Container -->
+    <div class="w-full max-w-4xl bg-white rounded-[24px] shadow-[0_10px_40px_rgba(0,0,0,0.08)] border border-[#E1E4E8] overflow-hidden flex flex-col md:flex-row h-auto md:h-[600px] relative fade-enter select-none">
+        
+        <!-- Left Side: Diagnostics and Setup Status -->
+        <div class="w-full md:w-[40%] bg-brand-navy p-8 md:p-10 flex flex-col justify-between text-white relative overflow-hidden h-[200px] md:h-full border-r border-brand-navy-800">
+            <!-- Background Grid -->
+            <div class="absolute inset-0 cyber-grid opacity-50"></div>
+            <!-- Ambient Radial Glow -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-emerald-neon/10 blur-[80px]"></div>
+            
+            <!-- Header -->
+            <div class="relative z-10 flex items-center justify-between">
+                <span class="font-display text-[9px] font-bold tracking-widest text-slate-500 uppercase">PROVISIONING WIZARD</span>
+                <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span class="text-[8px] font-display font-bold tracking-wider text-amber-500 uppercase" id="provisioning-badge">UNCONFIGURED</span>
+                </div>
+            </div>
+
+            <!-- Branding (Centered) -->
+            <div class="relative z-10 flex flex-col items-center my-auto">
+                <div class="bg-white px-5 py-4 rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.3)] border border-white/5 flex flex-col items-center justify-center w-52 h-20 mb-3">
+                    <img src="logo.png" alt="IMAGYN POS" style="max-height:28px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                    <div style="display:none;flex-direction:column;align-items:center;">
+                        <span class="text-brand-navy font-bold text-xl tracking-tight">IMAGYN</span>
+                        <span class="text-emerald-neon font-display font-extrabold text-xs tracking-widest">P O S</span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-400 font-medium tracking-wide">Initial Terminal Configuration</p>
+            </div>
+
+            <!-- Telemetry Logs Summary -->
+            <div class="relative z-10 bg-black/10 backdrop-blur-sm border border-white/10 rounded-xl p-3.5 space-y-2 text-[10px] text-white/70">
+                <div class="flex justify-between items-center">
+                    <span class="text-white/60">API Connection</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-neon"></span>
+                        <span class="font-medium text-white/90">Active</span>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-white/60">Device Hardware</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-neon"></span>
+                        <span class="font-medium text-white/90">Authenticated</span>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-white/60">Local Cache DB</span>
+                    <span class="font-mono text-amber-500" id="db-status-label">SQLite Inactive</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Input Form & Progress Logging -->
+        <div class="w-full md:w-[60%] p-8 md:p-10 flex flex-col justify-between bg-white h-auto md:h-full relative overflow-hidden">
+            
+            <!-- Setup Form Panel -->
+            <div id="setup-form-panel" class="my-auto w-full state-transition block">
+                <div class="mb-6 text-center md:text-left">
+                    <h2 class="font-display text-2xl font-extrabold text-brand-navy tracking-tight">Register Terminal</h2>
+                    <p class="text-xs text-brand-gray mt-1">Configure this register's location and terminal code.</p>
+                </div>
+
+                <div class="space-y-4 max-w-md mx-auto py-2">
+                    <!-- Store ID Selection -->
+                    <div>
+                        <label for="store-id" class="block text-xs font-semibold text-brand-navy mb-1.5">Store / Location ID</label>
+                        <div class="relative">
+                            <select id="store-id" class="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 text-brand-navy font-medium text-sm focus:border-fluent-blue focus:ring-fluent-blue transition-all outline-none">
+                                <option value="IMTIAZ-01">Imtiaz Super Market - Main Branch</option>
+                                <option value="BAHADURABAD-02">Bahadurabad Outlet - Karachi</option>
+                                <option value="CLIFTON-05">Clifton Flagship Store - Karachi</option>
+                                <option value="DHA-PHASE6">DHA Phase 6 - Express Store</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Code Input -->
+                    <div>
+                        <label for="terminal-code" class="block text-xs font-semibold text-brand-navy mb-1.5">Terminal / Register Code</label>
+                        <div class="relative">
+                            <input type="text" id="terminal-code" value="POS-01" class="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 text-brand-navy font-semibold text-sm focus:border-fluent-blue focus:ring-fluent-blue transition-all outline-none" placeholder="e.g. POS-01">
+                        </div>
+                    </div>
+
+                    <!-- Sync options checkbox -->
+                    <div class="flex items-center gap-2.5 pt-2">
+                        <input type="checkbox" id="sync-catalog" checked class="w-4 h-4 rounded text-fluent-blue border-slate-200 focus:ring-fluent-blue">
+                        <label for="sync-catalog" class="text-xs font-semibold text-brand-slate cursor-pointer">Synchronize Full Catalog & Prices immediately</label>
+                    </div>
+
+                    <!-- Action Button (Min height 52px for touch compatibility) -->
+                    <button type="button" onclick="startProvisioning()" class="btn-touch w-full h-[52px] mt-4 rounded-2xl bg-brand-navy hover:bg-slate-800 text-white font-display font-bold text-sm tracking-wide shadow-md flex items-center justify-center gap-2 transition-all">
+                        <span class="material-symbols-outlined text-[20px]">sync</span>
+                        Provision Terminal
+                    </button>
+                </div>
+            </div>
+
+            <!-- Provisioning Progress Panel (Hidden initially) -->
+            <div id="setup-progress-panel" class="my-auto w-full state-transition hidden">
+                <div class="mb-5 text-center">
+                    <h3 class="font-display text-xl font-extrabold text-brand-navy tracking-tight">Syncing Terminal Database</h3>
+                    <p class="text-xs text-brand-gray mt-1">Downloading inventory catalog and schemas locally...</p>
+                </div>
+
+                <!-- Circular/Horizontal Loader & Percentage -->
+                <div class="max-w-md mx-auto mb-4 bg-slate-55 p-3 rounded-2xl border border-slate-100">
+                    <div class="flex justify-between items-center text-xs font-bold text-brand-navy mb-2">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-neon animate-ping"></span>
+                            Downloading Catalog (1,250 items)
+                        </span>
+                        <span id="sync-percentage" class="font-mono text-emerald-neon text-sm">0%</span>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                        <div id="sync-progress-bar" class="h-full bg-emerald-neon rounded-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+
+                <!-- Scrolling Console log window -->
+                <div id="log-console" class="log-console w-full h-44 bg-brand-navy rounded-2xl p-4 font-mono text-[10px] text-emerald-neon overflow-y-auto space-y-1.5 shadow-inner">
+                    <!-- Logs will populate dynamically -->
+                </div>
+            </div>
+
+            <!-- Persistent Footer -->
+            <div class="mt-6 pt-5 border-t border-slate-100 max-w-md mx-auto w-full flex items-center justify-between text-[9px] text-brand-gray font-semibold">
+                <span class="font-display tracking-wider text-brand-slate uppercase" id="footer-terminal-label">UNREGISTERED TERMINAL</span>
+                <span class="text-slate-350">|</span>
+                <span>R TECHNOLOGIES POS • V1.0</span>
+            </div>
+            
+        </div>
+        
+    </div>
+
+    <!-- Demo Shortcut Overlay -->
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white/80 backdrop-blur-md border border-slate-200/80 shadow-[0_8px_32px_rgba(0,0,0,0.15)] rounded-full px-4 py-2 flex items-center gap-1.5 max-w-[95vw] md:max-w-none overflow-x-auto whitespace-nowrap">
+        <span class="font-display text-[9px] font-bold tracking-widest text-slate-500 uppercase mr-2 border-r border-slate-200 pr-2">Quick Shortcuts</span>
+        <button onclick="quickProvision()" class="px-3 py-1 rounded-full text-[10px] font-bold transition-all bg-emerald-50 hover:bg-emerald-100 text-fluent-success">Instant Provision</button>
+    </div>
+
+    <script>
+        const logs = [
+            { text: "Initializing socket connection to central API at https://api.rtechnologies.com/v1...", delay: 200, pct: 5 },
+            { text: "Connection successfully established with central endpoint. Latency 14ms.", delay: 400, pct: 10 },
+            { text: "Device token authentication verified: Active registration signature code [DEV-39A-8F].", delay: 600, pct: 15 },
+            { text: "Fetching system metadata schema rules...", delay: 800, pct: 20 },
+            { text: "Creating local SQLite relational cache structure on physical partition...", delay: 1000, pct: 25 },
+            { text: "SQLite tables [catalog, cash_movements, shifts, orders, sync_outbox] created successfully.", delay: 1200, pct: 30 },
+            { text: "Downloading inventory catalog snapshot...", delay: 1400, pct: 40 },
+            { text: "Catalog Stream: Downloading Category 'Grocery & Staples' (432 items) - OK", delay: 1600, pct: 50 },
+            { text: "Catalog Stream: Downloading Category 'Electronics & Hardware' (120 items) - OK", delay: 1800, pct: 60 },
+            { text: "Catalog Stream: Downloading Category 'Apparel & Clothing' (310 items) - OK", delay: 2000, pct: 70 },
+            { text: "Catalog Stream: Downloading Category 'Pharmacy & Healthcare' (388 items) - OK", delay: 2200, pct: 80 },
+            { text: "Syncing tax regulation rates: Standard 18% GST rules imported.", delay: 2400, pct: 85 },
+            { text: "Optimizing SQLite indexes for barcode query latency optimization...", delay: 2600, pct: 90 },
+            { text: "Setting up local outbox/sync queue sync engine task queue...", delay: 2800, pct: 95 },
+            { text: "Database cache populated successfully. 1,250 catalog entities cached locally.", delay: 3000, pct: 98 },
+            { text: "Provisioning successful. Cache finalized. Redirecting to Terminal Login...", delay: 3200, pct: 100 }
+        ];
+
+        function startProvisioning() {
+            const storeIdVal = document.getElementById('store-id').value;
+            const terminalCodeVal = document.getElementById('terminal-code').value || 'POS-01';
+
+            // Show progress panel, hide form
+            document.getElementById('setup-form-panel').classList.add('hidden');
+            document.getElementById('setup-progress-panel').classList.remove('hidden');
+
+            // Update badge & labels
+            const badge = document.getElementById('provisioning-badge');
+            badge.innerText = "PROVISIONING";
+            badge.className = "text-[8px] font-display font-bold tracking-wider text-amber-500 uppercase px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20";
+            
+            document.getElementById('db-status-label').innerText = "SQLite Syncing...";
+            document.getElementById('db-status-label').className = "font-mono text-amber-500";
+
+            document.getElementById('footer-terminal-label').innerText = `${terminalCodeVal} • ${storeIdVal}`;
+
+            // Save basic config to localStorage
+            const config = {
+                storeId: storeIdVal,
+                terminalId: terminalCodeVal,
+                companyName: 'R Technologies POS',
+                branch: storeIdVal + ' Branch',
+                version: 'V1.0',
+                lastSync: new Date().toISOString()
+            };
+            localStorage.setItem('terminal_config', JSON.stringify(config));
+
+            // Execute log sequence
+            const consoleEl = document.getElementById('log-console');
+            const bar = document.getElementById('sync-progress-bar');
+            const pctEl = document.getElementById('sync-percentage');
+
+            logs.forEach(log => {
+                setTimeout(() => {
+                    // Create element
+                    const logLine = document.createElement('div');
+                    logLine.className = log.text.includes('OK') || log.text.includes('success') || log.text.includes('established') || log.text.includes('verified')
+                        ? 'flex justify-between text-emerald-neon font-semibold' 
+                        : 'text-slate-300';
+                    logLine.innerHTML = `<span>[${new Date().toLocaleTimeString()}] ${log.text}</span>`;
+                    
+                    consoleEl.appendChild(logLine);
+                    consoleEl.scrollTop = consoleEl.scrollHeight;
+
+                    // Update progress UI
+                    bar.style.width = `${log.pct}%`;
+                    pctEl.innerText = `${log.pct}%`;
+
+                    // If last step, complete and redirect
+                    if (log.pct === 100) {
+                        badge.innerText = "PROVISIONED";
+                        badge.className = "text-[8px] font-display font-bold tracking-wider text-emerald-neon uppercase px-2 py-0.5 rounded-full bg-emerald-neon/10 border border-emerald-neon/20";
+                        
+                        const dbLabel = document.getElementById('db-status-label');
+                        dbLabel.innerText = "SQLite Active";
+                        dbLabel.className = "font-mono text-emerald-neon font-bold";
+
+                        setTimeout(() => {
+                            // Coordinate simulator select highlight if parent frame is available
+                            if (window.parent && typeof window.parent.selectScreen === 'function') {
+                                window.parent.selectScreen('screens/terminal_login.html', 2);
+                            } else {
+                                window.location.href = 'terminal_login.html';
+                            }
+                        }, 1000);
+                    }
+                }, log.delay);
+            });
+        }
+
+        function quickProvision() {
+            // Fill inputs if empty and run setup
+            startProvisioning();
+        }
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Imtiaz POS - Interactive UI Prototype Simulator</title>
+    <title>IMAGYN POS — Interactive UI Prototype</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -67,10 +67,10 @@
             </div>
             <div>
                 <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                    Imtiaz POS
-                    <span class="text-xs bg-accent/20 text-accent font-semibold px-2 py-0.5 rounded">UI Prototype Hub</span>
+                    IMAGYN POS
+                    <span class="text-xs bg-accent/20 text-accent font-semibold px-2 py-0.5 rounded">UI Prototype</span>
                 </h1>
-                <p class="text-xs text-gray-400">Desktop Terminal Interactive Flow</p>
+                <p class="text-xs text-gray-400">Enterprise POS · Terminal Interactive Flow</p>
             </div>
         </div>
 
@@ -122,13 +122,27 @@
                 </h3>
                 
                 <div class="space-y-3" id="flow-steps-container">
+                    <!-- Step 0: Provision Terminal -->
+                    <div onclick="selectScreen('screens/provision_terminal.html', 0)" id="step-0" class="flow-step cursor-pointer group p-3 rounded-lg border border-darkBorder bg-black/20 hover:bg-black/40 transition">
+                        <div class="flex items-start gap-3">
+                            <span class="w-6 h-6 rounded-full bg-darkBorder text-gray-400 text-xs flex items-center justify-center font-bold font-mono group-hover:bg-accent group-hover:text-white transition">0</span>
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white">Provision Terminal</h4>
+                                <p class="text-xs text-gray-400 mt-0.5">Register terminal & sync SQLite catalog from server.</p>
+                                <div class="flex gap-2 mt-2">
+                                    <span class="text-[10px] bg-darkBorder text-gray-300 px-1.5 py-0.5 rounded">One-time Setup</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Step 1: Login -->
                     <div onclick="selectScreen('screens/terminal_login.html', 1)" id="step-1" class="flow-step cursor-pointer group p-3 rounded-lg border border-darkBorder bg-black/20 hover:bg-black/40 transition">
                         <div class="flex items-start gap-3">
                             <span class="w-6 h-6 rounded-full bg-darkBorder text-gray-400 text-xs flex items-center justify-center font-bold font-mono group-hover:bg-accent group-hover:text-white transition">1</span>
                             <div>
-                                <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white">Terminal Login</h4>
-                                <p class="text-xs text-gray-400 mt-0.5">Employee PIN login keypad authentication.</p>
+                                <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white">Operator Login</h4>
+                                <p class="text-xs text-gray-400 mt-0.5">Select operator from list, enter PIN to authenticate.</p>
                                 <div class="flex gap-2 mt-2">
                                     <span class="text-[10px] bg-darkBorder text-gray-300 px-1.5 py-0.5 rounded">Security</span>
                                 </div>

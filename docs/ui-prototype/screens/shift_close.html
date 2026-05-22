@@ -1,399 +1,931 @@
 <!DOCTYPE html>
-
-<html class="light" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Enterprise POS - Shift Close</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Shift Close & Reconciliation - Imtiaz POS</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
-                    "colors": {
-                        "outline-variant": "#c6c6cd",
-                        "background": "#f9f9ff",
-                        "on-secondary-fixed-variant": "#005236",
-                        "surface-container": "#e7eeff",
-                        "primary-fixed-dim": "#bec6e0",
-                        "on-tertiary": "#ffffff",
-                        "on-primary": "#ffffff",
-                        "secondary-fixed-dim": "#4edea3",
-                        "error": "#ba1a1a",
-                        "on-secondary-fixed": "#002113",
-                        "on-primary-fixed": "#131b2e",
-                        "on-secondary": "#ffffff",
-                        "secondary-container": "#6cf8bb",
-                        "surface-bright": "#f9f9ff",
-                        "on-primary-container": "#7c839b",
-                        "on-tertiary-fixed-variant": "#653e00",
-                        "surface-container-low": "#f0f3ff",
-                        "tertiary-container": "#2a1700",
-                        "tertiary": "#000000",
-                        "border-subtle": "#E2E8F0",
-                        "primary": "#000000",
-                        "secondary-fixed": "#6ffbbe",
-                        "inverse-surface": "#263143",
+                    colors: {
+                        "primary": "#0F172A",
+                        "secondary": "#10B981",
+                        "accent": "#3B82F6",
+                        "warning": "#F59E0B",
                         "danger": "#EF4444",
-                        "on-surface": "#111c2d",
-                        "on-primary-fixed-variant": "#3f465c",
-                        "surface-dim": "#cfdaf2",
-                        "outline": "#76777d",
-                        "on-tertiary-container": "#b87500",
-                        "on-background": "#111c2d",
-                        "tertiary-fixed-dim": "#ffb95f",
-                        "on-tertiary-fixed": "#2a1700",
-                        "on-error-container": "#93000a",
-                        "inverse-on-surface": "#ecf1ff",
-                        "surface-main": "#FFFFFF",
-                        "primary-fixed": "#dae2fd",
-                        "text-secondary": "#64748B",
-                        "border-input": "#CBD5E1",
+                        "border-subtle": "#E2E8F0",
                         "surface-secondary": "#F8FAFC",
-                        "surface": "#f9f9ff",
-                        "surface-container-high": "#dee8ff",
-                        "on-secondary-container": "#00714d",
-                        "on-error": "#ffffff",
-                        "surface-container-lowest": "#ffffff",
-                        "surface-variant": "#d8e3fb",
-                        "on-surface-variant": "#45464d",
-                        "error-container": "#ffdad6",
-                        "primary-container": "#131b2e",
-                        "surface-tint": "#565e74",
-                        "inverse-primary": "#bec6e0",
-                        "surface-container-highest": "#d8e3fb",
-                        "secondary": "#006c49",
-                        "tertiary-fixed": "#ffddb8"
+                        "surface-main": "#FFFFFF",
+                        "text-secondary": "#64748B",
+                        "emerald-pos": "#10B981",
+                        "on-surface": "#111c2d"
                     },
-                    "borderRadius": {
+                    borderRadius: {
                         "DEFAULT": "0.25rem",
                         "lg": "0.5rem",
                         "xl": "0.75rem",
                         "full": "9999px"
                     },
-                    "spacing": {
+                    spacing: {
                         "touch-target-min": "44px",
-                        "sidebar-width": "240px",
                         "margin": "16px",
                         "gutter": "16px"
                     },
-                    "fontFamily": {
-                        "headline-md": ["Inter"],
-                        "display-numeric": ["Inter"],
-                        "body-lg": ["Inter"],
-                        "body-md": ["Inter"],
-                        "label-sm": ["Inter"],
-                        "label-md": ["Inter"],
-                        "headline-lg": ["Inter"]
-                    },
-                    "fontSize": {
-                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                        "display-numeric": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
-                        "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
-                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+                    fontFamily: {
+                        sans: ["Inter", "sans-serif"]
                     }
                 }
             }
         }
     </script>
-<style>
-        body { font-family: 'Inter', sans-serif; background-color: #f9f9ff; overflow: hidden; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .denomination-input:focus { outline: 2px solid #3f465c; border-color: transparent; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    <style>
+        body { font-family: 'Inter', sans-serif; overflow: hidden; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #E2E8F0;
+            border-radius: 10px;
+        }
+        /* Realistic receipt card */
+        .receipt-paper {
+            font-family: 'Courier New', Courier, monospace;
+            background: #ffffff;
+            color: #000000;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            border-radius: 4px;
+            position: relative;
+        }
+        .receipt-paper::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background-image: linear-gradient(135deg, transparent 4px, #ffffff 4px), linear-gradient(-135deg, transparent 4px, #ffffff 4px);
+            background-size: 8px 8px;
+            background-repeat: repeat-x;
+        }
+        .touch-btn:active {
+            transform: scale(0.96);
+        }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden text-on-surface">
-<!-- SideNavBar -->
-<aside class="flex flex-col h-full w-[240px] py-6 px-4 border-r border-border-subtle bg-primary-container z-50 fixed left-0 top-0">
-<div class="mb-8 px-4">
-<h1 class="text-headline-md font-headline-md font-bold text-on-primary">Enterprise POS</h1>
-</div>
-<nav class="flex-1 flex flex-col gap-2">
-<!-- Checkout -->
-<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
-<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
-<span class="text-label-md font-label-md">Checkout</span>
-</div>
-<!-- Shift (Active) -->
-<div class="flex items-center gap-4 bg-on-primary-fixed-variant text-on-primary rounded-lg px-4 py-3 cursor-pointer scale-95 active:scale-90 duration-150">
-<span class="material-symbols-outlined" data-icon="person_pin_circle">person_pin_circle</span>
-<span class="text-label-md font-label-md">Shift</span>
-</div>
-<!-- Cash Control -->
-<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
-<span class="material-symbols-outlined" data-icon="payments">payments</span>
-<span class="text-label-md font-label-md">Cash Control</span>
-</div>
-<!-- Catalog Management -->
-<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
-<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
-<span class="text-label-md font-label-md">Catalog</span>
-</div>
-<!-- Reports -->
-<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
-<span class="material-symbols-outlined" data-icon="assessment">assessment</span>
-<span class="text-label-md font-label-md">Reports</span>
-</div>
-<!-- Settings -->
-<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
-<span class="material-symbols-outlined" data-icon="settings">settings</span>
-<span class="text-label-md font-label-md">Settings</span>
-</div>
-</nav>
-<div class="mt-auto border-t border-on-primary-fixed-variant/30 pt-4 flex flex-col gap-2">
-<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
-<span class="material-symbols-outlined" data-icon="help">help</span>
-<span class="text-label-md font-label-md">Help</span>
-</div>
-<div class="flex items-center gap-4 text-on-primary-container px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer scale-95 active:scale-90 duration-150 rounded-lg">
-<span class="material-symbols-outlined" data-icon="logout">logout</span>
-<span class="text-label-md font-label-md">Sign Out</span>
-</div>
-</div>
+<body class="bg-[#f9f9ff] text-on-surface h-screen flex overflow-hidden">
+
+<!-- Side Navigation Shell -->
+<aside class="flex flex-col h-full w-[240px] py-6 px-4 border-r border-border-subtle bg-primary z-50 fixed left-0 top-0 text-white shrink-0">
+    <div class="mb-8 px-4 flex items-center gap-2">
+        <span class="material-symbols-outlined text-secondary text-2xl">point_of_sale</span>
+        <span class="text-lg font-bold tracking-tight text-white">Imtiaz Retail</span>
+    </div>
+    <nav class="flex-grow space-y-2">
+        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="main_checkout.html">
+            <span class="material-symbols-outlined">shopping_cart</span>
+            <span class="text-sm font-semibold">Checkout</span>
+        </a>
+        <a class="flex items-center gap-4 text-white bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="shift_close.html">
+            <span class="material-symbols-outlined text-secondary">person_pin_circle</span>
+            <span class="text-sm font-semibold">Shift Control</span>
+        </a>
+        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="cash_control.html">
+            <span class="material-symbols-outlined">payments</span>
+            <span class="text-sm font-semibold">Cash Control</span>
+        </a>
+        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="main_checkout.html">
+            <span class="material-symbols-outlined">inventory_2</span>
+            <span class="text-sm font-semibold">Catalog</span>
+        </a>
+        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="shift_close.html">
+            <span class="material-symbols-outlined">assessment</span>
+            <span class="text-sm font-semibold">Z-Report</span>
+        </a>
+        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" onclick="showToast('Settings are disabled in prototype.', 'info')">
+            <span class="material-symbols-outlined">settings</span>
+            <span class="text-sm font-semibold">Settings</span>
+        </a>
+    </nav>
+    <div class="mt-auto border-t border-gray-700 pt-4 space-y-2">
+        <div class="flex items-center gap-3 px-4 py-2 mb-4">
+            <div class="w-8 h-8 rounded-full bg-secondary text-primary flex items-center justify-center text-xs font-bold" id="operator-initials">AS</div>
+            <div class="overflow-hidden">
+                <p class="text-sm font-semibold truncate text-white" id="operator-name">System Operator</p>
+                <p class="text-xs text-gray-400 truncate">POS-01 · Active Shift</p>
+            </div>
+        </div>
+        <a class="flex items-center gap-4 text-gray-400 hover:text-white px-4 py-2 hover:bg-white/5 transition-all text-xs rounded-lg" onclick="showToast('Verification PIN is 1234', 'info')">
+            <span class="material-symbols-outlined text-[18px]">help</span>
+            <span>Help Guide</span>
+        </a>
+        <a class="flex items-center gap-4 text-danger hover:bg-red-500/10 px-4 py-2 transition-all text-xs rounded-lg cursor-pointer" onclick="doLogout()">
+            <span class="material-symbols-outlined text-[18px]">logout</span>
+            <span>Sign Out</span>
+        </a>
+    </div>
 </aside>
-<!-- Main Content Area -->
-<main class="flex-1 ml-[240px] flex flex-col h-full bg-background">
-<!-- TopNavBar -->
-<header class="flex justify-between items-center h-16 px-gutter w-full sticky top-0 z-50 bg-surface-main border-b border-border-subtle">
-<div class="flex items-center gap-6">
-<div class="flex flex-col">
-<span class="text-label-sm font-label-sm text-text-secondary">Company / Location</span>
-<span class="text-body-md font-body-md font-bold text-primary">Imtiaz - Tariq Road</span>
-</div>
-<div class="h-8 w-[1px] bg-border-subtle"></div>
-<div class="flex flex-col">
-<span class="text-label-sm font-label-sm text-text-secondary">Terminal / Date</span>
-<span class="text-body-md font-body-md font-bold text-primary">POS-01 | 2026-05-19</span>
-</div>
-</div>
-<div class="flex items-center gap-4">
-<div class="flex flex-col items-end mr-4">
-<div class="flex items-center gap-2">
-<div class="w-2 h-2 rounded-full bg-[#10B981]"></div>
-<span class="text-label-md font-label-md text-[#10B981]">Shift Open</span>
-</div>
-<span class="text-body-md font-body-md text-text-secondary">Cashier: Adeel</span>
-</div>
-<div class="flex gap-2">
-<button class="p-2 rounded-full hover:bg-surface-secondary transition-colors material-symbols-outlined text-primary" data-icon="schedule">schedule</button>
-<button class="p-2 rounded-full hover:bg-surface-secondary transition-colors material-symbols-outlined text-primary" data-icon="location_on">location_on</button>
-<button class="p-2 rounded-full hover:bg-surface-secondary transition-colors material-symbols-outlined text-primary" data-icon="terminal">terminal</button>
-<button class="p-2 rounded-full hover:bg-surface-secondary transition-colors material-symbols-outlined text-primary" data-icon="account_circle">account_circle</button>
-</div>
-</div>
-</header>
-<!-- Workspace Split View -->
-<div class="flex flex-1 overflow-hidden">
-<!-- Left Column: Cash Drawer Count (40%) -->
-<section class="w-[40%] border-r border-border-subtle flex flex-col bg-surface-main">
-<div class="p-gutter border-b border-border-subtle">
-<h2 class="text-headline-md font-headline-md text-primary">Cash Drawer Count</h2>
-<p class="text-body-md font-body-md text-text-secondary">Enter the quantity of each denomination</p>
-</div>
-<div class="flex-1 overflow-y-auto p-gutter space-y-3">
-<!-- Denomination Rows -->
-<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
-<div class="flex flex-col">
-<span class="text-label-md font-label-md text-primary">PKR 5,000</span>
-<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
-</div>
-<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="2"/>
-</div>
-<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
-<div class="flex flex-col">
-<span class="text-label-md font-label-md text-primary">PKR 1,000</span>
-<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
-</div>
-<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="4"/>
-</div>
-<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
-<div class="flex flex-col">
-<span class="text-label-md font-label-md text-primary">PKR 500</span>
-<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
-</div>
-<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="0"/>
-</div>
-<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
-<div class="flex flex-col">
-<span class="text-label-md font-label-md text-primary">PKR 100</span>
-<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
-</div>
-<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="2"/>
-</div>
-<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
-<div class="flex flex-col">
-<span class="text-label-md font-label-md text-primary">PKR 50</span>
-<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
-</div>
-<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="1"/>
-</div>
-<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
-<div class="flex flex-col">
-<span class="text-label-md font-label-md text-primary">PKR 20</span>
-<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
-</div>
-<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="0"/>
-</div>
-<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
-<div class="flex flex-col">
-<span class="text-label-md font-label-md text-primary">PKR 10</span>
-<span class="text-label-sm font-label-sm text-text-secondary">Banknote</span>
-</div>
-<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="0"/>
-</div>
-<div class="flex items-center justify-between p-3 border border-border-subtle rounded-lg hover:border-outline transition-colors">
-<div class="flex flex-col">
-<span class="text-label-md font-label-md text-primary">Coins</span>
-<span class="text-label-sm font-label-sm text-text-secondary">Loose Change</span>
-</div>
-<input class="denomination-input w-24 h-touch-target-min text-right border-border-input rounded-lg text-body-md font-display-numeric" placeholder="0" type="number" value="0"/>
-</div>
-</div>
-<div class="p-gutter bg-surface-secondary border-t border-border-subtle">
-<div class="flex justify-between items-center mb-2">
-<span class="text-label-md font-label-md text-text-secondary uppercase tracking-wider">Total Counted Cash</span>
-</div>
-<div class="text-display-numeric font-display-numeric text-primary leading-tight">
-                        PKR 14,250
+
+<!-- Main Content Canvas -->
+<main class="flex-grow ml-[240px] flex flex-col h-screen relative">
+    
+    <!-- Top Status Bar -->
+    <header class="flex justify-between items-center h-16 px-6 w-full bg-white border-b border-border-subtle shrink-0 animate-fade-in">
+        <div class="flex items-center gap-6">
+            <div class="flex flex-col">
+                <span class="text-xs text-text-secondary">Store</span>
+                <span class="text-sm font-semibold text-primary">Imtiaz Superstore</span>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-xs text-text-secondary">Location</span>
+                <span class="text-sm font-semibold text-primary">Tariq Road, Karachi</span>
+            </div>
+            <div class="h-8 w-px bg-border-subtle"></div>
+            <div class="flex flex-col">
+                <span class="text-xs text-text-secondary">Terminal</span>
+                <span class="text-sm font-semibold text-primary">POS-01</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-border-subtle">
+                <span class="material-symbols-outlined text-secondary text-lg">schedule</span>
+                <span class="text-sm font-semibold text-on-surface" id="current-date-display">2026-05-22</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+                <span class="text-xs font-semibold text-text-secondary">Shift Active</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Workspace Split View -->
+    <div class="flex-grow flex overflow-hidden">
+        
+        <!-- Left Column: Banknote Counter (40%) -->
+        <section class="w-[40%] flex flex-col border-r border-border-subtle bg-slate-50 overflow-y-auto custom-scrollbar p-6">
+            <div class="mb-4">
+                <h2 class="text-xl font-extrabold text-primary tracking-tight">Cash Drawer Count</h2>
+                <p class="text-xs text-text-secondary mt-0.5">Declare actual physical banknotes in drawer.</p>
+            </div>
+
+            <!-- Denomination Input Rows -->
+            <div class="space-y-3 flex-grow overflow-y-auto custom-scrollbar pr-1" id="denom-rows-container">
+                <!-- PKR 5,000 -->
+                <div class="bg-white p-3 border border-border-subtle rounded-xl flex items-center justify-between shadow-sm hover:border-slate-300 transition-all duration-150">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-primary">PKR 5,000</span>
+                        <span class="text-[10px] text-text-secondary uppercase font-bold tracking-wider">Banknote</span>
                     </div>
-</div>
-</section>
-<!-- Right Column: Shift Reconciliation & Z-Report (60%) -->
-<section class="w-[60%] flex flex-col bg-surface-secondary overflow-y-auto">
-<div class="p-gutter space-y-6">
-<!-- Sales Summary -->
-<div class="space-y-4">
-<h3 class="text-label-md font-label-md text-text-secondary uppercase tracking-wider">Shift Sales Summary</h3>
-<div class="grid grid-cols-5 gap-4">
-<div class="bg-surface-main p-4 rounded-lg border border-border-subtle shadow-sm">
-<span class="text-label-sm font-label-sm text-text-secondary block mb-1">Gross Sales</span>
-<span class="text-body-lg font-bold text-primary">PKR 38,450</span>
-</div>
-<div class="bg-surface-main p-4 rounded-lg border border-border-subtle shadow-sm">
-<span class="text-label-sm font-label-sm text-text-secondary block mb-1">Net Sales</span>
-<span class="text-body-lg font-bold text-primary">PKR 36,950</span>
-</div>
-<div class="bg-surface-main p-4 rounded-lg border border-border-subtle shadow-sm">
-<span class="text-label-sm font-label-sm text-text-secondary block mb-1">Tax Total</span>
-<span class="text-body-lg font-bold text-primary">PKR 1,850</span>
-</div>
-<div class="bg-surface-main p-4 rounded-lg border border-border-subtle shadow-sm">
-<span class="text-label-sm font-label-sm text-text-secondary block mb-1">Discounts</span>
-<span class="text-body-lg font-bold text-danger">PKR 1,500</span>
-</div>
-<div class="bg-surface-main p-4 rounded-lg border border-border-subtle shadow-sm text-center">
-<span class="text-label-sm font-label-sm text-text-secondary block mb-1">Orders</span>
-<span class="text-body-lg font-bold text-primary">14</span>
-</div>
-</div>
-</div>
-<!-- Layout for Tender & Cash Reconciliation -->
-<div class="grid grid-cols-2 gap-6">
-<!-- Tender Breakdown Table -->
-<div class="space-y-4">
-<h3 class="text-label-md font-label-md text-text-secondary uppercase tracking-wider">Tender Breakdown</h3>
-<div class="bg-surface-main border border-border-subtle rounded-lg overflow-hidden">
-<table class="w-full text-left">
-<thead>
-<tr class="bg-surface-secondary border-b border-border-subtle">
-<th class="p-3 text-label-sm font-label-sm text-text-secondary">Payment Method</th>
-<th class="p-3 text-label-sm font-label-sm text-text-secondary text-right">Amount</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-border-subtle">
-<tr>
-<td class="p-3 text-body-md font-body-md">Cash Payments</td>
-<td class="p-3 text-body-md font-body-md text-right font-display-numeric">15,000</td>
-</tr>
-<tr class="bg-surface-secondary/30">
-<td class="p-3 text-body-md font-body-md">Credit/Debit Card</td>
-<td class="p-3 text-body-md font-body-md text-right font-display-numeric">19,500</td>
-</tr>
-<tr>
-<td class="p-3 text-body-md font-body-md">Mobile Wallet</td>
-<td class="p-3 text-body-md font-body-md text-right font-display-numeric">3,950</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<!-- Cash Reconciliation -->
-<div class="space-y-4">
-<h3 class="text-label-md font-label-md text-text-secondary uppercase tracking-wider">Cash Reconciliation</h3>
-<div class="bg-surface-main p-4 border border-border-subtle rounded-lg space-y-3">
-<div class="flex justify-between">
-<span class="text-body-md font-body-md text-text-secondary">Opening Balance</span>
-<span class="text-body-md font-body-md text-primary">PKR 5,000</span>
-</div>
-<div class="flex justify-between">
-<span class="text-body-md font-body-md text-text-secondary">Cash Sales (+)</span>
-<span class="text-body-md font-body-md text-primary">PKR 15,000</span>
-</div>
-<div class="flex justify-between">
-<span class="text-body-md font-body-md text-text-secondary">Paid Outs/Drops (-)</span>
-<span class="text-body-md font-body-md text-danger">PKR 6,000</span>
-</div>
-<div class="h-[1px] bg-border-subtle"></div>
-<div class="flex justify-between font-bold">
-<span class="text-body-md font-body-md">Expected Cash</span>
-<span class="text-body-md font-body-md">PKR 14,000</span>
-</div>
-<div class="flex justify-between">
-<span class="text-body-md font-body-md text-text-secondary">Actual Counted</span>
-<span class="text-body-md font-body-md text-primary">PKR 14,250</span>
-</div>
-<div class="h-[1px] bg-border-subtle"></div>
-<div class="flex justify-between items-center">
-<span class="text-label-md font-label-md text-text-secondary uppercase">Variance</span>
-<span class="text-headline-md font-headline-md text-[#10B981] font-bold">+PKR 250</span>
-</div>
-</div>
-</div>
-</div>
-<!-- Variance Warning -->
-<div class="bg-[#FFFBEB] border border-[#F59E0B]/30 p-4 rounded-lg flex items-start gap-4">
-<span class="material-symbols-outlined text-[#F59E0B]" data-icon="warning">warning</span>
-<div class="flex-1">
-<p class="text-label-md font-label-md text-[#92400E] mb-1">Cash Overage Detected (+PKR 250)</p>
-<p class="text-body-md font-body-md text-[#B45309]">The actual cash count exceeds the expected sales records. Please verify entries or provide a manager explanation note below.</p>
-<textarea class="mt-3 w-full border-border-input rounded-lg p-3 text-body-md focus:ring-[#F59E0B] focus:border-[#F59E0B]" placeholder="Enter explanation for variance (optional)..."></textarea>
-</div>
-</div>
-</div>
-<!-- Footer Actions -->
-<div class="mt-auto p-gutter bg-surface-main border-t border-border-subtle flex gap-4">
-<button class="flex-1 h-14 border border-border-input hover:bg-surface-secondary text-primary font-label-md transition-all rounded-lg flex items-center justify-center gap-2">
-<span class="material-symbols-outlined" data-icon="print">print</span>
-                        Print Z-Report Preview
-                    </button>
-<button class="flex-[1.5] h-14 bg-[#EF4444] hover:bg-[#DC2626] text-white font-label-md font-bold transition-all rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-danger/20" onclick="alert('Confirming Shift Closure...')">
-<span class="material-symbols-outlined" data-icon="lock">lock</span>
-                        Confirm Close Shift &amp; Lock Terminal
-                    </button>
-</div>
-</section>
-</div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="adjustDenom(5000, -1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">minus</span>
+                        </button>
+                        <input type="number" id="qty-5000" oninput="calculateTotalCounted()" class="w-16 h-9 border border-slate-200 rounded-lg text-center font-mono text-sm font-bold text-primary focus:ring-0 focus:border-secondary" placeholder="0" min="0" value="2">
+                        <button onclick="adjustDenom(5000, 1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">plus</span>
+                        </button>
+                    </div>
+                    <div class="w-24 text-right font-mono text-xs font-bold text-text-secondary" id="total-5000">PKR 10,000</div>
+                </div>
+
+                <!-- PKR 1,000 -->
+                <div class="bg-white p-3 border border-border-subtle rounded-xl flex items-center justify-between shadow-sm hover:border-slate-300 transition-all duration-150">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-primary">PKR 1,000</span>
+                        <span class="text-[10px] text-text-secondary uppercase font-bold tracking-wider">Banknote</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="adjustDenom(1000, -1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">minus</span>
+                        </button>
+                        <input type="number" id="qty-1000" oninput="calculateTotalCounted()" class="w-16 h-9 border border-slate-200 rounded-lg text-center font-mono text-sm font-bold text-primary focus:ring-0 focus:border-secondary" placeholder="0" min="0" value="4">
+                        <button onclick="adjustDenom(1000, 1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">plus</span>
+                        </button>
+                    </div>
+                    <div class="w-24 text-right font-mono text-xs font-bold text-text-secondary" id="total-1000">PKR 4,000</div>
+                </div>
+
+                <!-- PKR 500 -->
+                <div class="bg-white p-3 border border-border-subtle rounded-xl flex items-center justify-between shadow-sm hover:border-slate-300 transition-all duration-150">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-primary">PKR 500</span>
+                        <span class="text-[10px] text-text-secondary uppercase font-bold tracking-wider">Banknote</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="adjustDenom(500, -1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">minus</span>
+                        </button>
+                        <input type="number" id="qty-500" oninput="calculateTotalCounted()" class="w-16 h-9 border border-slate-200 rounded-lg text-center font-mono text-sm font-bold text-primary focus:ring-0 focus:border-secondary" placeholder="0" min="0" value="0">
+                        <button onclick="adjustDenom(500, 1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">plus</span>
+                        </button>
+                    </div>
+                    <div class="w-24 text-right font-mono text-xs font-bold text-text-secondary" id="total-500">PKR 0</div>
+                </div>
+
+                <!-- PKR 100 -->
+                <div class="bg-white p-3 border border-border-subtle rounded-xl flex items-center justify-between shadow-sm hover:border-slate-300 transition-all duration-150">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-primary">PKR 100</span>
+                        <span class="text-[10px] text-text-secondary uppercase font-bold tracking-wider">Banknote</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="adjustDenom(100, -1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">minus</span>
+                        </button>
+                        <input type="number" id="qty-100" oninput="calculateTotalCounted()" class="w-16 h-9 border border-slate-200 rounded-lg text-center font-mono text-sm font-bold text-primary focus:ring-0 focus:border-secondary" placeholder="0" min="0" value="2">
+                        <button onclick="adjustDenom(100, 1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">plus</span>
+                        </button>
+                    </div>
+                    <div class="w-24 text-right font-mono text-xs font-bold text-text-secondary" id="total-100">PKR 200</div>
+                </div>
+
+                <!-- PKR 50 -->
+                <div class="bg-white p-3 border border-border-subtle rounded-xl flex items-center justify-between shadow-sm hover:border-slate-300 transition-all duration-150">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-primary">PKR 50</span>
+                        <span class="text-[10px] text-text-secondary uppercase font-bold tracking-wider">Banknote</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="adjustDenom(50, -1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">minus</span>
+                        </button>
+                        <input type="number" id="qty-50" oninput="calculateTotalCounted()" class="w-16 h-9 border border-slate-200 rounded-lg text-center font-mono text-sm font-bold text-primary focus:ring-0 focus:border-secondary" placeholder="0" min="0" value="1">
+                        <button onclick="adjustDenom(50, 1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">plus</span>
+                        </button>
+                    </div>
+                    <div class="w-24 text-right font-mono text-xs font-bold text-text-secondary" id="total-50">PKR 50</div>
+                </div>
+
+                <!-- PKR 20 -->
+                <div class="bg-white p-3 border border-border-subtle rounded-xl flex items-center justify-between shadow-sm hover:border-slate-300 transition-all duration-150">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-primary">PKR 20</span>
+                        <span class="text-[10px] text-text-secondary uppercase font-bold tracking-wider">Banknote</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="adjustDenom(20, -1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">minus</span>
+                        </button>
+                        <input type="number" id="qty-20" oninput="calculateTotalCounted()" class="w-16 h-9 border border-slate-200 rounded-lg text-center font-mono text-sm font-bold text-primary focus:ring-0 focus:border-secondary" placeholder="0" min="0" value="0">
+                        <button onclick="adjustDenom(20, 1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">plus</span>
+                        </button>
+                    </div>
+                    <div class="w-24 text-right font-mono text-xs font-bold text-text-secondary" id="total-20">PKR 0</div>
+                </div>
+
+                <!-- PKR 10 -->
+                <div class="bg-white p-3 border border-border-subtle rounded-xl flex items-center justify-between shadow-sm hover:border-slate-300 transition-all duration-150">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-primary">PKR 10</span>
+                        <span class="text-[10px] text-text-secondary uppercase font-bold tracking-wider">Banknote</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="adjustDenom(10, -1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">minus</span>
+                        </button>
+                        <input type="number" id="qty-10" oninput="calculateTotalCounted()" class="w-16 h-9 border border-slate-200 rounded-lg text-center font-mono text-sm font-bold text-primary focus:ring-0 focus:border-secondary" placeholder="0" min="0" value="0">
+                        <button onclick="adjustDenom(10, 1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">plus</span>
+                        </button>
+                    </div>
+                    <div class="w-24 text-right font-mono text-xs font-bold text-text-secondary" id="total-10">PKR 0</div>
+                </div>
+
+                <!-- Coins -->
+                <div class="bg-white p-3 border border-border-subtle rounded-xl flex items-center justify-between shadow-sm hover:border-slate-300 transition-all duration-150">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-primary">Coins</span>
+                        <span class="text-[10px] text-text-secondary uppercase font-bold tracking-wider">Loose Change</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="adjustDenom(1, -5)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none" title="Minus 5">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">minus</span>
+                        </button>
+                        <input type="number" id="qty-coins" oninput="calculateTotalCounted()" class="w-16 h-9 border border-slate-200 rounded-lg text-center font-mono text-sm font-bold text-primary focus:ring-0 focus:border-secondary" placeholder="0" min="0" value="0">
+                        <button onclick="adjustDenom(1, 5)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center border border-slate-200 transition-all active:scale-90 select-none" title="Plus 5">
+                            <span class="material-symbols-outlined text-sm font-bold text-slate-700">plus</span>
+                        </button>
+                    </div>
+                    <div class="w-24 text-right font-mono text-xs font-bold text-text-secondary" id="total-coins">PKR 0</div>
+                </div>
+            </div>
+
+            <!-- Left Total Cash Section -->
+            <div class="mt-4 pt-4 border-t border-border-subtle">
+                <span class="text-[10px] text-text-secondary font-extrabold uppercase tracking-widest block">Total Counted Cash</span>
+                <span class="text-3xl font-black text-primary font-mono tracking-tight block mt-1" id="total-counted-cash-header">PKR 14,250</span>
+            </div>
+        </section>
+        
+        <!-- Right Column: Shift Reconciliation Details (60%) -->
+        <section class="w-[60%] flex flex-col bg-slate-100 overflow-y-auto custom-scrollbar p-6 justify-between gap-6">
+            <div class="space-y-6">
+                <!-- Shift Sales Summary Header Cards -->
+                <div>
+                    <h3 class="text-[10px] font-extrabold text-text-secondary uppercase tracking-wider mb-3">Shift Sales Summary</h3>
+                    <div class="grid grid-cols-5 gap-3 shrink-0">
+                        <div class="bg-white p-3 rounded-xl border border-border-subtle shadow-sm flex flex-col gap-0.5">
+                            <span class="text-[10px] text-text-secondary font-semibold uppercase">Gross Sales</span>
+                            <span class="text-sm font-extrabold text-primary font-mono" id="summary-gross">PKR 0</span>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-border-subtle shadow-sm flex flex-col gap-0.5 animate-pulse">
+                            <span class="text-[10px] text-text-secondary font-semibold uppercase">Net Sales</span>
+                            <span class="text-sm font-extrabold text-primary font-mono text-emerald-pos" id="summary-net">PKR 0</span>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-border-subtle shadow-sm flex flex-col gap-0.5">
+                            <span class="text-[10px] text-text-secondary font-semibold uppercase">Tax Total</span>
+                            <span class="text-sm font-extrabold text-primary font-mono" id="summary-tax">PKR 0</span>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-border-subtle shadow-sm flex flex-col gap-0.5">
+                            <span class="text-[10px] text-text-secondary font-semibold uppercase">Discounts</span>
+                            <span class="text-sm font-extrabold text-danger font-mono" id="summary-discounts">PKR 0</span>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-border-subtle shadow-sm flex flex-col gap-0.5 items-center justify-center text-center">
+                            <span class="text-[10px] text-text-secondary font-semibold uppercase">Orders</span>
+                            <span class="text-base font-extrabold text-primary" id="summary-orders">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reconciliation Split Panel -->
+                <div class="grid grid-cols-2 gap-4 shrink-0">
+                    <!-- Tender Breakdown -->
+                    <div class="bg-white p-4 rounded-xl border border-border-subtle shadow-sm flex flex-col gap-3">
+                        <h4 class="text-[10px] font-extrabold text-text-secondary uppercase tracking-wider">Tender Breakdown</h4>
+                        <div class="space-y-3" id="tender-mix-container">
+                            <!-- Live loaded items -->
+                            <div class="text-center py-6 text-xs text-text-secondary">No transaction logs available.</div>
+                        </div>
+                    </div>
+
+                    <!-- Cash Reconciliation -->
+                    <div class="bg-white p-4 rounded-xl border border-border-subtle shadow-sm flex flex-col gap-3">
+                        <h4 class="text-[10px] font-extrabold text-text-secondary uppercase tracking-wider">Cash Reconciliation</h4>
+                        <div class="space-y-2 text-xs font-medium">
+                            <div class="flex justify-between">
+                                <span class="text-text-secondary">Opening Float Balance</span>
+                                <span class="font-mono text-primary" id="recon-float">PKR 5,000</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-text-secondary">Cash Sales (+)</span>
+                                <span class="font-mono text-emerald-pos font-semibold" id="recon-cash-sales">PKR 0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-text-secondary">Safe Drops / Paid Outs (-)</span>
+                                <span class="font-mono text-danger font-semibold" id="recon-drops">PKR 0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-text-secondary">Float Injections (+)</span>
+                                <span class="font-mono text-accent font-semibold" id="recon-injections">PKR 0</span>
+                            </div>
+                            <hr class="border-dashed border-slate-200">
+                            <div class="flex justify-between text-sm font-bold text-primary">
+                                <span>Expected Cash</span>
+                                <span class="font-mono" id="recon-expected">PKR 5,000</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-text-secondary">
+                                <span>Actual Counted</span>
+                                <span class="font-mono font-bold text-slate-800" id="recon-actual">PKR 14,250</span>
+                            </div>
+                            <hr class="border-dashed border-slate-200">
+                            <div class="flex justify-between items-center pt-1">
+                                <span class="text-[10px] font-extrabold text-text-secondary uppercase">Variance</span>
+                                <span class="text-lg font-black font-mono tracking-tight" id="recon-variance">PKR 0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Variance Alert Card -->
+                <div id="variance-card" class="p-4 rounded-xl border flex items-start gap-4 transition-all duration-300">
+                    <span class="material-symbols-outlined text-[28px] shrink-0" id="variance-card-icon">check_circle</span>
+                    <div class="flex-grow">
+                        <p class="text-sm font-bold text-slate-800 mb-0.5" id="variance-card-title">Reconciled — No Variance</p>
+                        <p class="text-xs text-slate-600 leading-relaxed font-medium" id="variance-card-desc">The declared physical cash matches expected drawer sales perfectly.</p>
+                        <textarea id="explanation-text" class="mt-3 w-full border-slate-200 rounded-lg p-2.5 text-xs focus:ring-secondary focus:border-secondary font-medium placeholder-slate-400" placeholder="Enter explanation note for auditing purposes (optional)..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom CTA Panel -->
+            <div class="p-4 bg-white border border-border-subtle rounded-xl shadow-sm flex gap-4 mt-auto">
+                <button onclick="showZReportModal()" class="flex-1 h-12 border border-slate-200 hover:bg-slate-50 text-slate-700 hover:border-slate-300 font-bold text-xs rounded-xl flex items-center justify-center gap-2 active:scale-95 duration-100 transition-all select-none">
+                    <span class="material-symbols-outlined text-lg">print</span>
+                    Print Z-Report Preview
+                </button>
+                <button onclick="confirmShiftClose()" class="flex-[1.5] h-12 bg-danger hover:bg-red-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 active:scale-95 duration-100 transition-all shadow-lg shadow-danger/25 select-none">
+                    <span class="material-symbols-outlined text-lg">lock_open</span>
+                    Confirm Close Shift & Lock Terminal
+                </button>
+            </div>
+        </section>
+    </div>
+
 </main>
+
+<!-- Z-Report Modal Overlay -->
+<div id="zreport-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center opacity-0 pointer-events-none transition-all duration-300">
+    <div class="receipt-paper w-[360px] p-6 max-h-[85vh] overflow-y-auto custom-scrollbar flex flex-col gap-4 scale-95 opacity-0 transition-all duration-300">
+        <!-- Close overlay button -->
+        <div class="flex justify-between items-center border-b border-dashed border-slate-300 pb-2">
+            <span class="text-xs font-bold text-slate-500 font-sans uppercase">Z-Report Slip Preview</span>
+            <button onclick="closeZReportModal()" class="w-6 h-6 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 active:scale-90 font-sans font-bold select-none">×</button>
+        </div>
+
+        <div class="receipt-content text-left text-xs font-mono select-text" id="z-receipt-body">
+            <!-- Dynamic Receipt Insertion -->
+        </div>
+
+        <div class="flex gap-2 font-sans pt-2">
+            <button onclick="printZReport()" class="flex-grow py-2.5 bg-primary hover:bg-primary/95 text-white font-bold text-xs rounded-lg active:scale-95 duration-100">
+                Print Official Z-Report
+            </button>
+            <button onclick="closeZReportModal()" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg active:scale-95 duration-100">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Active Global Toast Notification Wrapper -->
+<div id="toast-wrapper" class="fixed bottom-6 right-6 z-50 flex flex-col pointer-events-none"></div>
+
 <script>
-        // Micro-interaction for inputs
-        document.querySelectorAll('.denomination-input').forEach(input => {
-            input.addEventListener('focus', function() {
-                this.select();
-            });
+    // State metrics
+    let expectedCash = 5000;
+    let countedCash = 14250;
+    let openingFloat = 5000;
+    let cashSales = 0;
+    let safeDropsTotal = 0;
+    let floatInjectionsTotal = 0;
+    
+    // completed sales summary metrics
+    let grossSales = 0;
+    let netSales = 0;
+    let taxTotal = 0;
+    let discounts = 0;
+    let ordersCount = 0;
+
+    // payment breakdowns
+    let cashTenderTotal = 0;
+    let cardTenderTotal = 0;
+    let walletTenderTotal = 0;
+
+    const denominations = [5000, 1000, 500, 100, 50, 20, 10, 1];
+
+    function showToast(message, type = 'success') {
+        const wrapper = document.getElementById('toast-wrapper');
+        const toast = document.createElement('div');
+        toast.className = `p-4 mb-2 rounded-xl text-white shadow-xl flex items-center gap-3 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto max-w-sm ${
+            type === 'success' ? 'bg-secondary' : type === 'error' ? 'bg-danger' : 'bg-slate-800'
+        }`;
+        
+        const icon = type === 'success' ? 'check_circle' : type === 'error' ? 'cancel' : 'warning';
+        toast.innerHTML = `
+            <span class="material-symbols-outlined">${icon}</span>
+            <span class="text-xs font-bold font-sans">${message}</span>
+        `;
+        
+        wrapper.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.remove('translate-y-2', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+        }, 10);
+        
+        setTimeout(() => {
+            toast.classList.remove('translate-y-0', 'opacity-100');
+            toast.classList.add('translate-y-2', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 3500);
+    }
+
+    function syncParentSidebar(stepIndex) {
+        if (window.parent && typeof window.parent.document !== 'undefined') {
+            const doc = window.parent.document;
+            const stepEl = doc.getElementById('step-' + stepIndex);
+            if (stepEl) {
+                doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+                stepEl.classList.add('flow-step-active');
+            }
+            const urlDisplay = doc.getElementById('simulator-url-display');
+            if (urlDisplay) {
+                const filename = window.location.pathname.split('/').pop();
+                urlDisplay.innerText = 'screens/' + filename;
+            }
+            const openNewTabBtn = doc.getElementById('open-new-tab-btn');
+            if (openNewTabBtn) {
+                const filename = window.location.pathname.split('/').pop();
+                openNewTabBtn.href = 'screens/' + filename;
+            }
+        }
+    }
+
+    function fmt(val) {
+        return 'PKR ' + new Intl.NumberFormat('en-PK').format(val);
+    }
+
+    // Adjust denominations buttons
+    function adjustDenom(val, delta) {
+        const id = 'qty-' + (val === 1 ? 'coins' : val);
+        const input = document.getElementById(id);
+        if (input) {
+            let cur = parseInt(input.value) || 0;
+            let next = Math.max(0, cur + delta);
+            input.value = next;
+            calculateTotalCounted();
+        }
+    }
+
+    // Dynamic banknote and coins updates
+    function calculateTotalCounted() {
+        countedCash = 0;
+        denominations.forEach(d => {
+            const id = 'qty-' + (d === 1 ? 'coins' : d);
+            const labelId = 'total-' + (d === 1 ? 'coins' : d);
+            const input = document.getElementById(id);
+            const label = document.getElementById(labelId);
             
-            input.addEventListener('input', function() {
-                // In a real app, this would recalculate the Total Counted Cash live
-                // Here we keep it static as per the prompt requirement
-            });
+            if (input) {
+                const qty = Math.max(0, parseInt(input.value) || 0);
+                // Standardize display back to valid integers
+                input.value = qty;
+                
+                const itemTotal = qty * d;
+                countedCash += itemTotal;
+                
+                if (label) {
+                    label.textContent = fmt(itemTotal);
+                }
+            }
         });
-    </script>
-</body></html>
+
+        // Update indicators
+        document.getElementById('total-counted-cash-header').textContent = fmt(countedCash);
+        document.getElementById('recon-actual').textContent = fmt(countedCash);
+        
+        updateReconciliationMath();
+    }
+
+    // Calculate metrics on page load
+    function loadMetrics() {
+        // 1. Float opening
+        openingFloat = parseFloat(sessionStorage.getItem('pos_shift_float')) || 5000;
+        document.getElementById('recon-float').textContent = fmt(openingFloat);
+
+        // 2. Sales summaries
+        const completedTransactions = JSON.parse(sessionStorage.getItem('pos_completed_transactions') || '[]');
+        ordersCount = completedTransactions.length;
+        
+        grossSales = 0;
+        netSales = 0;
+        taxTotal = 0;
+        discounts = 0;
+        
+        cashTenderTotal = 0;
+        cardTenderTotal = 0;
+        walletTenderTotal = 0;
+
+        completedTransactions.forEach(t => {
+            netSales += t.total;
+            taxTotal += t.tax;
+            discounts += t.discount;
+            grossSales += (t.subtotal + t.tax); // Gross sales is subtotal + tax
+
+            // Tender splits or individual counts
+            if (t.tender === 'Cash') {
+                cashTenderTotal += t.total;
+            } else if (t.tender === 'Debit Card' || t.tender === 'Credit Card') {
+                cardTenderTotal += t.total;
+            } else if (t.tender === 'Mobile Wallet') {
+                walletTenderTotal += t.total;
+            } else if (t.tender === 'Split') {
+                // Split cash and card totals
+                cashTenderTotal += (t.splitCash || 0);
+                cardTenderTotal += (t.splitCard || 0);
+            }
+        });
+
+        document.getElementById('summary-gross').textContent = fmt(grossSales);
+        document.getElementById('summary-net').textContent = fmt(netSales);
+        document.getElementById('summary-tax').textContent = fmt(taxTotal);
+        document.getElementById('summary-discounts').textContent = fmt(discounts);
+        document.getElementById('summary-orders').textContent = ordersCount;
+
+        // 3. Cash Control Drops / Injections
+        const safeDrops = JSON.parse(sessionStorage.getItem('pos_safe_drops') || '[]');
+        safeDropsTotal = safeDrops
+            .filter(d => d.type === 'withdraw')
+            .reduce((sum, d) => sum + d.amount, 0);
+
+        floatInjectionsTotal = safeDrops
+            .filter(d => d.type === 'deposit')
+            .reduce((sum, d) => sum + d.amount, 0);
+
+        document.getElementById('recon-cash-sales').textContent = fmt(cashTenderTotal);
+        document.getElementById('recon-drops').textContent = fmt(safeDropsTotal);
+        document.getElementById('recon-injections').textContent = fmt(floatInjectionsTotal);
+
+        // 4. Expected drawer math
+        // Expected Cash = float + Net cash sales - Drops + Injections
+        expectedCash = openingFloat + cashTenderTotal - safeDropsTotal + floatInjectionsTotal;
+        document.getElementById('recon-expected').textContent = fmt(expectedCash);
+
+        // Render tender breakdown
+        renderTenderMix();
+
+        // Counted Cash
+        calculateTotalCounted();
+    }
+
+    function renderTenderMix() {
+        const container = document.getElementById('tender-mix-container');
+        container.innerHTML = '';
+
+        const totalPayments = cashTenderTotal + cardTenderTotal + walletTenderTotal;
+        
+        if (totalPayments === 0) {
+            container.innerHTML = `
+                <div class="text-center py-6 text-xs text-text-secondary">
+                    No transactions processed in this shift.
+                </div>
+            `;
+            return;
+        }
+
+        const items = [
+            { label: 'Cash Payments', val: cashTenderTotal, color: 'bg-secondary', barBg: 'bg-emerald-50' },
+            { label: 'Credit/Debit Card', val: cardTenderTotal, color: 'bg-accent', barBg: 'bg-blue-50' },
+            { label: 'Mobile Wallet', val: walletTenderTotal, color: 'bg-warning', barBg: 'bg-amber-50' }
+        ];
+
+        items.forEach(item => {
+            const pct = totalPayments > 0 ? (item.val / totalPayments) * 100 : 0;
+            
+            const div = document.createElement('div');
+            div.className = "space-y-1";
+            div.innerHTML = `
+                <div class="flex justify-between text-xs font-bold text-primary">
+                    <span>${item.label}</span>
+                    <span class="font-mono">${fmt(item.val)} <span class="text-text-secondary font-medium font-sans">(${pct.toFixed(1)}%)</span></span>
+                </div>
+                <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full ${item.color} rounded-full" style="width: ${pct}%"></div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // live update reconciliation math and indicators
+    function updateReconciliationMath() {
+        const variance = countedCash - expectedCash;
+        const varianceLabel = document.getElementById('recon-variance');
+        
+        const card = document.getElementById('variance-card');
+        const icon = document.getElementById('variance-card-icon');
+        const title = document.getElementById('variance-card-title');
+        const desc = document.getElementById('variance-card-desc');
+
+        if (variance === 0) {
+            varianceLabel.textContent = 'Perfect Balance';
+            varianceLabel.className = 'text-lg font-black font-mono tracking-tight text-emerald-pos';
+            
+            card.className = "p-4 bg-emerald-50 border border-secondary/20 rounded-xl flex items-start gap-4 transition-all duration-300";
+            icon.className = "material-symbols-outlined text-[28px] shrink-0 text-emerald-pos";
+            icon.textContent = "check_circle";
+            title.textContent = "Reconciled — Perfect Balance";
+            title.className = "text-sm font-bold text-emerald-800 mb-0.5";
+            desc.textContent = "Your cash count matches calculated expected sales perfectly. Ready for close.";
+        } else if (variance > 0) {
+            varianceLabel.textContent = `+PKR ${new Intl.NumberFormat('en-PK').format(variance)}`;
+            varianceLabel.className = 'text-lg font-black font-mono tracking-tight text-warning';
+
+            card.className = "p-4 bg-amber-50 border border-warning/20 rounded-xl flex items-start gap-4 transition-all duration-300";
+            icon.className = "material-symbols-outlined text-[28px] shrink-0 text-warning animate-bounce";
+            icon.textContent = "warning";
+            title.textContent = `Cash Overage Detected (+${fmt(variance)})`;
+            title.className = "text-sm font-bold text-amber-800 mb-0.5";
+            desc.textContent = "Physical cash is higher than expected sales ledger. Please perform count audits and record an explanation below.";
+        } else {
+            varianceLabel.textContent = `-${fmt(Math.abs(variance))}`;
+            varianceLabel.className = 'text-lg font-black font-mono tracking-tight text-danger';
+
+            card.className = "p-4 bg-red-50 border border-danger/20 rounded-xl flex items-start gap-4 transition-all duration-300 animate-pulse";
+            icon.className = "material-symbols-outlined text-[28px] shrink-0 text-danger";
+            icon.textContent = "cancel";
+            title.textContent = `Cash Shortage Detected (-${fmt(Math.abs(variance))})`;
+            title.className = "text-sm font-bold text-red-800 mb-0.5";
+            desc.textContent = "Physical cash in register is less than expected sales records. Audit cashier transactions and log explanation details below.";
+        }
+    }
+
+    // Modal Z-Report triggers
+    function showZReportModal() {
+        const modal = document.getElementById('zreport-modal');
+        const body = document.getElementById('z-receipt-body');
+
+        const now = new Date().toISOString().replace('T', ' ').slice(0, 16);
+        const cashierName = localStorage.getItem('terminal_operator') || 'Adeel';
+        const variance = countedCash - expectedCash;
+        const varianceStr = variance === 0 ? 'RECONCILED (0.00)' : variance > 0 ? `OVERAGE (+${variance})` : `SHORTAGE (-${Math.abs(variance)})`;
+        const explanation = document.getElementById('explanation-text').value.trim() || 'N/A';
+
+        // Prepare the receipt content
+        body.innerHTML = `
+            <div class="text-center font-bold text-[13px] tracking-wide mb-1 font-sans">IMTIAZ SUPERSTORE</div>
+            <div class="text-center text-[10px] text-gray-500 mb-3">Tariq Road Branch, Karachi</div>
+            
+            <div class="border-b border-dashed border-black pb-2 text-[10px]">
+                <p><strong>REPORT TYPE:</strong> OFFICIAL Z-REPORT</p>
+                <p><strong>SHIFT ID:</strong> SHIFT-S4218-TARIQ</p>
+                <p><strong>TERMINAL ID:</strong> POS-01</p>
+                <p><strong>OPERATOR:</strong> ${cashierName.toUpperCase()}</p>
+                <p><strong>DATE/TIME:</strong> ${now}</p>
+            </div>
+            
+            <div class="py-3 border-b border-dashed border-black text-[10px] space-y-1">
+                <div class="font-bold uppercase tracking-wider text-[11px] mb-1">Shift Transaction Summary</div>
+                <div class="flex justify-between">
+                    <span>ORDERS PROCESSED:</span>
+                    <span>${ordersCount}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>GROSS SALES:</span>
+                    <span>${fmt(grossSales)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>DISCOUNTS GIVEN:</span>
+                    <span>-${fmt(discounts)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>TAX COLLECTED:</span>
+                    <span>${fmt(taxTotal)}</span>
+                </div>
+                <div class="flex justify-between font-bold border-t border-dotted border-black pt-1">
+                    <span>NET SALES SETTLEMENT:</span>
+                    <span>${fmt(netSales)}</span>
+                </div>
+            </div>
+
+            <div class="py-3 border-b border-dashed border-black text-[10px] space-y-1">
+                <div class="font-bold uppercase tracking-wider text-[11px] mb-1">Tender Breakdown Mix</div>
+                <div class="flex justify-between">
+                    <span>CASH SETTLED:</span>
+                    <span>${fmt(cashTenderTotal)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>CARDS SETTLED:</span>
+                    <span>${fmt(cardTenderTotal)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>WALLETS SETTLED:</span>
+                    <span>${fmt(walletTenderTotal)}</span>
+                </div>
+                <div class="flex justify-between font-bold border-t border-dotted border-black pt-1">
+                    <span>TOTAL SETTLEMENTS:</span>
+                    <span>${fmt(netSales)}</span>
+                </div>
+            </div>
+
+            <div class="py-3 border-b border-dashed border-black text-[10px] space-y-1">
+                <div class="font-bold uppercase tracking-wider text-[11px] mb-1">Cash Drawer Audit</div>
+                <div class="flex justify-between">
+                    <span>OPENING FLOAT BALANCE:</span>
+                    <span>${fmt(openingFloat)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>CASH SALES:</span>
+                    <span>+${fmt(cashTenderTotal)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>WITHDRAWALS / DROPS:</span>
+                    <span>-${fmt(safeDropsTotal)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>INJECTIONS / FLOATS:</span>
+                    <span>+${fmt(floatInjectionsTotal)}</span>
+                </div>
+                <div class="flex justify-between font-bold border-t border-dotted border-black pt-1">
+                    <span>EXPECTED DRAWER CASH:</span>
+                    <span>${fmt(expectedCash)}</span>
+                </div>
+                <div class="flex justify-between font-bold text-slate-800">
+                    <span>DECLARED ACTUAL COUNTED:</span>
+                    <span>${fmt(countedCash)}</span>
+                </div>
+                <div class="flex justify-between font-bold text-[11px] border-t border-dotted border-black pt-1 ${variance === 0 ? 'text-green-700' : 'text-red-700'}">
+                    <span>AUDIT VARIANCE:</span>
+                    <span>${varianceStr}</span>
+                </div>
+            </div>
+
+            <div class="py-3 border-b border-dashed border-black text-[10px] space-y-1">
+                <div class="font-bold uppercase tracking-wider">Manager Audit Notes</div>
+                <p class="italic text-gray-700 mt-1">${explanation}</p>
+            </div>
+
+            <div class="pt-8 pb-4 text-[9px] flex flex-col gap-6 text-center font-sans border-b border-dashed border-slate-300">
+                <div class="flex justify-between px-4">
+                    <div class="border-t border-black w-24 pt-1">CASHIER SIG</div>
+                    <div class="border-t border-black w-24 pt-1">MANAGER SIG</div>
+                </div>
+            </div>
+
+            <div class="text-center font-mono text-[8px] text-gray-500 pt-3">
+                <p class="font-bold">FBR FISCAL REPORT GENERATED</p>
+                <p>Reference ID: FBR-ZREP-TARIQ-260519-POS01</p>
+                <p class="mt-1">Generated by Antigravity POS Core Engine</p>
+            </div>
+        `;
+
+        modal.classList.remove('pointer-events-none', 'opacity-0');
+        modal.classList.add('opacity-100');
+        setTimeout(() => {
+            modal.querySelector('div').classList.remove('scale-95', 'opacity-0');
+            modal.querySelector('div').classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    function closeZReportModal() {
+        const modal = document.getElementById('zreport-modal');
+        modal.querySelector('div').classList.remove('scale-100', 'opacity-100');
+        modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('pointer-events-none', 'opacity-0');
+            modal.classList.remove('opacity-100');
+        }, 200);
+    }
+
+    function printZReport() {
+        showToast('Z-Report sent to primary thermal printer network queue!', 'success');
+        closeZReportModal();
+    }
+
+    // Close Shift confirmation and logic
+    function confirmShiftClose() {
+        const variance = countedCash - expectedCash;
+        let confirmMsg = 'Are you sure you want to close this shift and lock the terminal?';
+        
+        if (variance !== 0) {
+            confirmMsg = `WARNING: Active Cash Variance of ${fmt(variance)} detected!\n\nAre you sure you want to proceed and submit this cashier audit deviation to the store controller?`;
+        }
+
+        if (confirm(confirmMsg)) {
+            // Write shift open to false
+            sessionStorage.setItem('pos_shift_open', 'false');
+            
+            // Clear checkout cart and intermediate states
+            sessionStorage.removeItem('pos_cart');
+            sessionStorage.removeItem('pos_last_total');
+            sessionStorage.removeItem('pos_last_subtotal');
+            sessionStorage.removeItem('pos_last_tax');
+            sessionStorage.removeItem('pos_last_discount');
+            
+            showToast('Terminal locked. Finalizing audit settlements...', 'success');
+            
+            setTimeout(() => {
+                window.location.href = 'terminal_login.html';
+            }, 1200);
+        }
+    }
+
+    // signout operator logic
+    function doLogout() {
+        sessionStorage.clear();
+        localStorage.removeItem('terminal_operator');
+        window.location.href = 'terminal_login.html';
+    }
+
+    // Window on loads
+    window.addEventListener('DOMContentLoaded', () => {
+        syncParentSidebar(6);
+
+        // Fetch Cashier and dates
+        const operatorName = localStorage.getItem('terminal_operator') || 'Adeel';
+        document.getElementById('operator-name').textContent = operatorName;
+        document.getElementById('operator-initials').textContent = operatorName.split(' ').map(n=>n[0]).join('').toUpperCase();
+        document.getElementById('current-date-display').textContent = new Date().toISOString().split('T')[0];
+
+        // Trigger loading stats
+        loadMetrics();
+    });
+</script>
+</body>
+</html>

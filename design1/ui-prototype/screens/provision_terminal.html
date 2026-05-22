@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Terminal Provisioning — IMAGYN POS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; }
+
+        :root {
+            --navy:       #0F172A;
+            --navy-2:     #1E293B;
+            --green:      #10B981;
+            --amber:      #F59E0B;
+            --red:        #EF4444;
+            --bg:         #F8FAFC;
+            --white:      #FFFFFF;
+            --border:     #E2E8F0;
+            --border-2:   #CBD5E1;
+            --text:       #0F172A;
+            --text-muted: #64748B;
+            --text-dim:   #94A3B8;
+            --sans:       'Plus Jakarta Sans', 'Inter', ui-sans-serif, sans-serif;
+            --mono:       'IBM Plex Mono', ui-monospace, monospace;
+        }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px 16px 80px;
+            user-select: none;
+        }
+
+        .icon {
+            font-family: 'Material Symbols Outlined';
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+        }
+
+        /* Card */
+        .card {
+            width: 100%; max-width: 940px;
+            display: flex; border-radius: 24px; overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.09), 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+            min-height: 580px;
+            animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) forwards;
+        }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+        /* Left panel — navy */
+        .card-left {
+            width: 40%; background: var(--navy);
+            position: relative; overflow: hidden;
+            padding: 32px 28px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            border-right: 1px solid var(--navy-2);
+        }
+        .card-left::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .card-left::after {
+            content: ''; position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%,-50%);
+            width: 280px; height: 280px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .left-header { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; }
+        .left-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.2em; color: rgba(255,255,255,0.4); text-transform: uppercase; }
+
+        .status-badge {
+            display: flex; align-items: center; gap: 5px;
+            padding: 3px 10px; border-radius: 20px;
+            background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+            font-size: 8px; font-weight: 800; letter-spacing: 0.18em; color: var(--amber); text-transform: uppercase;
+            transition: all 0.3s;
+        }
+        .status-badge .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--amber); animation: blink 2s infinite; }
+        .status-badge.provisioned { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: var(--green); }
+        .status-badge.provisioned .dot { background: var(--green); }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .left-brand {
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .brand-card {
+            background: white; border-radius: 18px;
+            padding: 14px 24px; width: 200px; height: 76px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05);
+        }
+        .brand-name { color: var(--navy); font-weight: 800; font-size: 18px; letter-spacing: -0.03em; }
+        .brand-sub  { color: var(--green); font-weight: 700; font-size: 8px; letter-spacing: 3.5px; text-transform: uppercase; font-family: var(--mono); }
+        .brand-desc { font-size: 10px; color: rgba(255,255,255,0.45); text-align: center; line-height: 1.55; }
+
+        .telemetry {
+            position: relative; z-index: 1;
+            background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 12px 14px;
+        }
+        .tele-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .tele-row:last-child { margin-bottom: 0; }
+        .tele-label { font-size: 10px; color: rgba(255,255,255,0.5); }
+        .tele-val   { font-family: var(--mono); font-size: 10px; display: flex; align-items: center; gap: 5px; color: rgba(255,255,255,0.85); }
+        .tele-dot   { width: 6px; height: 6px; border-radius: 50%; }
+        .tele-dot.ok   { background: var(--green); }
+        .tele-dot.warn { background: var(--amber); }
+        .tele-dot.spin { background: var(--green); animation: blink 1.5s infinite; }
+
+        /* Right panel — white form */
+        .card-right { flex: 1; background: var(--white); display: flex; flex-direction: column; padding: 32px 36px 24px; }
+
+        #form-panel, #progress-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        #progress-panel { display: none; }
+
+        .form-title { font-size: 22px; font-weight: 800; color: var(--navy); letter-spacing: -0.03em; margin-bottom: 4px; }
+        .form-sub   { font-size: 12px; color: var(--text-muted); margin-bottom: 28px; }
+
+        .field-group { margin-bottom: 16px; }
+        .field-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; color: var(--navy); text-transform: uppercase; margin-bottom: 7px; }
+        .field-select, .field-input {
+            width: 100%; height: 46px; background: #F8FAFC;
+            border: 1.5px solid var(--border-2); border-radius: 11px;
+            padding: 0 14px; color: var(--text); font-size: 13px; font-weight: 600;
+            font-family: var(--sans); outline: none;
+            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+            appearance: none; -webkit-appearance: none;
+        }
+        .field-select {
+            background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer;
+        }
+        .field-select:focus, .field-input:focus { border-color: var(--navy); background: var(--white); box-shadow: 0 0 0 3px rgba(15,23,42,0.08); }
+
+        .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 2px 0; }
+        .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--navy); cursor: pointer; }
+        .checkbox-label { font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+
+        .provision-btn {
+            width: 100%; height: 52px; margin-top: 22px;
+            background: linear-gradient(135deg, var(--navy), var(--navy-2));
+            border: none; border-radius: 14px; color: white;
+            font-family: var(--sans); font-size: 13px; font-weight: 800;
+            letter-spacing: 0.06em; text-transform: uppercase;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px;
+            box-shadow: 0 4px 18px rgba(15,23,42,0.3);
+            transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
+        }
+        .provision-btn:hover { box-shadow: 0 6px 26px rgba(15,23,42,0.4); transform: translateY(-1px); filter: brightness(1.06); }
+        .provision-btn:active { transform: scale(0.97); }
+
+        /* Progress panel */
+        .progress-title { font-size: 20px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+        .progress-sub   { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+        .progress-bar-wrap { background: #F8FAFC; border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+        .progress-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .progress-bar-label { font-size: 11px; font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: 8px; }
+        .ping-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: ping 1.2s infinite; }
+        @keyframes ping { 0%{opacity:1;transform:scale(1)} 60%{opacity:0;transform:scale(2)} 100%{opacity:0} }
+        .progress-pct { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--green); }
+        .bar-bg { background: #E2E8F0; border-radius: 6px; height: 8px; overflow: hidden; }
+        .bar-fill { height: 100%; background: linear-gradient(90deg, var(--green), #0EA5E9); border-radius: 6px; width: 0; transition: width 0.35s ease; }
+
+        .console {
+            background: #0F172A; border: 1px solid #1E293B;
+            border-radius: 12px; padding: 12px 14px;
+            font-family: var(--mono); font-size: 10px; color: var(--green);
+            height: 180px; overflow-y: auto; line-height: 1.7;
+        }
+        .console::-webkit-scrollbar { width: 3px; }
+        .console::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        .log-ok   { color: var(--green); }
+        .log-info { color: #94A3B8; }
+        .log-ts   { color: rgba(16,185,129,0.4); margin-right: 6px; }
+
+        .card-footer {
+            border-top: 1px solid var(--border); padding-top: 14px; margin-top: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .footer-left  { font-family: var(--mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.12em; }
+        .footer-right { font-size: 9px; color: var(--text-dim); }
+
+        /* Shortcuts bar — light glass */
+        .shortcuts-bar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 300;
+            background: rgba(255,255,255,0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(203,213,225,0.9); border-radius: 40px;
+            padding: 7px 14px; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 8px 24px rgba(15,23,42,0.1), 0 2px 8px rgba(0,0,0,0.05);
+            white-space: nowrap; overflow-x: auto; max-width: 95vw;
+        }
+        .shortcuts-bar::-webkit-scrollbar { display: none; }
+        .sc-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: var(--text-dim); text-transform: uppercase; padding-right: 8px; border-right: 1px solid var(--border); margin-right: 2px; }
+        .sc-btn { padding: 5px 13px; border-radius: 20px; border: none; cursor: pointer; font-size: 10px; font-weight: 700; transition: all 0.13s; font-family: var(--sans); white-space: nowrap; }
+        .sc-btn:active { transform: scale(0.95); }
+        .sc-btn.green { background: #ECFDF5; border: 1px solid #6EE7B7; color: #065F46; }
+        .sc-btn.green:hover { background: #D1FAE5; }
+        .sc-btn.blue  { background: #EFF6FF; border: 1px solid #93C5FD; color: #1D4ED8; }
+        .sc-btn.blue:hover  { background: #DBEAFE; }
+        .sc-btn.amber { background: #FFFBEB; border: 1px solid #FCD34D; color: #92400E; }
+        .sc-btn.amber:hover { background: #FEF3C7; }
+        .sc-btn.ghost { background: #F8FAFC; border: 1px solid var(--border); color: var(--text-muted); }
+        .sc-btn.ghost:hover { background: #F1F5F9; color: var(--text); }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <!-- Left Panel -->
+        <div class="card-left">
+            <div class="left-header">
+                <span class="left-eyebrow">Provisioning Wizard</span>
+                <div class="status-badge" id="status-badge">
+                    <span class="dot"></span>
+                    <span id="status-text">UNCONFIGURED</span>
+                </div>
+            </div>
+
+            <div class="left-brand">
+                <div class="brand-card">
+                    <img src="logo.png" alt="IMAGYN POS" style="max-height:26px;object-fit:contain;"
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+                    <div style="display:none;flex-direction:column;align-items:center;">
+                        <span class="brand-name">IMAGYN</span>
+                        <span class="brand-sub">P O S</span>
+                    </div>
+                </div>
+                <p class="brand-desc">Enterprise Point-of-Sale<br/>Imagyn Technologies Pvt. Ltd.</p>
+            </div>
+
+            <div class="telemetry">
+                <div class="tele-row">
+                    <span class="tele-label">API Connection</span>
+                    <span class="tele-val"><span class="tele-dot ok"></span>Active</span>
+                </div>
+                <div class="tele-row">
+                    <span class="tele-label">Device Hardware</span>
+                    <span class="tele-val"><span class="tele-dot ok"></span>Authenticated</span>
+                </div>
+                <div class="tele-row">
+                    <span class="tele-label">Local Cache DB</span>
+                    <span class="tele-val" id="db-status-wrap">
+                        <span class="tele-dot warn" id="db-dot"></span>
+                        <span id="db-status-label" style="color:var(--amber)">SQLite Inactive</span>
+                    </span>
+                </div>
+                <div class="tele-row" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08)">
+                    <span class="tele-label">POS Version</span>
+                    <span class="tele-val" style="color:rgba(255,255,255,0.35);font-size:9px;">IMAGYN POS v1.0.0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="card-right">
+            <div id="form-panel">
+                <div class="form-title">Register Terminal</div>
+                <p class="form-sub">Configure this terminal's store location and register code before first use.</p>
+
+                <div class="field-group">
+                    <label class="field-label" for="store-id">Store / Location</label>
+                    <select id="store-id" class="field-select">
+                        <option value="IMAGYN-KHI-01">Imagyn Technologies — Main Branch, Karachi</option>
+                        <option value="IMAGYN-LHR-01">Imagyn Technologies — Lahore Branch</option>
+                        <option value="IMAGYN-ISB-01">Imagyn Technologies — Islamabad Branch</option>
+                        <option value="IMAGYN-KHI-02">Imagyn Technologies — North Karachi</option>
+                    </select>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label" for="terminal-code">Terminal / Register Code</label>
+                    <input type="text" id="terminal-code" class="field-input" value="POS-01" placeholder="e.g. POS-01"/>
+                </div>
+
+                <div class="field-group">
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="sync-catalog" checked/>
+                        <label class="checkbox-label" for="sync-catalog">Sync full catalog &amp; prices immediately after provision</label>
+                    </div>
+                </div>
+
+                <button class="provision-btn" onclick="startProvisioning()">
+                    <span class="icon">sync</span>
+                    Provision Terminal
+                </button>
+            </div>
+
+            <div id="progress-panel">
+                <div class="progress-title">Syncing Terminal Database</div>
+                <p class="progress-sub">Downloading inventory catalog &amp; initializing SQLite cache…</p>
+
+                <div class="progress-bar-wrap">
+                    <div class="progress-bar-header">
+                        <span class="progress-bar-label"><span class="ping-dot"></span>Downloading Catalog</span>
+                        <span class="progress-pct" id="pct-label">0%</span>
+                    </div>
+                    <div class="bar-bg"><div class="bar-fill" id="bar-fill"></div></div>
+                </div>
+
+                <div class="console" id="console-log"></div>
+            </div>
+
+            <div class="card-footer">
+                <span class="footer-left" id="footer-terminal">UNREGISTERED TERMINAL</span>
+                <span class="footer-right">Imagyn Technologies · IMAGYN POS</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shortcuts bar -->
+    <div class="shortcuts-bar">
+        <span class="sc-label">Shortcuts</span>
+        <button class="sc-btn green" onclick="quickProvision()">⚡ Instant Provision</button>
+        <button class="sc-btn blue"  onclick="demoFill()">📋 Fill Demo Data</button>
+        <button class="sc-btn amber" onclick="window.location.href='terminal_login.html'">→ Skip to Login</button>
+        <button class="sc-btn ghost" onclick="resetTerminal()">↺ Reset</button>
+    </div>
+
+    <script>
+        const LOGS = [
+            { text: "Initializing socket to api.imagyntechnologies.com/v1...", ok: false, pct: 5 },
+            { text: "Connection established. Latency: 14ms.", ok: true, pct: 10 },
+            { text: "Device token [DEV-4A9-8F] authenticated successfully.", ok: true, pct: 15 },
+            { text: "Fetching metadata schema from central server...", ok: false, pct: 20 },
+            { text: "Creating SQLite relational cache on local partition...", ok: false, pct: 25 },
+            { text: "SQLite tables [catalog, shifts, orders, cash_movements, sync_outbox] created.", ok: true, pct: 30 },
+            { text: "Beginning catalog snapshot download...", ok: false, pct: 38 },
+            { text: "Category 'Grocery & Staples' — 432 items downloaded OK", ok: true, pct: 50 },
+            { text: "Category 'Electronics & Hardware' — 120 items downloaded OK", ok: true, pct: 60 },
+            { text: "Category 'Apparel & Clothing' — 310 items downloaded OK", ok: true, pct: 70 },
+            { text: "Category 'Pharmacy & Healthcare' — 388 items downloaded OK", ok: true, pct: 80 },
+            { text: "Tax rules imported: SST 15%, GST 18% — Active", ok: true, pct: 85 },
+            { text: "Optimizing SQLite indexes for barcode query performance...", ok: false, pct: 90 },
+            { text: "Sync outbox queue engine initialized.", ok: false, pct: 95 },
+            { text: "1,250 catalog items cached. Provision complete.", ok: true, pct: 100 },
+        ];
+
+        function startProvisioning() {
+            const storeId  = document.getElementById('store-id').value;
+            const terminal = document.getElementById('terminal-code').value || 'POS-01';
+
+            document.getElementById('form-panel').style.display = 'none';
+            document.getElementById('progress-panel').style.display = 'flex';
+            document.getElementById('progress-panel').style.flexDirection = 'column';
+
+            setStatus('provisioning');
+            document.getElementById('footer-terminal').textContent = terminal + ' · ' + storeId;
+            setDbStatus('syncing');
+
+            localStorage.setItem('terminal_config', JSON.stringify({
+                storeId, terminalId: terminal,
+                companyName: 'Imagyn Technologies',
+                branch: storeId, version: 'v1.0.0',
+                lastSync: new Date().toISOString()
+            }));
+
+            const cons  = document.getElementById('console-log');
+            const bar   = document.getElementById('bar-fill');
+            const pctEl = document.getElementById('pct-label');
+
+            LOGS.forEach((log, i) => {
+                setTimeout(() => {
+                    const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+                    const line = document.createElement('div');
+                    line.innerHTML = '<span class="log-ts">[' + ts + ']</span><span class="' + (log.ok ? 'log-ok' : 'log-info') + '">' + log.text + '</span>';
+                    cons.appendChild(line);
+                    cons.scrollTop = cons.scrollHeight;
+                    bar.style.width = log.pct + '%';
+                    pctEl.textContent = log.pct + '%';
+                    if (log.pct === 100) {
+                        setStatus('provisioned');
+                        setDbStatus('active');
+                        syncParent();
+                        setTimeout(() => { window.location.href = 'terminal_login.html'; }, 1100);
+                    }
+                }, i * 220);
+            });
+        }
+
+        function setStatus(state) {
+            const badge = document.getElementById('status-badge');
+            const text  = document.getElementById('status-text');
+            if (state === 'provisioning') { badge.className = 'status-badge'; text.textContent = 'PROVISIONING'; }
+            else if (state === 'provisioned') { badge.className = 'status-badge provisioned'; text.textContent = 'PROVISIONED'; }
+            else { badge.className = 'status-badge'; text.textContent = 'UNCONFIGURED'; }
+        }
+
+        function setDbStatus(state) {
+            const dot   = document.getElementById('db-dot');
+            const label = document.getElementById('db-status-label');
+            if (state === 'syncing') { dot.className = 'tele-dot spin'; label.style.color = 'var(--amber)'; label.textContent = 'Syncing…'; }
+            else if (state === 'active') { dot.className = 'tele-dot ok'; label.style.color = 'var(--green)'; label.textContent = 'Active'; }
+            else { dot.className = 'tele-dot warn'; label.style.color = 'var(--amber)'; label.textContent = 'SQLite Inactive'; }
+        }
+
+        function quickProvision() { startProvisioning(); }
+
+        function demoFill() {
+            document.getElementById('store-id').value = 'IMAGYN-KHI-01';
+            document.getElementById('terminal-code').value = 'POS-01';
+        }
+
+        function resetTerminal() {
+            localStorage.removeItem('terminal_config');
+            localStorage.removeItem('terminal_operator');
+            sessionStorage.clear();
+            document.getElementById('footer-terminal').textContent = 'UNREGISTERED TERMINAL';
+            setStatus('reset');
+            setDbStatus('inactive');
+            document.getElementById('form-panel').style.display = '';
+            document.getElementById('progress-panel').style.display = 'none';
+            document.getElementById('bar-fill').style.width = '0';
+            document.getElementById('pct-label').textContent = '0%';
+            document.getElementById('console-log').innerHTML = '';
+        }
+
+        function syncParent() {
+            try {
+                const doc = window.parent.document;
+                doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+                const el = doc.getElementById('step-0');
+                if (el) el.classList.add('flow-step-active');
+                const url = doc.getElementById('simulator-url-display');
+                if (url) url.innerText = 'screens/provision_terminal.html';
+                const nb = doc.getElementById('open-new-tab-btn');
+                if (nb) nb.href = 'screens/provision_terminal.html';
+            } catch(e) {}
+        }
+        document.addEventListener('DOMContentLoaded', syncParent);
+    </script>
+</body>
+</html>

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>IMAGYN POS • Operator Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; overflow: hidden; }
+
+        :root {
+            --navy:       #0F172A;
+            --navy-2:     #1E293B;
+            --green:      #10B981;
+            --green-dim:  #ECFDF5;
+            --amber:      #F59E0B;
+            --red:        #EF4444;
+            --bg:         #F8FAFC;
+            --white:      #FFFFFF;
+            --border:     #E2E8F0;
+            --border-2:   #CBD5E1;
+            --text:       #0F172A;
+            --text-muted: #64748B;
+            --text-dim:   #94A3B8;
+            --sans:       'Plus Jakarta Sans', 'Inter', ui-sans-serif, sans-serif;
+            --mono:       'IBM Plex Mono', ui-monospace, monospace;
+        }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            user-select: none;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+        /* ── Login overlay ── */
+        #login-overlay {
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,0.08); backdrop-filter: blur(6px);
+            z-index: 200; opacity: 0; pointer-events: none;
+            transition: opacity 0.4s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #login-overlay.show { opacity: 1; pointer-events: all; }
+        .overlay-card {
+            background: var(--white); border-radius: 20px;
+            padding: 36px 40px; text-align: center;
+            box-shadow: 0 24px 48px rgba(15,23,42,0.18);
+            border: 1px solid var(--border);
+        }
+        .overlay-icon {
+            width: 52px; height: 52px; border-radius: 50%;
+            background: var(--green-dim); border: 2px solid var(--green);
+            display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+        }
+
+        /* ── Top header ── */
+        header {
+            height: 54px; flex-shrink: 0;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; position: relative; z-index: 10;
+        }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .logo-box {
+            background: var(--navy); border-radius: 9px; padding: 5px 12px;
+            height: 34px; display: flex; align-items: center; justify-content: center;
+        }
+        .logo-box img { max-height: 18px; object-fit: contain; }
+        .logo-fallback { color: white; font-weight: 800; font-size: 12px; letter-spacing: -0.02em; }
+        .header-divider { width: 1px; height: 22px; background: var(--border); }
+        .header-info { display: flex; flex-direction: column; gap: 1px; }
+        .header-branch  { font-size: 10px; font-weight: 600; letter-spacing: 0.14em; color: var(--text-muted); text-transform: uppercase; }
+        .header-terminal { font-size: 12px; font-weight: 700; color: var(--navy); font-family: var(--mono); }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .live-clock { font-family: var(--mono); font-size: 13px; color: var(--text-muted); }
+        .system-pill {
+            display: flex; align-items: center; gap: 6px;
+            padding: 4px 12px; border-radius: 20px;
+            background: #ECFDF5; border: 1px solid #6EE7B7;
+        }
+        .system-pill-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+        .system-pill-text { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #065F46; text-transform: uppercase; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+        /* ── Main layout ── */
+        main {
+            flex: 1; display: flex; overflow: hidden; position: relative; z-index: 1;
+        }
+
+        /* ── Left: Operator grid ── */
+        .panel-left {
+            width: 58%; padding: 22px 20px 16px 24px;
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            background: var(--white);
+        }
+        .panel-heading { margin-bottom: 16px; }
+        .panel-heading h2 { font-size: 15px; font-weight: 700; color: var(--text); margin: 0 0 3px; }
+        .panel-heading p  { font-size: 12px; color: var(--text-muted); margin: 0; }
+
+        /* Operator grid */
+        #operator-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 10px; flex: 1;
+        }
+
+        /* Operator card */
+        .op-card {
+            background: var(--white);
+            border: 1.5px solid var(--border);
+            border-radius: 14px; padding: 14px 12px;
+            cursor: pointer; transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            min-height: 96px; position: relative; overflow: hidden;
+        }
+        .op-card:hover {
+            border-color: var(--navy);
+            background: #F1F5F9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(15,23,42,0.1);
+        }
+        .op-card:active { transform: scale(0.97); }
+        .op-card.selected {
+            border-color: var(--navy);
+            background: #E2E8F0;
+            box-shadow: 0 4px 16px rgba(15,23,42,0.15);
+        }
+        .op-card.manager-card { border-color: rgba(245,158,11,0.35); }
+        .op-card.manager-card:hover { border-color: var(--amber); background: #FFFBEB; }
+
+        .op-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 13px; color: white; flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Bottom meta bar */
+        .panel-meta {
+            margin-top: 14px; padding-top: 12px;
+            border-top: 1px solid var(--border);
+            display: flex; align-items: center; gap: 12px;
+        }
+        .panel-meta-id { font-size: 10px; color: var(--text-dim); font-family: var(--mono); flex: 1; }
+        .panel-meta-date { font-size: 10px; color: var(--text-dim); font-family: var(--mono); }
+
+        /* ── Right: PIN entry ── */
+        .panel-right {
+            width: 42%; padding: 22px 24px 16px 20px;
+            display: flex; flex-direction: column;
+            background: var(--bg);
+        }
+
+        /* Selected operator display */
+        .op-display { min-height: 64px; display: flex; align-items: center; margin-bottom: 18px; }
+        .op-empty-state {
+            width: 100%;
+            border: 1.5px dashed var(--border-2);
+            border-radius: 12px; padding: 18px 16px; text-align: center;
+        }
+        .op-empty-icon { color: var(--text-dim); font-size: 22px; display: block; margin-bottom: 5px; }
+        .op-empty-text { font-size: 12px; color: var(--text-dim); margin: 0; }
+        .op-empty-sub  { font-size: 11px; color: var(--text-dim); opacity: 0.7; margin: 3px 0 0; }
+
+        .op-selected-badge {
+            width: 100%;
+            background: #F1F5F9; border: 1.5px solid rgba(15,23,42,0.2);
+            border-radius: 12px; padding: 10px 14px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .op-selected-badge .op-avatar { width: 36px; height: 36px; font-size: 12px; }
+
+        /* PIN dots */
+        .pin-section { margin-bottom: 18px; }
+        .pin-label { font-size: 10px; font-weight: 600; letter-spacing: 0.18em; color: var(--text-muted); text-transform: uppercase; text-align: center; margin-bottom: 10px; }
+        .pin-dots { display: flex; align-items: center; justify-content: center; gap: 14px; }
+        .pin-dot {
+            width: 14px; height: 14px; border-radius: 50%;
+            border: 2px solid var(--border-2); background: transparent;
+            transition: all 0.15s ease;
+        }
+        .pin-dot.filled {
+            background: var(--navy); border-color: var(--navy);
+            box-shadow: 0 0 8px rgba(15,23,42,0.35);
+            transform: scale(1.1);
+        }
+
+        /* PIN keypad */
+        .pin-keypad {
+            display: grid; grid-template-columns: repeat(3,1fr);
+            gap: 8px; flex: 1; align-content: start;
+        }
+        .pin-key {
+            background: var(--white);
+            border: 1.5px solid var(--border-2);
+            border-radius: 12px; height: 58px;
+            font-size: 20px; font-weight: 600;
+            color: var(--text); cursor: pointer;
+            transition: all 0.12s cubic-bezier(0.16,1,0.3,1);
+            font-family: var(--mono);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .pin-key:hover { background: #F1F5F9; border-color: var(--navy); color: var(--navy); }
+        .pin-key:active { transform: scale(0.94); background: #E2E8F0; border-color: var(--navy); }
+        .pin-key.clear-key { color: var(--red); font-size: 11px; font-family: var(--sans); font-weight: 700; letter-spacing: 0.06em; }
+        .pin-key.clear-key:hover { background: #FEF2F2; border-color: var(--red); }
+        .pin-key.back-key  { color: var(--text-muted); }
+
+        /* Login button */
+        .login-btn {
+            background: linear-gradient(135deg, var(--navy), var(--navy-2));
+            color: white; font-weight: 700; font-size: 13px;
+            letter-spacing: 0.08em; text-transform: uppercase;
+            border: none; border-radius: 14px; height: 52px; width: 100%;
+            cursor: pointer; transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+            box-shadow: 0 4px 16px rgba(15,23,42,0.25);
+            opacity: 0.4; pointer-events: none;
+        }
+        .login-btn.active { opacity: 1; pointer-events: auto; }
+        .login-btn.active:hover { box-shadow: 0 6px 24px rgba(15,23,42,0.4); transform: translateY(-1px); filter: brightness(1.06); }
+        .login-btn.active:active { transform: scale(0.98); }
+
+        /* Shortcuts bar — light glass */
+        .shortcuts-bar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 300;
+            background: rgba(255,255,255,0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(203,213,225,0.9); border-radius: 40px;
+            padding: 7px 14px; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 8px 24px rgba(15,23,42,0.1), 0 2px 8px rgba(0,0,0,0.05);
+            white-space: nowrap; overflow-x: auto; max-width: 95vw;
+        }
+        .shortcuts-bar::-webkit-scrollbar { display: none; }
+        .sc-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: var(--text-dim); text-transform: uppercase; padding-right: 8px; border-right: 1px solid var(--border); margin-right: 2px; white-space: nowrap; }
+        .sc-btn { padding: 5px 13px; border-radius: 20px; border: none; cursor: pointer; font-size: 10px; font-weight: 700; transition: all 0.13s; font-family: var(--sans); white-space: nowrap; }
+        .sc-btn:active { transform: scale(0.95); }
+        .sc-btn.green { background: #ECFDF5; border: 1px solid #6EE7B7; color: #065F46; }
+        .sc-btn.green:hover { background: #D1FAE5; }
+        .sc-btn.amber { background: #FFFBEB; border: 1px solid #FCD34D; color: #92400E; }
+        .sc-btn.amber:hover { background: #FEF3C7; }
+        .sc-btn.blue  { background: #EFF6FF; border: 1px solid #93C5FD; color: #1D4ED8; }
+        .sc-btn.blue:hover  { background: #DBEAFE; }
+        .sc-btn.ghost { background: #F8FAFC; border: 1px solid var(--border); color: var(--text-muted); }
+        .sc-btn.ghost:hover { background: #F1F5F9; color: var(--text); }
+
+        @keyframes shake { 0%,100%{transform:translateX(0)} 15%{transform:translateX(-5px)} 30%{transform:translateX(5px)} 45%{transform:translateX(-4px)} 60%{transform:translateX(4px)} 75%{transform:translateX(-2px)} 90%{transform:translateX(2px)} }
+        .shake { animation: shake 0.4s ease; }
+    </style>
+</head>
+<body>
+    <!-- Login transition overlay -->
+    <div id="login-overlay">
+        <div class="overlay-card">
+            <div class="overlay-icon">
+                <span class="material-symbols-outlined fill" style="color:var(--green);font-size:24px;">check_circle</span>
+            </div>
+            <p style="color:var(--navy);font-weight:700;font-size:15px;" id="overlay-msg">Authenticating…</p>
+            <p style="color:var(--text-muted);font-size:12px;margin-top:4px;">Opening shift dashboard</p>
+        </div>
+    </div>
+
+    <!-- Top header -->
+    <header>
+        <div class="header-left">
+            <div class="logo-box">
+                <img src="logo.png" alt="IMAGYN POS"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+                <span class="logo-fallback" style="display:none">IMAGYN POS</span>
+            </div>
+            <div class="header-divider"></div>
+            <div class="header-info">
+                <span class="header-branch" id="header-branch">Main Branch</span>
+                <span class="header-terminal" id="header-terminal">POS-01</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <span class="live-clock" id="live-clock">--:--:--</span>
+            <div class="system-pill">
+                <span class="system-pill-dot"></span>
+                <span class="system-pill-text">System Online</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main>
+        <!-- Left: Operator grid -->
+        <div class="panel-left">
+            <div class="panel-heading">
+                <h2>Select Operator</h2>
+                <p>Tap your name, then enter your PIN to begin.</p>
+            </div>
+
+            <div id="operator-grid"></div>
+
+            <div class="panel-meta">
+                <span class="panel-meta-id">TERMINAL: <span id="footer-terminal">IMAGYN-POS-01</span></span>
+                <span class="panel-meta-date" id="footer-date">--</span>
+            </div>
+        </div>
+
+        <!-- Right: PIN entry -->
+        <div class="panel-right">
+
+            <!-- Operator display -->
+            <div class="op-display">
+                <div class="op-empty-state" id="op-empty-state">
+                    <span class="material-symbols-outlined op-empty-icon">person_pin</span>
+                    <p class="op-empty-text">No operator selected</p>
+                    <p class="op-empty-sub">Select a name from the left panel</p>
+                </div>
+                <div class="op-selected-badge" id="op-selected-state" style="display:none;">
+                    <div class="op-avatar" id="selected-op-avatar" style="background:var(--navy);"></div>
+                    <div style="flex:1;min-width:0;">
+                        <p style="font-size:13px;font-weight:700;color:var(--navy);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="selected-op-name">—</p>
+                        <p style="font-size:11px;color:var(--text-muted);margin:2px 0 0;font-weight:600;" id="selected-op-role">—</p>
+                    </div>
+                    <button onclick="clearOperator()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;border-radius:6px;line-height:0;">
+                        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PIN dots -->
+            <div class="pin-section">
+                <p class="pin-label">Security PIN</p>
+                <div class="pin-dots" id="pin-dots">
+                    <div class="pin-dot" id="dot-0"></div>
+                    <div class="pin-dot" id="dot-1"></div>
+                    <div class="pin-dot" id="dot-2"></div>
+                    <div class="pin-dot" id="dot-3"></div>
+                    <div class="pin-dot" id="dot-4" style="display:none;"></div>
+                    <div class="pin-dot" id="dot-5" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- PIN keypad -->
+            <div class="pin-keypad">
+                <button class="pin-key" onclick="pinPress('1')">1</button>
+                <button class="pin-key" onclick="pinPress('2')">2</button>
+                <button class="pin-key" onclick="pinPress('3')">3</button>
+                <button class="pin-key" onclick="pinPress('4')">4</button>
+                <button class="pin-key" onclick="pinPress('5')">5</button>
+                <button class="pin-key" onclick="pinPress('6')">6</button>
+                <button class="pin-key" onclick="pinPress('7')">7</button>
+                <button class="pin-key" onclick="pinPress('8')">8</button>
+                <button class="pin-key" onclick="pinPress('9')">9</button>
+                <button class="pin-key clear-key" onclick="pinPress('clear')">CLEAR</button>
+                <button class="pin-key" onclick="pinPress('0')">0</button>
+                <button class="pin-key back-key" onclick="pinPress('back')">
+                    <span class="material-symbols-outlined" style="font-size:20px;">backspace</span>
+                </button>
+            </div>
+
+            <!-- Login button -->
+            <div style="margin-top:14px;">
+                <button class="login-btn" id="login-btn" onclick="doLogin()">
+                    <span style="display:flex;align-items:center;justify-content:center;gap:8px;">
+                        <span class="material-symbols-outlined" style="font-size:18px;">login</span>
+                        Open Shift
+                    </span>
+                </button>
+                <p style="text-align:center;font-size:10px;color:var(--text-dim);margin:8px 0 0;font-family:var(--mono);">IMAGYN POS Platform · v1.0</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Shortcuts bar -->
+    <div class="shortcuts-bar">
+        <span class="sc-label">Shortcuts</span>
+        <button class="sc-btn green" onclick="demoQuickLogin('OP001')">⚡ Cashier (Adeel + 1234)</button>
+        <button class="sc-btn amber" onclick="demoQuickLogin('MGR01')">👔 Manager (Sana + 1234)</button>
+        <button class="sc-btn blue"  onclick="demoQuickLogin('OP002')">👤 Cashier 2 (Ahmed)</button>
+        <button class="sc-btn ghost" onclick="window.location.href='provision_terminal.html'">← Provision</button>
+    </div>
+
+    <script>
+        // ── Operators data ──
+        const operators = [
+            { id: 'OP001', name: 'Adeel Saifee',  role: 'Sr. Cashier',  color: '#2563EB', initials: 'AS' },
+            { id: 'OP002', name: 'Ahmed Khan',     role: 'Cashier',       color: '#7C3AED', initials: 'AK' },
+            { id: 'OP003', name: 'Zainab Fatima',  role: 'Cashier',       color: '#DB2777', initials: 'ZF' },
+            { id: 'OP004', name: 'Bilal Hassan',   role: 'Cashier',       color: '#D97706', initials: 'BH' },
+            { id: 'MGR01', name: 'Sana Malik',     role: 'Manager',       color: '#059669', initials: 'SM', isManager: true },
+            { id: 'MGR02', name: 'Usman Ali',      role: 'Supervisor',    color: '#64748B', initials: 'UA', isManager: true },
+        ];
+
+        let selectedOp = null;
+        let pinValue   = '';
+        const MAX_PIN  = 6;
+
+        function renderOperators() {
+            const grid = document.getElementById('operator-grid');
+            grid.innerHTML = '';
+            operators.forEach(op => {
+                const card = document.createElement('div');
+                card.className = 'op-card' + (op.isManager ? ' manager-card' : '');
+                card.id = 'op-' + op.id;
+                card.onclick = () => selectOperator(op);
+                card.innerHTML =
+                    '<div class="op-avatar" style="background:' + op.color + ';">' + op.initials + '</div>' +
+                    '<div style="text-align:center;">' +
+                    '<p style="font-size:12px;font-weight:700;color:#0F172A;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:108px;">' + op.name + '</p>' +
+                    '<p style="font-size:10px;color:' + (op.isManager ? '#D97706' : '#64748B') + ';margin:2px 0 0;font-weight:600;">' + op.role + '</p>' +
+                    '</div>';
+                grid.appendChild(card);
+            });
+        }
+
+        function selectOperator(op) {
+            selectedOp = op;
+            pinValue = '';
+            updatePinDots();
+            updateLoginBtn();
+
+            document.querySelectorAll('.op-card').forEach(c => c.classList.remove('selected'));
+            const card = document.getElementById('op-' + op.id);
+            if (card) card.classList.add('selected');
+
+            document.getElementById('op-empty-state').style.display  = 'none';
+            document.getElementById('op-selected-state').style.display = '';
+
+            const avatarEl = document.getElementById('selected-op-avatar');
+            avatarEl.textContent  = op.initials;
+            avatarEl.style.background = op.color;
+            document.getElementById('selected-op-name').textContent = op.name;
+            document.getElementById('selected-op-role').textContent  = op.role;
+
+            const existing = card.querySelector('.check-overlay');
+            if (!existing) {
+                const chk = document.createElement('div');
+                chk.className = 'check-overlay';
+                chk.style.cssText = 'position:absolute;top:6px;right:6px;';
+                chk.innerHTML = '<span class="material-symbols-outlined fill" style="font-size:14px;color:var(--navy);font-variation-settings:\'FILL\' 1">check_circle</span>';
+                card.appendChild(chk);
+            }
+        }
+
+        function clearOperator() {
+            selectedOp = null;
+            pinValue = '';
+            updatePinDots();
+            updateLoginBtn();
+            document.querySelectorAll('.op-card').forEach(c => {
+                c.classList.remove('selected');
+                const chk = c.querySelector('.check-overlay');
+                if (chk) chk.remove();
+            });
+            document.getElementById('op-empty-state').style.display  = '';
+            document.getElementById('op-selected-state').style.display = 'none';
+        }
+
+        function pinPress(val) {
+            if (val === 'clear') { pinValue = ''; }
+            else if (val === 'back') { pinValue = pinValue.slice(0, -1); }
+            else { if (pinValue.length >= MAX_PIN) return; pinValue += val; }
+            updatePinDots();
+            updateLoginBtn();
+        }
+
+        function updatePinDots() {
+            for (let i = 0; i < MAX_PIN; i++) {
+                const dot = document.getElementById('dot-' + i);
+                if (!dot) continue;
+                dot.classList.toggle('filled', i < pinValue.length);
+            }
+        }
+
+        function updateLoginBtn() {
+            const btn = document.getElementById('login-btn');
+            const ready = selectedOp !== null && pinValue.length >= 4;
+            btn.classList.toggle('active', ready);
+        }
+
+        function doLogin() {
+            if (!selectedOp || pinValue.length < 4) return;
+
+            const btn = document.getElementById('login-btn');
+            btn.style.opacity = '0.7';
+            btn.style.pointerEvents = 'none';
+            btn.innerHTML = '<span style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 0.8s linear infinite"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Authenticating…</span>';
+
+            const operator = {
+                id: selectedOp.id, name: selectedOp.name,
+                role: selectedOp.role, color: selectedOp.color,
+                initials: selectedOp.initials, loginTime: new Date().toISOString()
+            };
+            localStorage.setItem('terminal_operator', JSON.stringify(operator));
+
+            const config = JSON.parse(localStorage.getItem('terminal_config') || '{}');
+            if (!config.terminalId) {
+                config.terminalId = 'POS-01'; config.branch = 'Main Branch'; config.version = 'V1.0';
+                localStorage.setItem('terminal_config', JSON.stringify(config));
+            }
+
+            setTimeout(() => {
+                const overlay = document.getElementById('login-overlay');
+                document.getElementById('overlay-msg').textContent = 'Welcome, ' + selectedOp.name;
+                overlay.classList.add('show');
+                setTimeout(() => { window.location.href = 'shift_open.html'; }, 900);
+            }, 700);
+        }
+
+        function updateClock() {
+            document.getElementById('live-clock').textContent =
+                new Date().toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        document.getElementById('footer-date').textContent =
+            new Date().toLocaleDateString('en-PK', { day:'2-digit', month:'short', year:'numeric' });
+
+        const cfg = JSON.parse(localStorage.getItem('terminal_config') || '{}');
+        if (cfg.terminalId) document.getElementById('header-terminal').textContent = cfg.terminalId;
+        if (cfg.branch)     document.getElementById('header-branch').textContent   = cfg.branch;
+        if (cfg.terminalId) document.getElementById('footer-terminal').textContent = 'IMAGYN-' + cfg.terminalId;
+
+        document.addEventListener('keydown', e => {
+            if (e.key >= '0' && e.key <= '9') pinPress(e.key);
+            else if (e.key === 'Backspace') pinPress('back');
+            else if (e.key === 'Escape')    pinPress('clear');
+            else if (e.key === 'Enter')     doLogin();
+        });
+
+        const spinStyle = document.createElement('style');
+        spinStyle.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+        document.head.appendChild(spinStyle);
+
+        function syncParentSidebar(stepIndex) {
+            try {
+                const doc = window.parent.document;
+                doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+                const stepEl = doc.getElementById('step-' + stepIndex);
+                if (stepEl) stepEl.classList.add('flow-step-active');
+                const urlDisplay = doc.getElementById('simulator-url-display');
+                if (urlDisplay) urlDisplay.innerText = 'screens/terminal_login.html';
+            } catch(e) {}
+        }
+
+        function demoQuickLogin(opId) {
+            const op = operators.find(o => o.id === opId);
+            if (!op) return;
+            selectOperator(op);
+            pinValue = '';
+            updatePinDots();
+            const demoPin = '1234';
+            let i = 0;
+            const fillNext = () => {
+                if (i >= demoPin.length) { updateLoginBtn(); return; }
+                pinValue += demoPin[i++];
+                updatePinDots();
+                setTimeout(fillNext, 100);
+            };
+            setTimeout(fillNext, 180);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderOperators();
+            syncParentSidebar(1);
+            sessionStorage.removeItem('pos_shift_open');
+        });
+    </script>
+</body>
+</html>

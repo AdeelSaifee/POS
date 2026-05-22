@@ -5,23 +5,33 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>IMAGYN POS • Operator Login</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
     <style>
         :root {
-            --bg: #06090F;
-            --surface: rgba(12, 20, 38, 0.65);
-            --surface-solid: #0C1426;
-            --border: rgba(255, 255, 255, 0.07);
-            --border-active: #10B981;
-            --green: #10B981;
-            --green-dim: rgba(16, 185, 129, 0.12);
-            --green-glow: 0 0 20px rgba(16, 185, 129, 0.25);
-            --text: rgba(255, 255, 255, 0.92);
-            --text-muted: rgba(255, 255, 255, 0.45);
-            --text-dim: rgba(255, 255, 255, 0.25);
-            --sans: 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
+            --bg: #FFFFFF;
+            --surface: #F7F7F7;
+            --surface-solid: #F7F7F7;
+            --border: #E5E5E5;
+            --border-active: #A8E63D;
+            --green: #A8E63D;
+            --green-dim: #F4FBE9;
+            --green-dark: #96D32A;
+            --green-glow: 0 0 20px rgba(168, 230, 61, 0.25);
+            --amber: #F59E0B;
+            --amber-dim: #FEF3C7;
+            --red: #EF4444;
+            --red-dim: #FEF2F2;
+            --text: #202020;
+            --text-muted: #6B6B6B;
+            --text-dim: #A3A3A3;
+            --sans: 'Inter Tight', 'Inter', ui-sans-serif, sans-serif;
+            --heading: 'Space Grotesk', sans-serif;
             --mono: 'IBM Plex Mono', ui-monospace, monospace;
+            --navy: #202020;
+            --navy-2: #121212;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -29,9 +39,6 @@
         body {
             font-family: var(--sans);
             background-color: var(--bg);
-            background-image:
-                radial-gradient(ellipse at 10% 0%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
-                radial-gradient(ellipse at 90% 100%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
             min-height: 100vh;
             overflow: hidden;
             color: var(--text);
@@ -44,8 +51,8 @@
             position: fixed;
             inset: 0;
             background-image:
-                linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+                linear-gradient(rgba(0,0,0,0.01) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.01) 1px, transparent 1px);
             background-size: 36px 36px;
             pointer-events: none;
             z-index: 0;
@@ -62,15 +69,13 @@
         /* Glass panel */
         .glass {
             background: var(--surface);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--border);
         }
 
         /* Operator card */
         .op-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1.5px solid rgba(255, 255, 255, 0.07);
+            background: var(--surface);
+            border: 1.5px solid var(--border);
             border-radius: 16px;
             padding: 14px 12px;
             cursor: pointer;
@@ -89,12 +94,12 @@
             inset: 0;
             border-radius: 16px;
             opacity: 0;
-            background: radial-gradient(circle at center, rgba(16,185,129,0.08) 0%, transparent 70%);
+            background: radial-gradient(circle at center, rgba(168,230,61,0.08) 0%, transparent 70%);
             transition: opacity 0.2s;
         }
         .op-card:hover {
-            border-color: rgba(255, 255, 255, 0.18);
-            background: rgba(255, 255, 255, 0.055);
+            border-color: var(--border-2);
+            background: #F0F0F0;
             transform: translateY(-1px);
         }
         .op-card:hover::after { opacity: 1; }
@@ -106,7 +111,7 @@
         }
         .op-card.selected::after { opacity: 1; }
         .op-card.manager-card {
-            border-color: rgba(245, 158, 11, 0.2);
+            border-color: var(--border);
         }
 
         /* Avatar */
@@ -126,8 +131,8 @@
 
         /* PIN keypad button */
         .pin-key {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.07);
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 14px;
             display: flex;
             align-items: center;
@@ -142,43 +147,54 @@
             -webkit-tap-highlight-color: transparent;
         }
         .pin-key:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.18);
+            background: #F0F0F0;
+            border-color: var(--border-2);
         }
         .pin-key:active {
             transform: scale(0.94);
-            background: rgba(16, 185, 129, 0.12);
-            border-color: rgba(16, 185, 129, 0.3);
+            background: var(--green);
+            color: var(--navy);
+            border-color: var(--green-dark);
         }
         .pin-key.clear-key {
-            color: rgba(248, 113, 113, 0.8);
+            color: var(--red);
             font-size: 11px;
             font-family: var(--sans);
             font-weight: 700;
             letter-spacing: 0.06em;
         }
-        .pin-key.back-key { color: rgba(255,255,255,0.6); }
+        .pin-key.back-key { color: var(--text-muted); }
 
         /* PIN dot */
         .pin-dot {
             width: 14px;
             height: 14px;
             border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.25);
+            border: 2px solid var(--border-2);
             transition: all 0.15s ease;
             background: transparent;
         }
         .pin-dot.filled {
             background: var(--green);
             border-color: var(--green);
-            box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+            box-shadow: 0 0 8px rgba(168, 230, 61, 0.5);
             transform: scale(1.1);
+        }
+        .pin-dot.error {
+            background: var(--red) !important;
+            border-color: var(--red) !important;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.5) !important;
+        }
+        .pin-dot.success {
+            background: #22C55E !important;
+            border-color: #22C55E !important;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.5) !important;
         }
 
         /* Login button */
         .login-btn {
-            background: linear-gradient(135deg, #10B981, #0EA5E9);
-            color: #fff;
+            background: var(--green);
+            color: var(--navy);
             font-weight: 700;
             font-size: 13px;
             letter-spacing: 0.1em;
@@ -189,7 +205,7 @@
             width: 100%;
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+            box-shadow: 0 4px 20px rgba(168, 230, 61, 0.2);
             opacity: 0.4;
             pointer-events: none;
         }
@@ -198,15 +214,15 @@
             pointer-events: auto;
         }
         .login-btn.active:hover {
-            box-shadow: 0 6px 28px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 6px 28px rgba(168, 230, 61, 0.4);
             transform: translateY(-1px);
-            filter: brightness(1.06);
+            background: var(--green-dark);
         }
         .login-btn.active:active { transform: scale(0.98); }
 
         /* Empty operator state */
         .op-empty-state {
-            border: 1.5px dashed rgba(255,255,255,0.1);
+            border: 1.5px dashed var(--border);
             border-radius: 14px;
             padding: 20px 16px;
             text-align: center;
@@ -215,7 +231,7 @@
         /* Selected operator badge */
         .selected-op-badge {
             background: var(--green-dim);
-            border: 1px solid rgba(16, 185, 129, 0.25);
+            border: 1px solid rgba(168, 230, 61, 0.25);
             border-radius: 12px;
             padding: 10px 14px;
             display: flex;
@@ -241,6 +257,7 @@
             pointer-events: all;
         }
     </style>
+    </style>
 </head>
 <body class="flex flex-col h-screen">
     <!-- Transition overlay -->
@@ -255,11 +272,11 @@
     </div>
 
     <!-- ── TOP STATUS BAR ─────────────────────────────────── -->
-    <header class="relative z-10 flex items-center justify-between px-6 py-3 border-b" style="border-color:var(--border); background: rgba(6,9,15,0.8); backdrop-filter: blur(12px);">
+    <header class="relative z-10 flex items-center justify-between px-6 py-3 border-b" style="border-color:var(--border); background: var(--bg);">
         <div class="flex items-center gap-4">
             <!-- Logo -->
-            <div style="background:white; border-radius:10px; padding:5px 12px; height:34px; display:flex; align-items:center; justify-content:center;">
-                <img src="logo.png" alt="IMAGYN POS" style="max-height:20px; object-fit:contain;" onerror="this.parentElement.innerHTML='<span style=\'color:#0F3A7D;font-weight:800;font-size:13px;font-family:var(--sans);letter-spacing:-0.02em;\'>IMAGYN POS</span>'" />
+            <div style="background:var(--surface); border-radius:10px; padding:5px 12px; height:34px; display:flex; align-items:center; justify-content:center;">
+                <img src="logo.png" alt="IMAGYN POS" style="max-height:20px; object-fit:contain;" onerror="this.parentElement.innerHTML='<span style=\'color:var(--navy);font-weight:800;font-size:13px;font-family:var(--sans);letter-spacing:-0.02em;\'>IMAGYN POS</span>'" />
             </div>
             <div style="width:1px;height:20px;background:var(--border);"></div>
             <div style="display:flex;flex-direction:column;gap:1px;">
@@ -270,9 +287,9 @@
 
         <div class="flex items-center gap-4">
             <div style="font-family:var(--mono);font-size:13px;color:var(--text-muted);" id="live-clock">--:--:--</div>
-            <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);">
-                <span style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;display:block;"></span>
-                <span style="font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--green);text-transform:uppercase;">SYSTEM ONLINE</span>
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:var(--green-dim);border:1px solid var(--green);">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--navy);animation:pulse 2s infinite;display:block;"></span>
+                <span style="font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--navy);text-transform:uppercase;">SYSTEM ONLINE</span>
             </div>
         </div>
     </header>
@@ -281,9 +298,9 @@
     <main class="relative z-10 flex flex-1 overflow-hidden" style="gap:0;">
 
         <!-- LEFT: Operator Selection (58%) -->
-        <div class="flex flex-col" style="width:58%;padding:24px 20px 20px 24px;border-right:1px solid var(--border);">
+        <div class="flex flex-col" style="width:58%;padding:24px 20px 20px 24px;border-right:1px solid var(--border); background: var(--bg);">
             <div style="margin-bottom:20px;">
-                <h2 style="font-size:15px;font-weight:700;color:var(--text);margin:0 0 4px;">Select Operator</h2>
+                <h2 style="font-size:15px;font-weight:700;color:var(--text);margin:0 0 4px;font-family:var(--heading);">Select Operator</h2>
                 <p style="font-size:12px;color:var(--text-muted);margin:0;">Tap your name, then enter your PIN to begin.</p>
             </div>
 
@@ -300,7 +317,7 @@
         </div>
 
         <!-- RIGHT: PIN Entry (42%) -->
-        <div class="flex flex-col" style="width:42%;padding:24px 24px 20px 20px;">
+        <div class="flex flex-col" style="width:42%;padding:24px 24px 20px 20px; background: var(--bg);">
 
             <!-- Selected Operator Display -->
             <div style="margin-bottom:18px;min-height:64px;display:flex;align-items:center;">
@@ -312,10 +329,10 @@
                 </div>
                 <!-- Selected operator badge (hidden until selection) -->
                 <div class="selected-op-badge w-full" id="op-selected-state" style="display:none;">
-                    <div id="selected-op-avatar" class="op-avatar" style="width:36px;height:36px;font-size:12px;background:#10B981;flex-shrink:0;"></div>
+                    <div id="selected-op-avatar" class="op-avatar" style="width:36px;height:36px;font-size:12px;background:var(--green);color:var(--navy);flex-shrink:0;"></div>
                     <div style="flex:1;min-width:0;">
                         <p style="font-size:13px;font-weight:700;color:var(--text);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="selected-op-name">—</p>
-                        <p style="font-size:11px;color:rgba(16,185,129,0.9);margin:2px 0 0;font-weight:600;" id="selected-op-role">—</p>
+                        <p style="font-size:11px;color:var(--text-muted);margin:2px 0 0;font-weight:600;" id="selected-op-role">—</p>
                     </div>
                     <button onclick="clearOperator()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;border-radius:6px;line-height:0;" title="Change operator">
                         <span class="material-symbols-outlined" style="font-size:18px;">close</span>
@@ -334,6 +351,7 @@
                     <div class="pin-dot" id="dot-4" style="display:none;"></div>
                     <div class="pin-dot" id="dot-5" style="display:none;"></div>
                 </div>
+                <p style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:10px;" id="pin-hint">Hint: Demo PIN is 1234</p>
             </div>
 
             <!-- PIN Keypad -->
@@ -382,22 +400,55 @@
             90% { transform: translateX(2px); }
         }
         .shake { animation: shake 0.4s ease; }
+
+    /* ── Quick Shortcuts floating bar ── */
+    .shortcuts-bar {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 300;
+      background: rgba(255,255,255,0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(203,213,225,0.9); border-radius: 40px;
+      padding: 7px 14px; display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.02);
+      white-space: nowrap; overflow-x: auto; max-width: 95vw;
+    }
+    .shortcuts-bar::-webkit-scrollbar { display: none; }
+    .sc-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: #94A3B8;
+      text-transform: uppercase; padding-right: 8px; border-right: 1px solid #E2E8F0;
+      margin-right: 2px; white-space: nowrap;
+    }
+    .sc-btn {
+      padding: 5px 13px; border-radius: 20px; border: none; cursor: pointer;
+      font-size: 10px; font-weight: 700; transition: all 0.13s;
+      font-family: var(--sans); white-space: nowrap; letter-spacing: 0.02em;
+    }
+    .sc-btn:active { transform: scale(0.95); }
+    .sc-btn.green { background: var(--green-dim); border: 1px solid var(--green); color: var(--navy); }
+    .sc-btn.green:hover { background: var(--green); }
+    .sc-btn.blue  { background: var(--surface); border: 1px solid var(--border-2); color: var(--text); }
+    .sc-btn.blue:hover  { background: var(--border); }
+    .sc-btn.amber { background: var(--amber-dim); border: 1px solid var(--amber); color: var(--navy); }
+    .sc-btn.amber:hover { background: var(--amber); }
+    .sc-btn.ghost { background: var(--white); border: 1px solid var(--border); color: var(--text-muted); }
+    .sc-btn.ghost:hover { background: var(--surface); color: var(--text); }
     </style>
 
     <script>
         // ── Operators data ──
         const operators = [
-            { id: 'OP001', name: 'Adeel Saifee',  role: 'Sr. Cashier',  color: '#2563EB', initials: 'AS' },
-            { id: 'OP002', name: 'Ahmed Khan',     role: 'Cashier',       color: '#7C3AED', initials: 'AK' },
-            { id: 'OP003', name: 'Sara Ahmed',     role: 'Cashier',       color: '#DB2777', initials: 'SA' },
-            { id: 'OP004', name: 'Bilal Hassan',   role: 'Cashier',       color: '#D97706', initials: 'BH' },
-            { id: 'MGR01', name: 'Nadia Mirza',    role: 'Manager',       color: '#059669', initials: 'NM', isManager: true },
-            { id: 'MGR02', name: 'Usman Ali',      role: 'Supervisor',    color: '#64748B', initials: 'UA', isManager: true },
+            { id: 'OP001', name: 'Adeel Saifee',  role: 'Sr. Cashier',  color: '#2563EB', initials: 'AS', pin: '1111' },
+            { id: 'OP002', name: 'Ahmed Khan',     role: 'Cashier',       color: '#7C3AED', initials: 'AK', pin: '2222' },
+            { id: 'OP003', name: 'Sara Ahmed',     role: 'Cashier',       color: '#DB2777', initials: 'SA', pin: '3333' },
+            { id: 'OP004', name: 'Bilal Hassan',   role: 'Cashier',       color: '#D97706', initials: 'BH', pin: '4444' },
+            { id: 'MGR01', name: 'Nadia Mirza',    role: 'Manager',       color: '#059669', initials: 'NM', pin: '9999', isManager: true },
+            { id: 'MGR02', name: 'Usman Ali',      role: 'Supervisor',    color: '#64748B', initials: 'UA', pin: '8888', isManager: true },
         ];
 
         let selectedOp = null;
         let pinValue   = '';
-        const MAX_PIN  = 6;
+        const MAX_PIN  = 4;
+        let isAuthenticating = false;
+        let isErrorState = false;
 
         // ── Render operator grid ──
         function renderOperators() {
@@ -409,14 +460,14 @@
                 card.id = 'op-' + op.id;
                 card.onclick = () => selectOperator(op);
                 card.innerHTML = `
-                    <div class="op-avatar" style="background:${op.color};">
+                    <div class="op-avatar" style="background:${op.color}; color:#FFFFFF;">
                         ${op.initials}
                     </div>
                     <div style="text-align:center;">
-                        <p style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.9);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;">${op.name}</p>
-                        <p style="font-size:10px;color:${op.isManager ? '#F59E0B' : 'rgba(255,255,255,0.45)'};margin:2px 0 0;font-weight:600;">${op.role}</p>
+                        <p style="font-size:12px;font-weight:700;color:var(--text);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;">${op.name}</p>
+                        <p style="font-size:10px;color:${op.isManager ? 'var(--amber)' : 'var(--text-muted)'};margin:2px 0 0;font-weight:600;">${op.role}</p>
                     </div>
-                    ${selectedOp && selectedOp.id === op.id ? '<div style="position:absolute;top:6px;right:6px;"><span class="material-symbols-outlined fill" style="font-size:14px;color:var(--green);">check_circle</span></div>' : ''}
+                    ${selectedOp && selectedOp.id === op.id ? '<div class="check-overlay" style="position:absolute;top:6px;right:6px;"><span class="material-symbols-outlined fill" style="font-size:14px;color:var(--navy);">check_circle</span></div>' : ''}
                 `;
                 grid.appendChild(card);
             });
@@ -424,8 +475,10 @@
 
         // ── Select operator ──
         function selectOperator(op) {
+            if (isAuthenticating || isErrorState) return;
             selectedOp = op;
             pinValue = '';
+            clearPinDotsError();
             updatePinDots();
             updateLoginBtn();
 
@@ -457,8 +510,10 @@
 
         // ── Clear operator ──
         function clearOperator() {
+            if (isAuthenticating || isErrorState) return;
             selectedOp = null;
             pinValue = '';
+            clearPinDotsError();
             updatePinDots();
             updateLoginBtn();
             document.querySelectorAll('.op-card').forEach(c => {
@@ -472,16 +527,44 @@
 
         // ── PIN press ──
         function pinPress(val) {
+            if (!selectedOp || isAuthenticating || isErrorState) return;
+
             if (val === 'clear') {
                 pinValue = '';
+                clearPinDotsError();
             } else if (val === 'back') {
                 pinValue = pinValue.slice(0, -1);
+                clearPinDotsError();
             } else {
                 if (pinValue.length >= MAX_PIN) return;
                 pinValue += val;
             }
             updatePinDots();
             updateLoginBtn();
+
+            // Validate immediately on 4 digits
+            if (pinValue.length === 4) {
+                if (pinValue === selectedOp.pin) {
+                    isAuthenticating = true;
+                    setPinDotsSuccess();
+                    setTimeout(() => {
+                        doLogin();
+                    }, 500);
+                } else {
+                    isErrorState = true;
+                    setPinDotsError();
+                    const dotsContainer = document.getElementById('pin-dots');
+                    dotsContainer.classList.add('shake');
+                    setTimeout(() => {
+                        dotsContainer.classList.remove('shake');
+                        pinValue = '';
+                        updatePinDots();
+                        clearPinDotsError();
+                        isErrorState = false;
+                        updateLoginBtn();
+                    }, 650);
+                }
+            }
         }
 
         // ── Update PIN dot display ──
@@ -496,13 +579,53 @@
         // ── Update login button state ──
         function updateLoginBtn() {
             const btn = document.getElementById('login-btn');
-            const ready = selectedOp !== null && pinValue.length >= 4;
+            const ready = selectedOp !== null && pinValue.length >= 4 && pinValue === selectedOp.pin;
             btn.classList.toggle('active', ready);
+        }
+
+        function setPinDotsSuccess() {
+            for (let i = 0; i < 4; i++) {
+                const dot = document.getElementById('dot-' + i);
+                if (dot) dot.classList.add('success');
+            }
+            const hintEl = document.getElementById('pin-hint');
+            hintEl.textContent = 'Access granted ✓';
+            hintEl.style.color = '#22C55E';
+            hintEl.style.fontWeight = '700';
+        }
+
+        function setPinDotsError() {
+            for (let i = 0; i < 4; i++) {
+                const dot = document.getElementById('dot-' + i);
+                if (dot) dot.classList.add('error');
+            }
+            const hintEl = document.getElementById('pin-hint');
+            hintEl.textContent = 'Incorrect PIN — try again';
+            hintEl.style.color = 'var(--red)';
+            hintEl.style.fontWeight = '700';
+        }
+
+        function clearPinDotsError() {
+            for (let i = 0; i < 4; i++) {
+                const dot = document.getElementById('dot-' + i);
+                if (dot) {
+                    dot.classList.remove('error');
+                    dot.classList.remove('success');
+                }
+            }
+            const hintEl = document.getElementById('pin-hint');
+            hintEl.style.color = 'var(--text-muted)';
+            hintEl.style.fontWeight = '400';
+            if (selectedOp) {
+                hintEl.textContent = 'Hint: PIN is ' + selectedOp.pin;
+            } else {
+                hintEl.textContent = 'Hint: Select an operator to see PIN';
+            }
         }
 
         // ── Login ──
         function doLogin() {
-            if (!selectedOp || pinValue.length < 4) return;
+            if (!selectedOp || pinValue !== selectedOp.pin) return;
 
             const btn = document.getElementById('login-btn');
             btn.style.opacity = '0.7';
@@ -535,7 +658,7 @@
                 setTimeout(() => {
                     window.location.href = 'shift_open.html';
                 }, 900);
-            }, 700);
+            }, 500);
         }
 
         // ── Clock ──
@@ -561,7 +684,11 @@
             if (e.key >= '0' && e.key <= '9') pinPress(e.key);
             else if (e.key === 'Backspace') pinPress('back');
             else if (e.key === 'Escape')    pinPress('clear');
-            else if (e.key === 'Enter')     doLogin();
+            else if (e.key === 'Enter') {
+                if (selectedOp && pinValue === selectedOp.pin) {
+                    doLogin();
+                }
+            }
         });
 
         // ── Spin animation ──
@@ -587,9 +714,42 @@
         document.addEventListener('DOMContentLoaded', () => {
             renderOperators();
             syncParentSidebar(1);
+            clearPinDotsError(); // Set default hint text
             // Clear any stale session
             sessionStorage.removeItem('pos_shift_open');
         });
+
+        // ── Demo quick-login shortcuts ──
+        function demoQuickLogin(opId) {
+            const op = operators.find(o => o.id === opId);
+            if (!op) return;
+            selectOperator(op);
+            // Reset state
+            pinValue = '';
+            clearPinDotsError();
+            updatePinDots();
+            isAuthenticating = false;
+            isErrorState = false;
+
+            const demoPin = op.pin;
+            let i = 0;
+            const fillNext = () => {
+                if (i >= demoPin.length) {
+                    return;
+                }
+                pinPress(demoPin[i++]);
+                setTimeout(fillNext, 120);
+            };
+            setTimeout(fillNext, 180);
+        }
     </script>
+    <!-- ── Quick Shortcuts floating bar ── -->
+    <div class="shortcuts-bar">
+        <span class="sc-label">Shortcuts</span>
+        <button class="sc-btn green" onclick="demoQuickLogin('OP001')">⚡ Demo: Cashier (Adeel)</button>
+        <button class="sc-btn amber" onclick="demoQuickLogin('MGR01')">👔 Demo: Manager (Nadia)</button>
+        <button class="sc-btn blue"  onclick="demoQuickLogin('OP002')">👤 Demo: Cashier 2 (Ahmed)</button>
+        <button class="sc-btn ghost" onclick="window.location.href='provision_terminal.html'">← Provision</button>
+    </div>
 </body>
 </html>

@@ -1,328 +1,529 @@
 <!DOCTYPE html>
-<html class="light" lang="en">
+<html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Terminal Provisioning - R Technologies POS</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "brand-navy": "#0F3A7D", // Deep Navy
-                        "brand-navy-800": "#0A2859", // Darker Navy
-                        "brand-slate": "#4A5568", // Gray text
-                        "brand-gray": "#7F8C8D", // Light Gray text
-                        "emerald-neon": "#0A7A2B", // Enterprise Green
-                        "fluent-blue": "#0F3A7D", // Primary actions
-                        "fluent-error": "#E11D48", // Error red
-                        "fluent-success": "#0A7A2B" // Success green
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Plus Jakarta Sans', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #F4F6F8;
-        }
-        
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
-        }
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Terminal Provisioning — IMAGYN POS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:         #F4F6F8;
+      --white:      #FFFFFF;
+      --navy:       #0F3A7D;
+      --navy-2:     #0A2859;
+      --green:      #10B981;
+      --green-dim:  #ECFDF5;
+      --amber:      #F59E0B;
+      --red:        #EF4444;
+      --border:     #E1E4E8;
+      --border-2:   #CBD5E1;
+      --text:       #0F172A;
+      --text-muted: #64748B;
+      --text-dim:   #94A3B8;
+      --sans:       'Plus Jakarta Sans', 'Inter', ui-sans-serif, sans-serif;
+      --mono:       'IBM Plex Mono', ui-monospace, monospace;
+    }
 
-        .cyber-grid {
-            background-size: 24px 24px;
-            background-image: 
-                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-        }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
 
-        .state-transition {
-            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-        }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      user-select: none;
+    }
 
-        /* Tactile button active feedback */
-        .btn-touch {
-            transition: all 0.1s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .btn-touch:active {
-            transform: scale(0.95);
-        }
+    /* ── Card wrapper ── */
+    .card {
+      width: 100%; max-width: 940px;
+      display: flex; border-radius: 24px; overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+      min-height: 580px;
+    }
 
-        .fade-enter {
-            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.99) translateY(4px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
+    /* ── Left panel ── */
+    .card-left {
+      width: 40%; background: var(--navy);
+      position: relative; overflow: hidden;
+      padding: 32px 28px; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    /* cyber grid overlay */
+    .card-left::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background-image: linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    /* ambient glow */
+    .card-left::after {
+      content: ''; position: absolute;
+      top: 50%; left: 50%; transform: translate(-50%,-50%);
+      width: 260px; height: 260px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
 
-        /* Console log auto scroll styling */
-        .log-console::-webkit-scrollbar {
-            width: 4px;
-        }
-        .log-console::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-        .log-console::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 2px;
-        }
-    </style>
+    .left-header {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .left-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.22em;
+      color: rgba(255,255,255,0.35); text-transform: uppercase;
+    }
+    .status-badge {
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px;
+      background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.28);
+      font-size: 8px; font-weight: 800; letter-spacing: 0.18em;
+      color: var(--amber); text-transform: uppercase;
+      transition: all 0.3s;
+    }
+    .status-badge .dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--amber); animation: blink 2s infinite;
+    }
+    .status-badge.provisioned {
+      background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: var(--green);
+    }
+    .status-badge.provisioned .dot { background: var(--green); }
+
+    .left-brand {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .brand-card {
+      background: white; border-radius: 16px; padding: 16px 24px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06);
+    }
+    .brand-name { color: var(--navy); font-weight: 800; font-size: 18px; letter-spacing: -0.03em; font-family: var(--sans); }
+    .brand-sub  { color: var(--green); font-weight: 700; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; font-family: var(--mono); }
+    .brand-desc { font-size: 10px; color: rgba(255,255,255,0.45); text-align: center; line-height: 1.5; }
+
+    .telemetry {
+      position: relative; z-index: 1;
+      background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 12px 14px;
+    }
+    .tele-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .tele-row:last-child { margin-bottom: 0; }
+    .tele-label { font-size: 10px; color: rgba(255,255,255,0.45); }
+    .tele-val   { font-family: var(--mono); font-size: 10px; display: flex; align-items: center; gap: 5px; color: rgba(255,255,255,0.85); }
+    .tele-dot   { width: 6px; height: 6px; border-radius: 50%; }
+    .tele-dot.ok   { background: var(--green); }
+    .tele-dot.warn { background: var(--amber); }
+    .tele-dot.pulse { background: var(--green); animation: blink 1.5s infinite; }
+
+    /* ── Right panel ── */
+    .card-right {
+      flex: 1; background: var(--white);
+      display: flex; flex-direction: column;
+      padding: 32px 32px 24px;
+    }
+
+    #form-panel, #progress-panel {
+      flex: 1; display: flex; flex-direction: column; justify-content: center;
+    }
+    #progress-panel { display: none; }
+
+    .form-title {
+      font-size: 22px; font-weight: 800; color: var(--navy);
+      letter-spacing: -0.03em; margin-bottom: 4px;
+    }
+    .form-sub {
+      font-size: 12px; color: var(--text-muted); margin-bottom: 28px;
+    }
+
+    .field-group { margin-bottom: 16px; }
+    .field-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.15em;
+      color: var(--navy); text-transform: uppercase; display: block; margin-bottom: 7px;
+    }
+    .field-select, .field-input {
+      width: 100%; height: 46px;
+      background: #F8FAFC; border: 1.5px solid var(--border);
+      border-radius: 11px; padding: 0 14px;
+      color: var(--text); font-size: 13px; font-weight: 600;
+      font-family: var(--sans); outline: none;
+      transition: border-color 0.15s, background 0.15s;
+      appearance: none; -webkit-appearance: none;
+    }
+    .field-select {
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer;
+    }
+    .field-select:focus, .field-input:focus {
+      border-color: var(--navy); background: #EBF2FF;
+    }
+
+    .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 2px 0; }
+    .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--navy); cursor: pointer; }
+    .checkbox-label { font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+
+    .provision-btn {
+      width: 100%; height: 52px; margin-top: 20px;
+      background: var(--navy); border: none; border-radius: 14px;
+      color: white; font-family: var(--sans); font-size: 13px; font-weight: 800;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px;
+      box-shadow: 0 4px 16px rgba(15,58,125,0.2);
+      transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
+    }
+    .provision-btn:hover { background: var(--navy-2); box-shadow: 0 6px 24px rgba(15,58,125,0.3); transform: translateY(-1px); }
+    .provision-btn:active { transform: scale(0.97); }
+
+    /* ── Progress panel ── */
+    .progress-title { font-size: 20px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+    .progress-sub   { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+
+    .progress-bar-wrap {
+      background: #F8FAFC; border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
+    }
+    .progress-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .progress-bar-label  { font-size: 11px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 7px; }
+    .ping-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: ping 1.2s infinite; }
+    .progress-pct { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--green); }
+    .bar-bg   { background: #E2E8F0; border-radius: 6px; height: 8px; overflow: hidden; }
+    .bar-fill { height: 100%; background: linear-gradient(90deg, var(--green), #0EA5E9); border-radius: 6px; width: 0; transition: width 0.35s ease; }
+
+    /* Console */
+    .console {
+      background: var(--navy-2); border: 1.5px solid rgba(15,58,125,0.2);
+      border-radius: 12px; padding: 12px 14px;
+      font-family: var(--mono); font-size: 10px; color: var(--green);
+      height: 180px; overflow-y: auto; line-height: 1.7;
+    }
+    .console::-webkit-scrollbar { width: 3px; }
+    .console::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    .console .log-ok   { color: #6EE7B7; }
+    .console .log-info { color: rgba(255,255,255,0.5); }
+    .console .log-ts   { color: rgba(16,185,129,0.5); margin-right: 6px; }
+
+    /* ── Card footer ── */
+    .card-footer {
+      border-top: 1px solid var(--border); padding-top: 14px; margin-top: 16px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .footer-left  { font-family: var(--mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.12em; }
+    .footer-right { font-size: 9px; color: var(--text-dim); letter-spacing: 0.05em; }
+
+    /* ── Shortcuts bar (light glass) ── */
+    .shortcuts-bar {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 300;
+      background: rgba(255,255,255,0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(203,213,225,0.9); border-radius: 40px;
+      padding: 7px 14px; display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 8px 24px rgba(15,58,125,0.1), 0 2px 8px rgba(0,0,0,0.05);
+      white-space: nowrap; overflow-x: auto; max-width: 95vw;
+    }
+    .shortcuts-bar::-webkit-scrollbar { display: none; }
+    .sc-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: #94A3B8;
+      text-transform: uppercase; padding-right: 8px; border-right: 1px solid #E2E8F0;
+      margin-right: 2px; white-space: nowrap;
+    }
+    .sc-btn {
+      padding: 5px 13px; border-radius: 20px; border: none; cursor: pointer;
+      font-size: 10px; font-weight: 700; transition: all 0.13s;
+      font-family: var(--sans); white-space: nowrap; letter-spacing: 0.02em;
+    }
+    .sc-btn:active { transform: scale(0.95); }
+    .sc-btn.green { background: #ECFDF5; border: 1px solid #6EE7B7; color: #065F46; }
+    .sc-btn.green:hover { background: #D1FAE5; }
+    .sc-btn.blue  { background: #EFF6FF; border: 1px solid #93C5FD; color: #1D4ED8; }
+    .sc-btn.blue:hover  { background: #DBEAFE; }
+    .sc-btn.amber { background: #FFFBEB; border: 1px solid #FCD34D; color: #92400E; }
+    .sc-btn.amber:hover { background: #FEF3C7; }
+    .sc-btn.ghost { background: #F8FAFC; border: 1px solid #E2E8F0; color: #64748B; }
+    .sc-btn.ghost:hover { background: #F1F5F9; color: #0F172A; }
+
+    /* Fade in */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .fade-in { animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+    /* Animations */
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    @keyframes ping  { 0%{opacity:1;transform:scale(1)} 60%{opacity:0;transform:scale(2)} 100%{opacity:0} }
+  </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4 md:p-6 overflow-x-hidden">
-    
-    <!-- Main Card Container -->
-    <div class="w-full max-w-4xl bg-white rounded-[24px] shadow-[0_10px_40px_rgba(0,0,0,0.08)] border border-[#E1E4E8] overflow-hidden flex flex-col md:flex-row h-auto md:h-[600px] relative fade-enter select-none">
-        
-        <!-- Left Side: Diagnostics and Setup Status -->
-        <div class="w-full md:w-[40%] bg-brand-navy p-8 md:p-10 flex flex-col justify-between text-white relative overflow-hidden h-[200px] md:h-full border-r border-brand-navy-800">
-            <!-- Background Grid -->
-            <div class="absolute inset-0 cyber-grid opacity-50"></div>
-            <!-- Ambient Radial Glow -->
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-emerald-neon/10 blur-[80px]"></div>
-            
-            <!-- Header -->
-            <div class="relative z-10 flex items-center justify-between">
-                <span class="font-display text-[9px] font-bold tracking-widest text-slate-500 uppercase">PROVISIONING WIZARD</span>
-                <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                    <span class="text-[8px] font-display font-bold tracking-wider text-amber-500 uppercase" id="provisioning-badge">UNCONFIGURED</span>
-                </div>
-            </div>
+<body>
 
-            <!-- Branding (Centered) -->
-            <div class="relative z-10 flex flex-col items-center my-auto">
-                <div class="bg-white px-5 py-4 rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.3)] border border-white/5 flex flex-col items-center justify-center w-52 h-20 mb-3">
-                    <img src="logo.png" alt="IMAGYN POS" style="max-height:28px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-                    <div style="display:none;flex-direction:column;align-items:center;">
-                        <span class="text-brand-navy font-bold text-xl tracking-tight">IMAGYN</span>
-                        <span class="text-emerald-neon font-display font-extrabold text-xs tracking-widest">P O S</span>
-                    </div>
-                </div>
-                <p class="text-[10px] text-slate-400 font-medium tracking-wide">Initial Terminal Configuration</p>
-            </div>
+  <div class="card fade-in">
 
-            <!-- Telemetry Logs Summary -->
-            <div class="relative z-10 bg-black/10 backdrop-blur-sm border border-white/10 rounded-xl p-3.5 space-y-2 text-[10px] text-white/70">
-                <div class="flex justify-between items-center">
-                    <span class="text-white/60">API Connection</span>
-                    <div class="flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-neon"></span>
-                        <span class="font-medium text-white/90">Active</span>
-                    </div>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-white/60">Device Hardware</span>
-                    <div class="flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-neon"></span>
-                        <span class="font-medium text-white/90">Authenticated</span>
-                    </div>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-white/60">Local Cache DB</span>
-                    <span class="font-mono text-amber-500" id="db-status-label">SQLite Inactive</span>
-                </div>
-            </div>
+    <!-- ── Left panel ── -->
+    <div class="card-left">
+      <div class="left-header">
+        <span class="left-label">Provisioning Wizard</span>
+        <div class="status-badge" id="status-badge">
+          <span class="dot"></span>
+          <span id="status-text">UNCONFIGURED</span>
         </div>
+      </div>
 
-        <!-- Right Side: Input Form & Progress Logging -->
-        <div class="w-full md:w-[60%] p-8 md:p-10 flex flex-col justify-between bg-white h-auto md:h-full relative overflow-hidden">
-            
-            <!-- Setup Form Panel -->
-            <div id="setup-form-panel" class="my-auto w-full state-transition block">
-                <div class="mb-6 text-center md:text-left">
-                    <h2 class="font-display text-2xl font-extrabold text-brand-navy tracking-tight">Register Terminal</h2>
-                    <p class="text-xs text-brand-gray mt-1">Configure this register's location and terminal code.</p>
-                </div>
-
-                <div class="space-y-4 max-w-md mx-auto py-2">
-                    <!-- Store ID Selection -->
-                    <div>
-                        <label for="store-id" class="block text-xs font-semibold text-brand-navy mb-1.5">Store / Location ID</label>
-                        <div class="relative">
-                            <select id="store-id" class="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 text-brand-navy font-medium text-sm focus:border-fluent-blue focus:ring-fluent-blue transition-all outline-none">
-                                <option value="IMTIAZ-01">Imtiaz Super Market - Main Branch</option>
-                                <option value="BAHADURABAD-02">Bahadurabad Outlet - Karachi</option>
-                                <option value="CLIFTON-05">Clifton Flagship Store - Karachi</option>
-                                <option value="DHA-PHASE6">DHA Phase 6 - Express Store</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Terminal Code Input -->
-                    <div>
-                        <label for="terminal-code" class="block text-xs font-semibold text-brand-navy mb-1.5">Terminal / Register Code</label>
-                        <div class="relative">
-                            <input type="text" id="terminal-code" value="POS-01" class="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 text-brand-navy font-semibold text-sm focus:border-fluent-blue focus:ring-fluent-blue transition-all outline-none" placeholder="e.g. POS-01">
-                        </div>
-                    </div>
-
-                    <!-- Sync options checkbox -->
-                    <div class="flex items-center gap-2.5 pt-2">
-                        <input type="checkbox" id="sync-catalog" checked class="w-4 h-4 rounded text-fluent-blue border-slate-200 focus:ring-fluent-blue">
-                        <label for="sync-catalog" class="text-xs font-semibold text-brand-slate cursor-pointer">Synchronize Full Catalog & Prices immediately</label>
-                    </div>
-
-                    <!-- Action Button (Min height 52px for touch compatibility) -->
-                    <button type="button" onclick="startProvisioning()" class="btn-touch w-full h-[52px] mt-4 rounded-2xl bg-brand-navy hover:bg-slate-800 text-white font-display font-bold text-sm tracking-wide shadow-md flex items-center justify-center gap-2 transition-all">
-                        <span class="material-symbols-outlined text-[20px]">sync</span>
-                        Provision Terminal
-                    </button>
-                </div>
-            </div>
-
-            <!-- Provisioning Progress Panel (Hidden initially) -->
-            <div id="setup-progress-panel" class="my-auto w-full state-transition hidden">
-                <div class="mb-5 text-center">
-                    <h3 class="font-display text-xl font-extrabold text-brand-navy tracking-tight">Syncing Terminal Database</h3>
-                    <p class="text-xs text-brand-gray mt-1">Downloading inventory catalog and schemas locally...</p>
-                </div>
-
-                <!-- Circular/Horizontal Loader & Percentage -->
-                <div class="max-w-md mx-auto mb-4 bg-slate-55 p-3 rounded-2xl border border-slate-100">
-                    <div class="flex justify-between items-center text-xs font-bold text-brand-navy mb-2">
-                        <span class="flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-emerald-neon animate-ping"></span>
-                            Downloading Catalog (1,250 items)
-                        </span>
-                        <span id="sync-percentage" class="font-mono text-emerald-neon text-sm">0%</span>
-                    </div>
-                    <!-- Progress Bar -->
-                    <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
-                        <div id="sync-progress-bar" class="h-full bg-emerald-neon rounded-full w-0 transition-all duration-300"></div>
-                    </div>
-                </div>
-
-                <!-- Scrolling Console log window -->
-                <div id="log-console" class="log-console w-full h-44 bg-brand-navy rounded-2xl p-4 font-mono text-[10px] text-emerald-neon overflow-y-auto space-y-1.5 shadow-inner">
-                    <!-- Logs will populate dynamically -->
-                </div>
-            </div>
-
-            <!-- Persistent Footer -->
-            <div class="mt-6 pt-5 border-t border-slate-100 max-w-md mx-auto w-full flex items-center justify-between text-[9px] text-brand-gray font-semibold">
-                <span class="font-display tracking-wider text-brand-slate uppercase" id="footer-terminal-label">UNREGISTERED TERMINAL</span>
-                <span class="text-slate-350">|</span>
-                <span>R TECHNOLOGIES POS • V1.0</span>
-            </div>
-            
+      <div class="left-brand">
+        <div class="brand-card">
+          <img src="logo.png" alt="IMAGYN POS" style="max-height:24px;object-fit:contain;"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+          <div style="display:none;flex-direction:column;align-items:center;">
+            <span class="brand-name">IMAGYN</span>
+            <span class="brand-sub">P O S</span>
+          </div>
         </div>
-        
+        <p class="brand-desc">Imagyn Technologies · Enterprise POS<br/>Initial Terminal Configuration</p>
+      </div>
+
+      <div class="telemetry">
+        <div class="tele-row">
+          <span class="tele-label">API Connection</span>
+          <span class="tele-val">
+            <span class="tele-dot ok"></span>Active
+          </span>
+        </div>
+        <div class="tele-row">
+          <span class="tele-label">Device Auth</span>
+          <span class="tele-val">
+            <span class="tele-dot ok"></span>Verified
+          </span>
+        </div>
+        <div class="tele-row">
+          <span class="tele-label">SQLite Cache</span>
+          <span class="tele-val" id="db-status">
+            <span class="tele-dot warn" id="db-dot"></span>
+            <span id="db-label" style="color:var(--amber)">Inactive</span>
+          </span>
+        </div>
+        <div class="tele-row" style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08)">
+          <span class="tele-label">POS Version</span>
+          <span class="tele-val" style="font-size:9px;color:rgba(255,255,255,0.35)">IMAGYN POS v1.0.0</span>
+        </div>
+      </div>
     </div>
 
-    <!-- Demo Shortcut Overlay -->
-    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white/80 backdrop-blur-md border border-slate-200/80 shadow-[0_8px_32px_rgba(0,0,0,0.15)] rounded-full px-4 py-2 flex items-center gap-1.5 max-w-[95vw] md:max-w-none overflow-x-auto whitespace-nowrap">
-        <span class="font-display text-[9px] font-bold tracking-widest text-slate-500 uppercase mr-2 border-r border-slate-200 pr-2">Quick Shortcuts</span>
-        <button onclick="quickProvision()" class="px-3 py-1 rounded-full text-[10px] font-bold transition-all bg-emerald-50 hover:bg-emerald-100 text-fluent-success">Instant Provision</button>
+    <!-- ── Right panel ── -->
+    <div class="card-right">
+
+      <!-- Form panel -->
+      <div id="form-panel">
+        <div class="form-title">Register Terminal</div>
+        <p class="form-sub">Configure this terminal's branch location and register code before first use.</p>
+
+        <div class="field-group">
+          <label class="field-label" for="store-id">Store / Location</label>
+          <select id="store-id" class="field-select">
+            <option value="IMAGYN-KHI-01">Imagyn Technologies — Main Branch, Karachi</option>
+            <option value="IMAGYN-LHR-01">Imagyn Technologies — Lahore Branch</option>
+            <option value="IMAGYN-ISB-01">Imagyn Technologies — Islamabad Branch</option>
+            <option value="IMAGYN-KHI-02">Imagyn Technologies — North Karachi</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="terminal-code">Terminal / Register Code</label>
+          <input type="text" id="terminal-code" class="field-input" value="POS-01" placeholder="e.g. POS-01"/>
+        </div>
+
+        <div class="field-group">
+          <div class="checkbox-row">
+            <input type="checkbox" id="sync-catalog" checked/>
+            <label class="checkbox-label" for="sync-catalog">Sync full catalog &amp; prices immediately after provision</label>
+          </div>
+        </div>
+
+        <button class="provision-btn" onclick="startProvisioning()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38"/></svg>
+          Provision Terminal
+        </button>
+      </div>
+
+      <!-- Progress panel -->
+      <div id="progress-panel">
+        <div class="progress-title">Syncing Terminal Database</div>
+        <p class="progress-sub">Downloading inventory catalog &amp; initializing SQLite cache…</p>
+
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-header">
+            <span class="progress-bar-label">
+              <span class="ping-dot"></span>
+              Downloading Catalog (1,250 items)
+            </span>
+            <span class="progress-pct" id="pct-label">0%</span>
+          </div>
+          <div class="bar-bg">
+            <div class="bar-fill" id="bar-fill"></div>
+          </div>
+        </div>
+
+        <div class="console" id="console-log"><!-- filled by JS --></div>
+      </div>
+
+      <!-- Footer -->
+      <div class="card-footer">
+        <span class="footer-left" id="footer-terminal">UNREGISTERED TERMINAL</span>
+        <span class="footer-right">Imagyn Technologies · IMAGYN POS</span>
+      </div>
     </div>
 
-    <script>
-        const logs = [
-            { text: "Initializing socket connection to central API at https://api.rtechnologies.com/v1...", delay: 200, pct: 5 },
-            { text: "Connection successfully established with central endpoint. Latency 14ms.", delay: 400, pct: 10 },
-            { text: "Device token authentication verified: Active registration signature code [DEV-39A-8F].", delay: 600, pct: 15 },
-            { text: "Fetching system metadata schema rules...", delay: 800, pct: 20 },
-            { text: "Creating local SQLite relational cache structure on physical partition...", delay: 1000, pct: 25 },
-            { text: "SQLite tables [catalog, cash_movements, shifts, orders, sync_outbox] created successfully.", delay: 1200, pct: 30 },
-            { text: "Downloading inventory catalog snapshot...", delay: 1400, pct: 40 },
-            { text: "Catalog Stream: Downloading Category 'Grocery & Staples' (432 items) - OK", delay: 1600, pct: 50 },
-            { text: "Catalog Stream: Downloading Category 'Electronics & Hardware' (120 items) - OK", delay: 1800, pct: 60 },
-            { text: "Catalog Stream: Downloading Category 'Apparel & Clothing' (310 items) - OK", delay: 2000, pct: 70 },
-            { text: "Catalog Stream: Downloading Category 'Pharmacy & Healthcare' (388 items) - OK", delay: 2200, pct: 80 },
-            { text: "Syncing tax regulation rates: Standard 18% GST rules imported.", delay: 2400, pct: 85 },
-            { text: "Optimizing SQLite indexes for barcode query latency optimization...", delay: 2600, pct: 90 },
-            { text: "Setting up local outbox/sync queue sync engine task queue...", delay: 2800, pct: 95 },
-            { text: "Database cache populated successfully. 1,250 catalog entities cached locally.", delay: 3000, pct: 98 },
-            { text: "Provisioning successful. Cache finalized. Redirecting to Terminal Login...", delay: 3200, pct: 100 }
-        ];
+  </div><!-- end card -->
 
-        function startProvisioning() {
-            const storeIdVal = document.getElementById('store-id').value;
-            const terminalCodeVal = document.getElementById('terminal-code').value || 'POS-01';
+  <!-- ── Shortcuts Bar ── -->
+  <div class="shortcuts-bar">
+    <span class="sc-label">Quick Shortcuts</span>
+    <button class="sc-btn green" onclick="quickProvision()">⚡ Instant Provision</button>
+    <button class="sc-btn blue"  onclick="demoFill()">📋 Fill Demo Data</button>
+    <button class="sc-btn ghost" onclick="window.location.href='terminal_login.html'">→ Skip to Login</button>
+    <button class="sc-btn ghost" onclick="resetTerminal()">↺ Reset</button>
+  </div>
 
-            // Show progress panel, hide form
-            document.getElementById('setup-form-panel').classList.add('hidden');
-            document.getElementById('setup-progress-panel').classList.remove('hidden');
+  <script>
+    const LOGS = [
+      { text: "Initializing socket to api.imagyntechnologies.com/v1...", ok: false, pct: 5 },
+      { text: "Connection established. Latency: 14ms.", ok: true, pct: 10 },
+      { text: "Device token [DEV-4A9-8F] authenticated successfully.", ok: true, pct: 15 },
+      { text: "Fetching metadata schema from central server...", ok: false, pct: 20 },
+      { text: "Creating SQLite relational cache on local partition...", ok: false, pct: 25 },
+      { text: "SQLite tables [catalog, shifts, orders, cash_movements, sync_outbox] created.", ok: true, pct: 30 },
+      { text: "Beginning catalog snapshot download...", ok: false, pct: 38 },
+      { text: "Category 'Grocery & Staples' — 432 items downloaded OK", ok: true, pct: 50 },
+      { text: "Category 'Electronics & Hardware' — 120 items downloaded OK", ok: true, pct: 60 },
+      { text: "Category 'Apparel & Clothing' — 310 items downloaded OK", ok: true, pct: 70 },
+      { text: "Category 'Pharmacy & Healthcare' — 388 items downloaded OK", ok: true, pct: 80 },
+      { text: "Tax rules imported: SST 15%, GST 18% — Active", ok: true, pct: 85 },
+      { text: "Optimizing SQLite indexes for barcode query performance...", ok: false, pct: 90 },
+      { text: "Sync outbox queue engine initialized.", ok: false, pct: 95 },
+      { text: "1,250 catalog items cached. Provision complete.", ok: true, pct: 100 },
+    ];
 
-            // Update badge & labels
-            const badge = document.getElementById('provisioning-badge');
-            badge.innerText = "PROVISIONING";
-            badge.className = "text-[8px] font-display font-bold tracking-wider text-amber-500 uppercase px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20";
-            
-            document.getElementById('db-status-label').innerText = "SQLite Syncing...";
-            document.getElementById('db-status-label').className = "font-mono text-amber-500";
+    function startProvisioning() {
+      const storeId  = document.getElementById('store-id').value;
+      const terminal = document.getElementById('terminal-code').value || 'POS-01';
 
-            document.getElementById('footer-terminal-label').innerText = `${terminalCodeVal} • ${storeIdVal}`;
+      // Switch panels
+      document.getElementById('form-panel').style.display = 'none';
+      document.getElementById('progress-panel').style.display = 'flex';
+      document.getElementById('progress-panel').style.flexDirection = 'column';
 
-            // Save basic config to localStorage
-            const config = {
-                storeId: storeIdVal,
-                terminalId: terminalCodeVal,
-                companyName: 'R Technologies POS',
-                branch: storeIdVal + ' Branch',
-                version: 'V1.0',
-                lastSync: new Date().toISOString()
-            };
-            localStorage.setItem('terminal_config', JSON.stringify(config));
+      // Update status badge
+      setStatus('provisioning');
+      document.getElementById('footer-terminal').textContent = terminal + ' · ' + storeId;
+      setDbStatus('syncing');
 
-            // Execute log sequence
-            const consoleEl = document.getElementById('log-console');
-            const bar = document.getElementById('sync-progress-bar');
-            const pctEl = document.getElementById('sync-percentage');
+      // Save config to localStorage
+      localStorage.setItem('terminal_config', JSON.stringify({
+        storeId, terminalId: terminal,
+        companyName: 'Imagyn Technologies',
+        branch: storeId + ' Branch',
+        version: 'v1.0.0',
+        lastSync: new Date().toISOString()
+      }));
 
-            logs.forEach(log => {
-                setTimeout(() => {
-                    // Create element
-                    const logLine = document.createElement('div');
-                    logLine.className = log.text.includes('OK') || log.text.includes('success') || log.text.includes('established') || log.text.includes('verified')
-                        ? 'flex justify-between text-emerald-neon font-semibold' 
-                        : 'text-slate-300';
-                    logLine.innerHTML = `<span>[${new Date().toLocaleTimeString()}] ${log.text}</span>`;
-                    
-                    consoleEl.appendChild(logLine);
-                    consoleEl.scrollTop = consoleEl.scrollHeight;
+      const cons  = document.getElementById('console-log');
+      const bar   = document.getElementById('bar-fill');
+      const pctEl = document.getElementById('pct-label');
 
-                    // Update progress UI
-                    bar.style.width = `${log.pct}%`;
-                    pctEl.innerText = `${log.pct}%`;
+      LOGS.forEach((log, i) => {
+        setTimeout(() => {
+          const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+          const line = document.createElement('div');
+          line.innerHTML = '<span class="log-ts">[' + ts + ']</span><span class="' + (log.ok ? 'log-ok' : 'log-info') + '">' + log.text + '</span>';
+          cons.appendChild(line);
+          cons.scrollTop = cons.scrollHeight;
 
-                    // If last step, complete and redirect
-                    if (log.pct === 100) {
-                        badge.innerText = "PROVISIONED";
-                        badge.className = "text-[8px] font-display font-bold tracking-wider text-emerald-neon uppercase px-2 py-0.5 rounded-full bg-emerald-neon/10 border border-emerald-neon/20";
-                        
-                        const dbLabel = document.getElementById('db-status-label');
-                        dbLabel.innerText = "SQLite Active";
-                        dbLabel.className = "font-mono text-emerald-neon font-bold";
+          bar.style.width = log.pct + '%';
+          pctEl.textContent = log.pct + '%';
 
-                        setTimeout(() => {
-                            // Coordinate simulator select highlight if parent frame is available
-                            if (window.parent && typeof window.parent.selectScreen === 'function') {
-                                window.parent.selectScreen('screens/terminal_login.html', 2);
-                            } else {
-                                window.location.href = 'terminal_login.html';
-                            }
-                        }, 1000);
-                    }
-                }, log.delay);
-            });
-        }
+          if (log.pct === 100) {
+            setStatus('provisioned');
+            setDbStatus('active');
+            syncParent();
+            setTimeout(() => { window.location.href = 'terminal_login.html'; }, 1100);
+          }
+        }, i * 220);
+      });
+    }
 
-        function quickProvision() {
-            // Fill inputs if empty and run setup
-            startProvisioning();
-        }
-    </script>
+    function setStatus(state) {
+      const badge = document.getElementById('status-badge');
+      const text  = document.getElementById('status-text');
+      if (state === 'provisioning') {
+        badge.className = 'status-badge';
+        text.textContent = 'PROVISIONING';
+      } else if (state === 'provisioned') {
+        badge.className = 'status-badge provisioned';
+        text.textContent = 'PROVISIONED';
+      }
+    }
+
+    function setDbStatus(state) {
+      const dot   = document.getElementById('db-dot');
+      const label = document.getElementById('db-label');
+      if (state === 'syncing') {
+        dot.className = 'tele-dot pulse';
+        label.style.color = 'var(--amber)';
+        label.textContent = 'Syncing…';
+      } else if (state === 'active') {
+        dot.className = 'tele-dot ok';
+        label.style.color = 'var(--green)';
+        label.textContent = 'Active';
+      }
+    }
+
+    function quickProvision() { startProvisioning(); }
+
+    function demoFill() {
+      document.getElementById('store-id').value = 'IMAGYN-KHI-01';
+      document.getElementById('terminal-code').value = 'POS-01';
+    }
+
+    function resetTerminal() {
+      localStorage.removeItem('terminal_config');
+      localStorage.removeItem('terminal_operator');
+      sessionStorage.clear();
+      document.getElementById('footer-terminal').textContent = 'UNREGISTERED TERMINAL';
+      setStatus('unconfigured');
+      // Reset badge manually
+      const badge = document.getElementById('status-badge');
+      const text  = document.getElementById('status-text');
+      badge.className = 'status-badge';
+      text.textContent = 'UNCONFIGURED';
+      // Reset db
+      const dot = document.getElementById('db-dot');
+      const label = document.getElementById('db-label');
+      dot.className = 'tele-dot warn';
+      label.style.color = 'var(--amber)';
+      label.textContent = 'Inactive';
+      // Show form
+      document.getElementById('form-panel').style.display = '';
+      document.getElementById('progress-panel').style.display = 'none';
+      document.getElementById('bar-fill').style.width = '0';
+      document.getElementById('pct-label').textContent = '0%';
+      document.getElementById('console-log').innerHTML = '';
+    }
+
+    function syncParent() {
+      try {
+        const doc = window.parent.document;
+        doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+        const el = doc.getElementById('step-0');
+        if (el) el.classList.add('flow-step-active');
+        const url = doc.getElementById('simulator-url-display');
+        if (url) url.innerText = 'screens/provision_terminal.html';
+        const newTab = doc.getElementById('open-new-tab-btn');
+        if (newTab) newTab.href = 'screens/provision_terminal.html';
+      } catch(e) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', syncParent);
+  </script>
 </body>
 </html>

@@ -1,1342 +1,1461 @@
 <!DOCTYPE html>
-
-<html class="light" lang="en"><head>
+<html lang="en">
+<head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Enterprise POS - Imtiaz Retail</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "on-primary-fixed": "#131b2e",
-                        "border-subtle": "#E2E8F0",
-                        "text-secondary": "#64748B",
-                        "secondary": "#006c49",
-                        "tertiary": "#000000",
-                        "primary": "#000000",
-                        "error": "#ba1a1a",
-                        "surface-variant": "#d8e3fb",
-                        "inverse-on-surface": "#ecf1ff",
-                        "on-primary-container": "#7c839b",
-                        "surface": "#f9f9ff",
-                        "secondary-fixed": "#6ffbbe",
-                        "tertiary-container": "#2a1700",
-                        "surface-container": "#e7eeff",
-                        "on-secondary-fixed": "#002113",
-                        "secondary-container": "#6cf8bb",
-                        "on-primary": "#ffffff",
-                        "on-tertiary-container": "#b87500",
-                        "border-input": "#CBD5E1",
-                        "surface-container-highest": "#d8e3fb",
-                        "surface-tint": "#565e74",
-                        "secondary-fixed-dim": "#4edea3",
-                        "tertiary-fixed-dim": "#ffb95f",
-                        "surface-main": "#FFFFFF",
-                        "on-tertiary-fixed-variant": "#653e00",
-                        "surface-container-high": "#dee8ff",
-                        "surface-secondary": "#F8FAFC",
-                        "on-secondary-fixed-variant": "#005236",
-                        "error-container": "#ffdad6",
-                        "on-error-container": "#93000a",
-                        "primary-fixed-dim": "#bec6e0",
-                        "on-background": "#111c2d",
-                        "on-error": "#ffffff",
-                        "surface-bright": "#f9f9ff",
-                        "primary-fixed": "#dae2fd",
-                        "surface-container-low": "#f0f3ff",
-                        "outline-variant": "#c6c6cd",
-                        "on-surface": "#111c2d",
-                        "inverse-surface": "#263143",
-                        "primary-container": "#131b2e",
-                        "surface-container-lowest": "#ffffff",
-                        "tertiary-fixed": "#ffddb8",
-                        "on-secondary": "#ffffff",
-                        "background": "#f9f9ff",
-                        "on-tertiary": "#ffffff",
-                        "surface-dim": "#cfdaf2",
-                        "on-secondary-container": "#00714d",
-                        "inverse-primary": "#bec6e0",
-                        "danger": "#EF4444",
-                        "outline": "#76777d",
-                        "on-tertiary-fixed": "#2a1700",
-                        "on-surface-variant": "#45464d",
-                        "on-primary-fixed-variant": "#3f465c"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                    "spacing": {
-                        "touch-target-min": "44px",
-                        "margin": "16px",
-                        "sidebar-width": "240px",
-                        "gutter": "16px"
-                    },
-                    "fontFamily": {
-                        "headline-lg": ["Inter"],
-                        "display-numeric": ["Inter"],
-                        "label-sm": ["Inter"],
-                        "label-md": ["Inter"],
-                        "headline-md": ["Inter"],
-                        "body-md": ["Inter"],
-                        "body-lg": ["Inter"]
-                    },
-                    "fontSize": {
-                        "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
-                        "display-numeric": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
-                        "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
-                        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
-                    }
-                },
-            },
-        }
-    </script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IMAGYN POS — Checkout</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet"/>
 <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f9f9ff;
-            overflow: hidden;
-        }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .cart-table-container {
-            height: calc(100vh - 380px);
-        }
-        .catalog-container {
-            height: calc(100vh - 180px);
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-    </style>
+  :root {
+    --bg:         #F4F6F8;
+    --white:      #FFFFFF;
+    --navy:       #0F3A7D;
+    --navy-2:     #0A2859;
+    --green:      #10B981;
+    --green-dim:  #ECFDF5;
+    --green-dark: #065F46;
+    --amber:      #F59E0B;
+    --red:        #EF4444;
+    --border:     #E1E4E8;
+    --border-2:   #CBD5E1;
+    --text:       #0F172A;
+    --text-muted: #64748B;
+    --text-dim:   #94A3B8;
+    --sans:       'Plus Jakarta Sans', 'Inter', ui-sans-serif, sans-serif;
+    --mono:       'IBM Plex Mono', ui-monospace, monospace;
+    /* legacy aliases kept for JS compatibility */
+    --navy-3:     #334155;
+    --green-l:    #ECFDF5;
+    --red-l:      #FEF2F2;
+    --amber-l:    #FFFBEB;
+    --muted:      #64748B;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; }
+
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    display: inline-flex; align-items: center; justify-content: center;
+    vertical-align: middle; line-height: 1;
+  }
+  .icon-fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+  /* ── SIDEBAR ─────────────────────────────── */
+  #sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 220px;
+    background: var(--navy); display: flex; flex-direction: column;
+    z-index: 50; border-right: 1px solid rgba(255,255,255,0.07);
+  }
+  .sidebar-logo {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sidebar-logo-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--green); display: flex; align-items: center; justify-content: center;
+  }
+  nav a, nav button {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 8px; margin: 2px 8px;
+    color: rgba(255,255,255,0.55); font-size: 13px; font-weight: 500;
+    text-decoration: none; border: none; background: none; cursor: pointer;
+    transition: all 0.15s; width: calc(100% - 16px); font-family: var(--sans);
+  }
+  nav a:hover, nav button:hover {
+    color: white; background: rgba(255,255,255,0.07);
+  }
+  nav a.active {
+    color: white; background: rgba(255,255,255,0.12);
+    font-weight: 600;
+  }
+  nav a.active .material-symbols-outlined { color: #6EE7B7; }
+  .sidebar-op {
+    padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .sidebar-op-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 11px; color: white; flex-shrink: 0;
+  }
+
+  /* ── HEADER ─────────────────────────────── */
+  #topbar {
+    position: sticky; top: 0; z-index: 40;
+    height: 56px; background: var(--white);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+  }
+  .topbar-meta { display: flex; flex-direction: column; }
+  .topbar-meta span:first-child { font-size: 10px; color: var(--text-muted); font-weight: 500; }
+  .topbar-meta span:last-child  { font-size: 13px; color: var(--text); font-weight: 700; }
+
+  /* ── MAIN LAYOUT ─────────────────────────── */
+  #content { margin-left: 220px; display: flex; flex-direction: column; height: 100vh; }
+  #workspace { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── ORDER PANEL ─────────────────────────── */
+  #order-panel {
+    width: 42%; min-width: 360px; max-width: 480px;
+    display: flex; flex-direction: column;
+    background: var(--white); border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .order-panel-header {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    background: #F8FAFC;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .order-number {
+    font-size: 12px; font-weight: 700; color: var(--navy);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .order-number span.num {
+    background: var(--white); border: 1px solid var(--border);
+    padding: 2px 8px; border-radius: 6px;
+    font-family: var(--mono); font-size: 11px;
+  }
+
+  /* Customer bar */
+  #customer-bar {
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    min-height: 48px; display: flex; align-items: center;
+  }
+  .customer-attached {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #F0FDF4; border: 1px solid #BBF7D0;
+    border-radius: 8px; padding: 7px 12px; width: 100%;
+  }
+  .customer-empty-btn {
+    width: 100%; height: 36px; border: 1.5px dashed var(--border-2);
+    border-radius: 8px; background: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    color: var(--text-muted); font-size: 12px; font-weight: 500;
+    transition: all 0.15s; font-family: var(--sans);
+  }
+  .customer-empty-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+
+  /* Cart items */
+  #cart-items-list {
+    flex: 1; overflow-y: auto; padding: 8px 0;
+  }
+  #cart-items-list::-webkit-scrollbar { width: 4px; }
+  #cart-items-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .cart-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-bottom: 1px solid #F4F6F8;
+    transition: background 0.12s; cursor: pointer;
+  }
+  .cart-item:hover { background: #F0F5FF; }
+  .cart-item.selected { background: #ECFDF5; }
+  .cart-item-info { flex: 1; min-width: 0; }
+  .cart-item-name {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cart-item-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .cart-item-qty {
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  }
+  .qty-btn {
+    width: 30px; height: 30px; border-radius: 7px;
+    background: var(--white); border: 1.5px solid var(--border-2);
+    font-weight: 700; font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.1s; color: var(--navy);
+    flex-shrink: 0;
+  }
+  .qty-btn:hover { background: #F0F5FF; border-color: var(--navy); }
+  .qty-btn:active { transform: scale(0.91); }
+  .qty-value {
+    font-size: 14px; font-weight: 700; min-width: 22px;
+    text-align: center; color: var(--text); font-family: var(--mono);
+  }
+  .cart-item-total {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    text-align: right; min-width: 72px; font-family: var(--mono);
+  }
+  .cart-item-delete {
+    width: 26px; height: 26px; border-radius: 6px;
+    border: none; background: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--border-2); opacity: 0; transition: all 0.12s; flex-shrink: 0;
+  }
+  .cart-item:hover .cart-item-delete { opacity: 1; }
+  .cart-item-delete:hover { background: #FEF2F2; color: var(--red); }
+
+  /* Cart empty state */
+  .cart-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 20px; text-align: center; height: 100%;
+  }
+  .cart-empty-icon {
+    width: 64px; height: 64px; border-radius: 16px;
+    background: var(--bg); border: 1.5px dashed var(--border);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 12px;
+  }
+
+  /* Discount row */
+  #discount-row {
+    padding: 10px 16px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .discount-input-wrap {
+    display: flex; align-items: center; gap: 0;
+    border: 1.5px solid var(--border-2); border-radius: 8px; overflow: hidden;
+    flex: 1; background: var(--white);
+  }
+  .discount-input-wrap input {
+    border: none; outline: none; padding: 8px 10px;
+    font-size: 13px; font-weight: 600; font-family: var(--mono);
+    flex: 1; min-width: 0; background: transparent; color: var(--text);
+  }
+  .discount-input-wrap select {
+    border: none; border-left: 1.5px solid var(--border-2);
+    background: var(--bg); padding: 8px 6px;
+    font-size: 12px; font-weight: 600; color: var(--text-muted); outline: none;
+  }
+  .discount-apply-btn {
+    height: 38px; padding: 0 12px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--border);
+    font-size: 12px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: var(--sans);
+  }
+  .discount-apply-btn:hover { border-color: var(--green); color: var(--green-dark); background: var(--green-dim); }
+
+  /* Totals panel */
+  #totals-panel {
+    padding: 12px 16px; border-top: 1px solid var(--border); background: #FAFBFC;
+  }
+  .total-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0; font-size: 13px;
+  }
+  .total-row .label { color: var(--text-muted); }
+  .total-row .value { font-weight: 600; color: var(--text); font-family: var(--mono); }
+  .total-row.discount .value { color: var(--red); }
+  .grand-total-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; margin-top: 8px;
+    background: linear-gradient(135deg, var(--navy), #1D4ED8); border-radius: 10px;
+  }
+  .grand-total-label {
+    font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.55);
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .grand-total-amount {
+    font-size: 22px; font-weight: 800; color: white;
+    font-family: var(--mono); letter-spacing: -0.02em;
+  }
+
+  /* Action buttons */
+  #action-buttons {
+    padding: 12px 16px; border-top: 1px solid var(--border);
+    display: flex; gap: 8px; background: var(--white);
+  }
+  .action-btn {
+    height: 48px; border-radius: 10px; border: 1px solid var(--border);
+    cursor: pointer; font-weight: 600; font-size: 12px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.15s; font-family: var(--sans);
+  }
+  .action-btn:active { transform: scale(0.97); }
+  .btn-void {
+    background: var(--white); color: var(--red); border-color: #FECACA;
+    padding: 0 14px;
+  }
+  .btn-void:hover { background: #FEF2F2; border-color: var(--red); }
+  .btn-hold {
+    background: var(--white); color: var(--text-muted);
+    padding: 0 14px;
+  }
+  .btn-hold:hover { background: var(--bg); border-color: var(--border-2); }
+  .btn-pay {
+    flex: 1; background: var(--green); color: white; border-color: var(--green);
+    font-size: 14px; font-weight: 700;
+    box-shadow: 0 4px 14px rgba(16,185,129,0.25);
+  }
+  .btn-pay:hover { background: #059669; box-shadow: 0 6px 20px rgba(16,185,129,0.35); }
+  .btn-pay:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+  .btn-pay .pay-amount {
+    font-size: 11px; font-weight: 700; opacity: 0.8;
+    font-family: var(--mono); margin-left: 4px;
+  }
+
+  /* ── CATALOG PANEL ─────────────────────── */
+  #catalog-panel {
+    flex: 1; display: flex; flex-direction: column;
+    overflow: hidden; background: var(--bg);
+  }
+  #catalog-toolbar {
+    padding: 12px 16px 10px; background: var(--white);
+    border-bottom: 1px solid var(--border);
+  }
+  .search-wrap {
+    display: flex; gap: 8px; margin-bottom: 10px;
+  }
+  .search-input-wrap {
+    position: relative; flex: 1;
+  }
+  .search-input-wrap .search-icon {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 20px; pointer-events: none;
+  }
+  .search-input-wrap input {
+    width: 100%; height: 44px; padding: 0 40px 0 42px;
+    border: 1.5px solid var(--border-2); border-radius: 10px;
+    font-size: 13px; font-weight: 500; background: var(--white);
+    outline: none; transition: border-color 0.15s; color: var(--text); font-family: var(--sans);
+  }
+  .search-input-wrap input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(15,58,125,0.08); }
+  .search-input-wrap .kbd-hint {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 10px; color: var(--text-muted); font-family: var(--mono);
+    background: var(--white); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px;
+  }
+  .scan-btn {
+    height: 44px; padding: 0 14px; border-radius: 10px;
+    background: var(--navy); color: white; border: none; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600;
+    transition: background 0.15s; font-family: var(--sans);
+  }
+  .scan-btn:hover { background: var(--navy-2); }
+  .scan-btn:active { transform: scale(0.97); }
+
+  /* Category chips */
+  #categories-row {
+    display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;
+  }
+  #categories-row::-webkit-scrollbar { display: none; }
+  .cat-chip {
+    padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+    background: var(--white); font-size: 12px; font-weight: 600; white-space: nowrap;
+    cursor: pointer; transition: all 0.12s; color: var(--text-muted); font-family: var(--sans);
+  }
+  .cat-chip:hover { border-color: var(--navy); color: var(--navy); }
+  .cat-chip.active {
+    background: var(--navy); color: white; border-color: var(--navy);
+    box-shadow: 0 2px 6px rgba(15,58,125,0.2);
+  }
+
+  /* Product grid */
+  #products-grid-wrap {
+    flex: 1; overflow-y: auto; padding: 12px 16px;
+  }
+  #products-grid-wrap::-webkit-scrollbar { width: 4px; }
+  #products-grid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  #products-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  @media (min-width: 1400px) { #products-grid { grid-template-columns: repeat(4, 1fr); } }
+
+  .product-card {
+    background: var(--white); border: 1.5px solid var(--border); border-radius: 12px;
+    cursor: pointer; overflow: hidden; transition: all 0.15s;
+    display: flex; flex-direction: column;
+  }
+  .product-card:hover {
+    border-color: var(--navy); box-shadow: 0 4px 16px rgba(15,58,125,0.10);
+    transform: translateY(-1px);
+  }
+  .product-card:active { transform: scale(0.98); }
+  .product-img-wrap {
+    position: relative; aspect-ratio: 1; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .product-img-placeholder {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 800;
+  }
+  .stock-badge {
+    position: absolute; top: 6px; right: 6px;
+    padding: 2px 7px; border-radius: 6px;
+    font-size: 10px; font-weight: 700;
+  }
+  .stock-ok    { background: #ECFDF5; color: #059669; border: 1px solid #6EE7B7; }
+  .stock-low   { background: #FEF2F2; color: var(--red); border: 1px solid #FCA5A5; }
+  .product-body {
+    padding: 10px 10px 8px; flex: 1; display: flex; flex-direction: column;
+  }
+  .product-cat  { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; }
+  .product-name { font-size: 12px; font-weight: 700; color: var(--text); line-height: 1.3; flex: 1; margin-bottom: 4px; }
+  .product-price { font-size: 14px; font-weight: 800; color: var(--navy); font-family: var(--mono); }
+  .product-add-btn {
+    margin: 6px 10px 10px;
+    height: 36px; width: calc(100% - 20px);
+    border-radius: 8px; border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--text-muted); cursor: pointer;
+    font-size: 12px; font-weight: 600; transition: all 0.12s; font-family: var(--sans);
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .product-card:hover .product-add-btn {
+    background: var(--green); color: white; border-color: var(--green);
+  }
+
+  /* ── MODALS ─────────────────────────────── */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(15,58,125,0.35); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-card {
+    background: var(--white); border-radius: 16px; overflow: hidden;
+    box-shadow: 0 24px 60px rgba(15,58,125,0.18);
+    transform: scale(0.96); transition: transform 0.2s;
+    width: 440px;
+  }
+  .modal-card.wide { width: 520px; }
+  .modal-card.narrow { width: 340px; }
+  .modal-backdrop.show .modal-card { transform: scale(1); }
+  .modal-header {
+    padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-header h3 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .modal-header .close-btn {
+    width: 30px; height: 30px; border-radius: 7px; border: none; background: rgba(255,255,255,0.2);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; color: white;
+  }
+  .modal-body { padding: 20px; }
+
+  /* PIN pad in modals */
+  .pin-display {
+    display: flex; gap: 10px; justify-content: center; margin-bottom: 16px;
+  }
+  .pin-cell {
+    width: 44px; height: 52px; border-radius: 10px;
+    border: 2px solid var(--border); background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 800; color: var(--navy);
+    transition: border-color 0.15s;
+  }
+  .pin-cell.filled { border-color: var(--green); background: var(--green-dim); }
+  .modal-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mk-btn {
+    height: 46px; border-radius: 10px; border: 1.5px solid var(--border-2);
+    background: var(--white); font-size: 17px; font-weight: 700; cursor: pointer;
+    transition: all 0.1s; font-family: var(--mono); color: var(--text);
+  }
+  .mk-btn:hover { background: #F0F5FF; border-color: var(--navy); }
+  .mk-btn:active { transform: scale(0.94); }
+  .mk-btn.danger { background: #FEF2F2; color: var(--red); border-color: #FECACA; font-size: 12px; }
+  .mk-btn.confirm { background: var(--amber); color: white; border-color: var(--amber); font-size: 14px; }
+
+  /* Toast */
+  #toast-wrapper { position: fixed; bottom: 80px; right: 20px; z-index: 500; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  .toast {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-radius: 10px; color: white;
+    font-size: 13px; font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    transform: translateY(8px); opacity: 0;
+    transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+    max-width: 320px; pointer-events: auto;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: #064E3B; }
+  .toast.error   { background: #7F1D1D; }
+  .toast.info    { background: var(--navy-2); }
+  .toast.warning { background: #78350F; }
+
+  /* ── RECEIPT MODAL ───────────────────────── */
+  .receipt-paper {
+    font-family: 'Courier New', monospace; font-size: 12px;
+    background: white; padding: 20px; border-radius: 4px;
+    border: 1px dashed var(--border-2); line-height: 1.6;
+  }
+  .receipt-paper .rline { display: flex; justify-content: space-between; }
+
+  @keyframes slideUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+  .fade-in { animation: slideUp 0.25s ease forwards; }
+
+  /* ── SHORTCUTS BAR ──────────────────────── */
+  .shortcuts-bar {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 300;
+    background: rgba(255,255,255,0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(203,213,225,0.9); border-radius: 40px;
+    padding: 7px 14px; display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 8px 24px rgba(15,58,125,0.1), 0 2px 8px rgba(0,0,0,0.05);
+    white-space: nowrap; overflow-x: auto; max-width: 95vw;
+  }
+  .shortcuts-bar::-webkit-scrollbar { display: none; }
+  .sc-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: #94A3B8; text-transform: uppercase; padding-right: 8px; border-right: 1px solid #E2E8F0; margin-right: 2px; }
+  .sc-btn { padding: 5px 13px; border-radius: 20px; border: none; cursor: pointer; font-size: 10px; font-weight: 700; transition: all 0.13s; font-family: var(--sans); white-space: nowrap; }
+  .sc-btn:active { transform: scale(0.95); }
+  .sc-btn.green { background: #ECFDF5; border: 1px solid #6EE7B7; color: #065F46; }
+  .sc-btn.green:hover { background: #D1FAE5; }
+  .sc-btn.blue  { background: #EFF6FF; border: 1px solid #93C5FD; color: #1D4ED8; }
+  .sc-btn.blue:hover  { background: #DBEAFE; }
+  .sc-btn.amber { background: #FFFBEB; border: 1px solid #FCD34D; color: #92400E; }
+  .sc-btn.amber:hover { background: #FEF3C7; }
+  .sc-btn.ghost { background: #F8FAFC; border: 1px solid #E2E8F0; color: #64748B; }
+  .sc-btn.ghost:hover { background: #F1F5F9; color: #0F172A; }
+</style>
 </head>
-<body class="bg-background text-on-surface select-none">
-<!-- Top Status Bar -->
-<header class="bg-surface-main dark:bg-on-background flex justify-between items-center h-16 px-gutter w-full sticky top-0 z-50 border-b border-border-subtle dark:border-outline">
-    <div class="flex items-center gap-6">
-        <div class="text-headline-md font-headline-md font-bold text-primary dark:text-on-primary-fixed flex items-center gap-2">
-            <span class="material-symbols-outlined text-secondary">point_of_sale</span>
-            Imtiaz Retail
-        </div>
-        <div class="flex items-center gap-2 text-text-secondary">
-            <span class="material-symbols-outlined text-body-md" data-icon="location_on">location_on</span>
-            <span class="text-body-md font-body-md" id="header-location">Tariq Road</span>
-        </div>
+<body>
+
+<!-- ══════ SIDEBAR ══════ -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">
+      <span class="material-symbols-outlined icon-fill" style="color:white;font-size:18px;">point_of_sale</span>
     </div>
-    <div class="flex items-center gap-8">
-        <div class="flex items-center gap-6 border-r border-border-subtle pr-8">
-            <div class="flex flex-col items-end">
-                <span class="text-label-sm font-label-sm text-text-secondary">Terminal</span>
-                <span class="text-label-md font-label-md">POS-01</span>
-            </div>
-            <div class="flex flex-col items-end">
-                <span class="text-label-sm font-label-sm text-text-secondary">Cashier</span>
-                <span class="text-label-md font-label-md" id="header-cashier">Adeel</span>
-            </div>
-            <div class="flex flex-col items-end">
-                <span class="text-label-sm font-label-sm text-text-secondary">Shift Status</span>
-                <div class="flex items-center gap-1.5" id="header-shift-status">
-                    <div class="w-2 h-2 rounded-full bg-secondary"></div>
-                    <span class="text-label-md font-label-md">Open</span>
-                </div>
-            </div>
-        </div>
-        <div class="flex items-center gap-4 text-sm text-text-secondary">
-            <span id="current-date-display">2026-05-22</span>
-            <span class="material-symbols-outlined text-on-primary-fixed-variant cursor-pointer hover:text-primary transition-colors" data-icon="account_circle" onclick="toggleCustomerModal()">account_circle</span>
-            <span class="material-symbols-outlined text-on-primary-fixed-variant cursor-pointer hover:text-primary transition-colors" data-icon="terminal" onclick="window.location.href='cash_control.html'">terminal</span>
-        </div>
+    <div>
+      <div style="font-size:13px;font-weight:800;color:white;letter-spacing:-0.02em;">IMAGYN POS</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:500;" id="sidebar-store">Imagyn Technologies</div>
     </div>
-</header>
+  </div>
 
-<div class="flex h-[calc(100vh-64px)] overflow-hidden">
-    <!-- Side Navigation -->
-    <aside class="flex flex-col h-full w-[240px] py-6 px-4 bg-primary-container dark:bg-on-background border-r border-border-subtle dark:border-outline">
-        <div class="flex flex-col gap-2 flex-grow">
-            <!-- Checkout Active -->
-            <div class="flex items-center gap-4 bg-on-primary-fixed-variant dark:bg-secondary text-on-primary dark:text-on-secondary-fixed rounded-lg px-4 py-3 cursor-pointer scale-95 active:scale-90 duration-150 transition-all" onclick="window.location.reload()">
-                <span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
-                <span class="text-label-md font-label-md">Checkout</span>
-            </div>
-            <div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-on-primary-fixed-variant/50 dark:hover:bg-surface-container-highest transition-all cursor-pointer scale-95 active:scale-90 duration-150" onclick="navigateToShift()">
-                <span class="material-symbols-outlined" data-icon="person_pin_circle">person_pin_circle</span>
-                <span class="text-label-md font-label-md">Shift Control</span>
-            </div>
-            <div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-on-primary-fixed-variant/50 dark:hover:bg-surface-container-highest transition-all cursor-pointer scale-95 active:scale-90 duration-150" onclick="window.location.href='cash_control.html'">
-                <span class="material-symbols-outlined" data-icon="payments">payments</span>
-                <span class="text-label-md font-label-md">Cash Control</span>
-            </div>
-            <div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-on-primary-fixed-variant/50 dark:hover:bg-surface-container-highest transition-all cursor-pointer scale-95 active:scale-90 duration-150" onclick="showHelpToast('Catalog items are loaded from central server.')">
-                <span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
-                <span class="text-label-md font-label-md">Catalog</span>
-            </div>
-            <div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-on-primary-fixed-variant/50 dark:hover:bg-surface-container-highest transition-all cursor-pointer scale-95 active:scale-90 duration-150" onclick="navigateToShift()">
-                <span class="material-symbols-outlined" data-icon="assessment">assessment</span>
-                <span class="text-label-md font-label-md">Z-Report</span>
-            </div>
-            <div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-on-primary-fixed-variant/50 dark:hover:bg-surface-container-highest transition-all cursor-pointer scale-95 active:scale-90 duration-150" onclick="showHelpToast('Settings are managed by Store Administrator.')">
-                <span class="material-symbols-outlined" data-icon="settings">settings</span>
-                <span class="text-label-md font-label-md">Settings</span>
-            </div>
+  <nav style="flex:1;padding:8px 0;">
+    <a href="main_checkout.html" class="active">
+      <span class="material-symbols-outlined icon-fill" style="font-size:20px;">shopping_cart</span>
+      Checkout
+    </a>
+    <a href="#" onclick="navigateToShift();return false;">
+      <span class="material-symbols-outlined" style="font-size:20px;">schedule</span>
+      Shift
+    </a>
+    <a href="cash_control.html">
+      <span class="material-symbols-outlined" style="font-size:20px;">payments</span>
+      Cash Control
+    </a>
+    <a href="#" onclick="showToast('Catalog managed by central server.','info');return false;">
+      <span class="material-symbols-outlined" style="font-size:20px;">inventory_2</span>
+      Catalog
+    </a>
+    <a href="shift_close.html">
+      <span class="material-symbols-outlined" style="font-size:20px;">assessment</span>
+      Z-Report
+    </a>
+    <a href="#" onclick="showToast('Settings managed by administrator.','info');return false;">
+      <span class="material-symbols-outlined" style="font-size:20px;">settings</span>
+      Settings
+    </a>
+  </nav>
+
+  <div style="border-top:1px solid rgba(255,255,255,0.08);padding:12px 8px 8px;">
+    <div class="sidebar-op">
+      <div class="sidebar-op-avatar" id="op-avatar" style="background:#10B981;">AS</div>
+      <div style="min-width:0;flex:1;">
+        <div style="font-size:13px;font-weight:600;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="op-name">System Operator</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);">POS-01 · Shift Active</div>
+      </div>
+    </div>
+    <a href="#" onclick="doLogout();return false;" style="color:rgba(239,68,68,0.8);">
+      <span class="material-symbols-outlined" style="font-size:18px;">logout</span>
+      Sign Out
+    </a>
+  </div>
+</nav>
+
+<!-- ══════ CONTENT ══════ -->
+<div id="content">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div style="display:flex;align-items:center;gap:20px;">
+      <div class="topbar-meta">
+        <span>Store</span>
+        <span id="tb-store">Imagyn Technologies</span>
+      </div>
+      <div style="width:1px;height:30px;background:var(--border);"></div>
+      <div class="topbar-meta">
+        <span>Location</span>
+        <span>Tariq Road, Karachi</span>
+      </div>
+      <div style="width:1px;height:30px;background:var(--border);"></div>
+      <div class="topbar-meta">
+        <span>Terminal</span>
+        <span id="tb-terminal">POS-01</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="font-size:12px;font-weight:600;color:var(--text-muted);font-family:var(--mono);" id="tb-clock">--:--</div>
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:20px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:block;"></span>
+        <span style="font-size:11px;font-weight:700;color:#065F46;">Shift Active</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:20px;cursor:pointer;" onclick="navigateToShift()">
+        <span class="material-symbols-outlined" style="font-size:16px;color:var(--text-muted);">account_circle</span>
+        <span style="font-size:12px;font-weight:600;color:var(--text);" id="tb-cashier">Adeel</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORKSPACE -->
+  <div id="workspace">
+
+    <!-- ══ ORDER PANEL ══ -->
+    <div id="order-panel">
+
+      <!-- Header -->
+      <div class="order-panel-header">
+        <div class="order-number">
+          <span class="material-symbols-outlined icon-fill" style="font-size:16px;color:var(--green);">receipt_long</span>
+          Active Order
+          <span class="num" id="order-number-display">#0042</span>
         </div>
-        <div class="border-t border-on-primary-fixed-variant/30 pt-4 flex flex-col gap-2">
-            <div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-on-primary-fixed-variant/50 transition-all cursor-pointer rounded-lg" onclick="showHelpToast('Enterprise POS v4.0. Pin-pad and Manager Voids enabled.')">
-                <span class="material-symbols-outlined" data-icon="help">help</span>
-                <span class="text-label-md font-label-md">Help Info</span>
-            </div>
-            <div class="flex items-center gap-4 text-on-primary-container dark:text-surface-variant px-4 py-3 hover:bg-error/20 transition-all cursor-pointer rounded-lg" onclick="doLogout()">
-                <span class="material-symbols-outlined text-danger" data-icon="logout">logout</span>
-                <span class="text-label-md font-label-md text-danger">Sign Out</span>
-            </div>
-        </div>
-    </aside>
+        <span style="font-size:12px;font-weight:600;color:var(--text-muted);" id="cart-item-count">0 Items</span>
+      </div>
 
-    <!-- Main Workspace -->
-    <main class="flex flex-grow overflow-hidden bg-white">
-        <!-- Cart Panel (40%) -->
-        <section class="w-[40%] flex flex-col bg-surface-secondary border-r border-border-subtle h-full">
-            <div class="p-5 flex flex-col h-full justify-between">
-                <div>
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-headline-md font-headline-md text-primary flex items-center gap-2">
-                            <span class="material-symbols-outlined text-secondary">shopping_bag</span>
-                            Current Order
-                        </h2>
-                        <span class="text-label-md font-label-md text-text-secondary" id="cart-item-count">0 Items</span>
-                    </div>
-
-                    <!-- Customer Indicator -->
-                    <div id="customer-indicator-bar" class="mb-3 hidden">
-                        <div class="flex items-center justify-between bg-emerald-50 text-emerald-800 p-2.5 rounded-lg border border-emerald-100 text-sm">
-                            <div class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-[18px]">verified_user</span>
-                                <span class="font-semibold" id="customer-indicator-name">Ahmed Khan</span>
-                            </div>
-                            <button onclick="detachCustomer()" class="text-emerald-500 hover:text-emerald-800 transition-colors font-bold text-xs">REMOVE</button>
-                        </div>
-                    </div>
-                    <div id="guest-customer-btn-wrapper" class="mb-3">
-                        <button onclick="toggleCustomerModal()" class="w-full py-2 bg-white hover:bg-surface-secondary border border-dashed border-border-input rounded-lg text-text-secondary text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                            <span class="material-symbols-outlined text-[16px]">person_add</span>
-                            Attach Loyalty Customer
-                        </button>
-                    </div>
-
-                    <!-- Cart Table -->
-                    <div class="cart-table-container overflow-y-auto scrollbar-hide bg-white rounded-lg border border-border-subtle mb-3">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="sticky top-0 bg-surface-container-low border-b border-border-subtle z-10">
-                                <tr>
-                                    <th class="px-4 py-2.5 text-label-sm font-label-sm text-text-secondary">Item</th>
-                                    <th class="px-2 py-2.5 text-label-sm font-label-sm text-text-secondary text-center">Qty</th>
-                                    <th class="px-3 py-2.5 text-label-sm font-label-sm text-text-secondary text-right">Price</th>
-                                    <th class="px-4 py-2.5 text-label-sm font-label-sm text-text-secondary text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-border-subtle" id="cart-lines-tbody">
-                                <!-- Dynamic Lines will go here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Footer Summary & Actions -->
-                <div>
-                    <!-- Line Edit Options Panel (Shows only when a line is selected) -->
-                    <div id="line-actions-panel" class="hidden mb-3 bg-white p-3 rounded-lg border border-border-subtle shadow-sm flex items-center justify-between gap-2">
-                        <span class="text-xs font-semibold text-text-secondary truncate" id="selected-line-label">Selected Item</span>
-                        <div class="flex gap-2">
-                            <button onclick="openQtyOverrideKeypad()" class="h-9 px-3 bg-surface-container text-on-surface rounded-lg text-xs font-semibold hover:bg-surface-container-highest transition-all flex items-center gap-1 active:scale-95">
-                                <span class="material-symbols-outlined text-[14px]">edit</span> Qty
-                            </button>
-                            <button onclick="voidSelectedLine()" class="h-9 px-3 bg-danger/10 text-danger rounded-lg text-xs font-semibold hover:bg-danger/20 transition-all flex items-center gap-1 active:scale-95">
-                                <span class="material-symbols-outlined text-[14px]">delete</span> Void
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2 bg-white p-4 rounded-lg border border-border-subtle shadow-sm">
-                        <div class="flex justify-between items-center text-body-md">
-                            <span class="text-text-secondary">Subtotal</span>
-                            <span class="font-medium" id="summary-subtotal">PKR 0</span>
-                        </div>
-                        <div class="flex justify-between items-center text-body-md">
-                            <span class="text-text-secondary">Discount</span>
-                            <span class="text-danger" id="summary-discount">- PKR 0</span>
-                        </div>
-                        <div class="flex justify-between items-center text-body-md">
-                            <span class="text-text-secondary">Tax (VAT 5%)</span>
-                            <span class="font-medium" id="summary-tax">PKR 0</span>
-                        </div>
-                        <div class="pt-3 mt-1 border-t border-border-subtle flex justify-between items-center">
-                            <span class="text-headline-md font-bold text-primary">Total</span>
-                            <span class="text-display-numeric font-display-numeric text-primary" id="summary-total">PKR 0</span>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="grid grid-cols-3 gap-3 mt-4">
-                        <button onclick="voidEntireOrder()" class="h-14 flex flex-col items-center justify-center bg-danger/10 text-danger border border-danger/20 rounded-xl hover:bg-danger hover:text-white transition-all active:scale-95 text-xs font-bold gap-1">
-                            <span class="material-symbols-outlined">delete_sweep</span>
-                            Void Order
-                        </button>
-                        <button onclick="holdActiveOrder()" class="h-14 flex flex-col items-center justify-center bg-surface-container-high text-on-surface rounded-xl hover:bg-surface-container-highest transition-all active:scale-95 text-xs font-bold gap-1">
-                            <span class="material-symbols-outlined">pause_circle</span>
-                            Hold Order
-                        </button>
-                        <button onclick="proceedToPayment()" class="h-14 flex flex-col items-center justify-center bg-secondary text-white rounded-xl hover:bg-opacity-90 transition-all active:scale-95 shadow-md shadow-secondary/20 text-xs font-bold gap-1">
-                            <span class="material-symbols-outlined">shopping_cart_checkout</span>
-                            Pay Now
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Catalog Grid (60%) -->
-        <section class="w-[60%] flex flex-col bg-white h-full">
-            <div class="p-5 flex flex-col h-full">
-                <!-- Search Bar -->
-                <div class="relative mb-4 flex gap-2">
-                    <div class="relative flex-1">
-                        <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary">barcode_scanner</span>
-                        <input id="catalog-search" oninput="handleSearch()" class="w-full h-[56px] pl-12 pr-4 bg-surface-secondary border border-border-input rounded-xl focus:ring-2 focus:ring-secondary focus:border-secondary transition-all text-body-lg" placeholder="Scan Barcode or Search Item (SKU, Name)..." type="text"/>
-                        <div class="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2">
-                            <kbd class="px-2 py-1 bg-white border border-border-subtle rounded text-[10px] text-text-secondary font-mono">F1: Focus</kbd>
-                        </div>
-                    </div>
-                    <button onclick="simulateBarcodeScan()" class="h-[56px] px-4 bg-primary text-white rounded-xl hover:bg-opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2 font-semibold">
-                        <span class="material-symbols-outlined">qr_code_scanner</span>
-                        Scan
-                    </button>
-                </div>
-
-                <!-- Categories Row -->
-                <div class="flex gap-2.5 mb-4 overflow-x-auto scrollbar-hide pb-2" id="categories-row">
-                    <!-- Dynamic categories chips -->
-                </div>
-
-                <!-- Product Grid -->
-                <div class="catalog-container overflow-y-auto pr-2 flex-grow">
-                    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="products-grid">
-                        <!-- Dynamic Product Cards will go here -->
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-</div>
-
-<!-- Modal 1: Manager PIN Approval Override Modal -->
-<div class="fixed inset-0 z-[200] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center transition-all opacity-0" id="manager-approval-modal">
-    <div class="bg-white rounded-2xl shadow-2xl border border-border-subtle w-[480px] overflow-hidden transform scale-95 transition-all">
-        <div class="bg-amber-500 text-white p-5 flex justify-between items-center">
+      <!-- Customer Bar -->
+      <div id="customer-bar">
+        <button class="customer-empty-btn" id="customer-empty-btn" onclick="toggleCustomerModal()">
+          <span class="material-symbols-outlined" style="font-size:16px;">person_add</span>
+          Attach Loyalty Customer
+        </button>
+        <div class="customer-attached" id="customer-attached-bar" style="display:none;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="material-symbols-outlined icon-fill" style="font-size:16px;color:#059669;">verified_user</span>
             <div>
-                <h3 class="text-headline-md font-bold flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[28px]">lock</span>
-                    Manager Override
-                </h3>
-                <p class="text-xs opacity-90 mt-0.5" id="manager-modal-subtitle">Required for voids above PKR 1,000</p>
+              <div style="font-size:12px;font-weight:700;color:#065F46;" id="customer-name-display">—</div>
+              <div style="font-size:10px;color:#059669;" id="customer-points-display">—</div>
             </div>
-            <button class="material-symbols-outlined text-white/80 hover:text-white" onclick="closeManagerApprovalModal()">close</button>
+          </div>
+          <button onclick="detachCustomer()" style="background:#D1FAE5;border:none;cursor:pointer;font-size:10px;font-weight:700;color:#059669;padding:4px 8px;border-radius:6px;font-family:var(--sans);">REMOVE</button>
         </div>
-        <div class="p-6">
-            <div class="grid grid-cols-1 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-text-secondary uppercase mb-1">Reason Code</label>
-                    <select id="manager-reason-select" class="w-full bg-surface-secondary border border-border-input rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500">
-                        <option>Wrong item scanned</option>
-                        <option>Customer changed mind</option>
-                        <option>Price discrepancy</option>
-                        <option>Damaged or defected item</option>
-                        <option>Manager goodwill adjustment</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-text-secondary uppercase mb-1">Requested Manager</label>
-                    <select id="manager-id-select" class="w-full bg-surface-secondary border border-border-input rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500">
-                        <option>E1043 — Fahad · Manager</option>
-                        <option>E1046 — Hira · Manager (Remote)</option>
-                    </select>
-                </div>
-                <div class="mt-2 text-center">
-                    <label class="block text-xs font-bold text-text-secondary uppercase mb-2">Enter 4-Digit Manager PIN</label>
-                    <!-- Dot Indicators -->
-                    <div class="flex justify-center gap-3 mb-4">
-                        <div class="w-10 h-12 rounded-lg border-2 border-border-input flex items-center justify-center text-xl font-bold bg-surface-secondary" id="pin-dot-1"></div>
-                        <div class="w-10 h-12 rounded-lg border-2 border-border-input flex items-center justify-center text-xl font-bold bg-surface-secondary" id="pin-dot-2"></div>
-                        <div class="w-10 h-12 rounded-lg border-2 border-border-input flex items-center justify-center text-xl font-bold bg-surface-secondary" id="pin-dot-3"></div>
-                        <div class="w-10 h-12 rounded-lg border-2 border-border-input flex items-center justify-center text-xl font-bold bg-surface-secondary" id="pin-dot-4"></div>
-                    </div>
+      </div>
 
-                    <!-- Keyboard pad -->
-                    <div class="grid grid-cols-3 gap-2 max-w-[280px] mx-auto">
-                        <button onclick="pressManagerPin('1')" class="h-11 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-base active:scale-95 transition-all">1</button>
-                        <button onclick="pressManagerPin('2')" class="h-11 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-base active:scale-95 transition-all">2</button>
-                        <button onclick="pressManagerPin('3')" class="h-11 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-base active:scale-95 transition-all">3</button>
-                        <button onclick="pressManagerPin('4')" class="h-11 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-base active:scale-95 transition-all">4</button>
-                        <button onclick="pressManagerPin('5')" class="h-11 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-base active:scale-95 transition-all">5</button>
-                        <button onclick="pressManagerPin('6')" class="h-11 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-base active:scale-95 transition-all">6</button>
-                        <button onclick="pressManagerPin('7')" class="h-11 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-base active:scale-95 transition-all">7</button>
-                        <button onclick="pressManagerPin('8')" class="h-11 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-base active:scale-95 transition-all">8</button>
-                        <button onclick="pressManagerPin('9')" class="h-11 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-base active:scale-95 transition-all">9</button>
-                        <button onclick="clearManagerPin()" class="h-11 bg-danger/10 text-danger hover:bg-danger/20 rounded-lg font-bold text-sm active:scale-95 transition-all">Clear</button>
-                        <button onclick="pressManagerPin('0')" class="h-11 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-base active:scale-95 transition-all">0</button>
-                        <button onclick="submitManagerOverride()" class="h-11 bg-amber-500 text-white rounded-lg font-bold text-sm hover:bg-amber-600 active:scale-95 transition-all">OK</button>
-                    </div>
-                    <p class="text-xs text-text-secondary mt-3">Manager standard credential PIN is <code class="font-mono bg-surface-secondary px-1 py-0.5 rounded font-bold">1234</code></p>
-                </div>
-            </div>
+      <!-- Cart Items -->
+      <div id="cart-items-list">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Discount Row -->
+      <div id="discount-row">
+        <span class="material-symbols-outlined" style="font-size:18px;color:var(--text-muted);flex-shrink:0;">local_offer</span>
+        <div class="discount-input-wrap">
+          <input type="text" id="discount-input" placeholder="Discount amount or code" />
+          <select id="discount-type">
+            <option value="flat">PKR</option>
+            <option value="pct">%</option>
+          </select>
         </div>
+        <button class="discount-apply-btn" onclick="applyDiscount()">Apply</button>
+      </div>
+
+      <!-- Totals -->
+      <div id="totals-panel">
+        <div class="total-row">
+          <span class="label">Subtotal</span>
+          <span class="value" id="summary-subtotal">PKR 0</span>
+        </div>
+        <div class="total-row discount">
+          <span class="label">Discount</span>
+          <span class="value" id="summary-discount">— PKR 0</span>
+        </div>
+        <div class="total-row">
+          <span class="label">Tax (5% GST)</span>
+          <span class="value" id="summary-tax">PKR 0</span>
+        </div>
+        <div class="grand-total-row">
+          <span class="grand-total-label">Grand Total</span>
+          <span class="grand-total-amount" id="summary-total">PKR 0</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div id="action-buttons">
+        <button class="action-btn btn-void" onclick="voidEntireOrder()">
+          <span class="material-symbols-outlined" style="font-size:16px;">delete_sweep</span>
+          Void
+        </button>
+        <button class="action-btn btn-hold" onclick="holdActiveOrder()">
+          <span class="material-symbols-outlined" style="font-size:16px;">pause_circle</span>
+          Hold
+        </button>
+        <button class="action-btn btn-pay" id="pay-btn" onclick="proceedToPayment()">
+          <span class="material-symbols-outlined icon-fill" style="font-size:18px;">shopping_cart_checkout</span>
+          Pay Now
+          <span class="pay-amount" id="pay-btn-amount"></span>
+        </button>
+      </div>
+
+    </div><!-- /order-panel -->
+
+    <!-- ══ CATALOG PANEL ══ -->
+    <div id="catalog-panel">
+
+      <div id="catalog-toolbar">
+        <!-- Search -->
+        <div class="search-wrap">
+          <div class="search-input-wrap">
+            <span class="material-symbols-outlined search-icon">barcode_scanner</span>
+            <input type="text" id="catalog-search" placeholder="Scan barcode or search item name, SKU…" oninput="handleSearch()" />
+            <span class="kbd-hint">F1</span>
+          </div>
+          <button class="scan-btn" onclick="simulateBarcodeScan()">
+            <span class="material-symbols-outlined" style="font-size:18px;">qr_code_scanner</span>
+            Scan
+          </button>
+        </div>
+        <!-- Categories -->
+        <div id="categories-row"></div>
+      </div>
+
+      <div id="products-grid-wrap">
+        <div id="products-grid"></div>
+      </div>
+
+    </div><!-- /catalog-panel -->
+
+  </div><!-- /workspace -->
+</div><!-- /content -->
+
+<!-- ══════ MODALS ══════ -->
+
+<!-- Manager Approval Modal -->
+<div class="modal-backdrop" id="manager-approval-modal" style="display:none;">
+  <div class="modal-card wide fade-in">
+    <div class="modal-header" style="background:var(--amber);">
+      <h3 style="color:white;">
+        <span class="material-symbols-outlined" style="font-size:20px;">lock</span>
+        Manager Override Required
+      </h3>
+      <button class="close-btn" onclick="closeManagerApprovalModal()">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
     </div>
+    <div class="modal-body">
+      <div style="display:grid;gap:12px;margin-bottom:16px;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;">Reason Code</label>
+          <select id="manager-reason-select" style="width:100%;padding:10px 12px;border:1.5px solid var(--border-2);border-radius:8px;font-size:13px;background:var(--bg);outline:none;color:var(--text);">
+            <option>Wrong item scanned</option>
+            <option>Customer changed mind</option>
+            <option>Price discrepancy</option>
+            <option>Damaged or defective item</option>
+            <option>Manager goodwill adjustment</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;">Authorizing Manager</label>
+          <select id="manager-id-select" style="width:100%;padding:10px 12px;border:1.5px solid var(--border-2);border-radius:8px;font-size:13px;background:var(--bg);outline:none;color:var(--text);">
+            <option>MGR01 — Nadia Mirza · Manager</option>
+            <option>MGR02 — Usman Ali · Supervisor</option>
+          </select>
+        </div>
+      </div>
+      <label style="display:block;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;">Enter 4-Digit Manager PIN</label>
+      <div class="pin-display">
+        <div class="pin-cell" id="pin-dot-1"></div>
+        <div class="pin-cell" id="pin-dot-2"></div>
+        <div class="pin-cell" id="pin-dot-3"></div>
+        <div class="pin-cell" id="pin-dot-4"></div>
+      </div>
+      <div class="modal-keypad">
+        <button class="mk-btn" onclick="pressManagerPin('1')">1</button>
+        <button class="mk-btn" onclick="pressManagerPin('2')">2</button>
+        <button class="mk-btn" onclick="pressManagerPin('3')">3</button>
+        <button class="mk-btn" onclick="pressManagerPin('4')">4</button>
+        <button class="mk-btn" onclick="pressManagerPin('5')">5</button>
+        <button class="mk-btn" onclick="pressManagerPin('6')">6</button>
+        <button class="mk-btn" onclick="pressManagerPin('7')">7</button>
+        <button class="mk-btn" onclick="pressManagerPin('8')">8</button>
+        <button class="mk-btn" onclick="pressManagerPin('9')">9</button>
+        <button class="mk-btn danger" onclick="clearManagerPin()">CLEAR</button>
+        <button class="mk-btn" onclick="pressManagerPin('0')">0</button>
+        <button class="mk-btn confirm" onclick="submitManagerOverride()">OK</button>
+      </div>
+      <p style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:10px;">Demo PIN: <code style="font-family:var(--mono);background:var(--bg);padding:1px 6px;border-radius:4px;font-weight:700;">1234</code></p>
+    </div>
+  </div>
 </div>
 
-<!-- Modal 2: Void Item Confirmation Modal -->
-<div class="fixed inset-0 z-[190] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center transition-all opacity-0" id="void-item-modal">
-    <div class="bg-white rounded-2xl shadow-2xl border border-border-subtle w-[450px] overflow-hidden transform scale-95 transition-all">
-        <div class="bg-danger text-white p-5 flex justify-between items-center">
-            <div>
-                <h3 class="text-headline-md font-bold flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[28px]">remove_shopping_cart</span>
-                    Remove Item
-                </h3>
-                <p class="text-xs opacity-90 mt-0.5">FBR transactional audit log event</p>
-            </div>
-            <button class="material-symbols-outlined text-white/80 hover:text-white" onclick="closeVoidItemModal()">close</button>
-        </div>
-        <div class="p-6">
-            <div class="bg-surface-secondary p-4 rounded-xl flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 rounded-lg bg-danger/10 text-danger flex items-center justify-center text-xl font-bold" id="void-modal-item-letter">M</div>
-                <div class="flex-grow">
-                    <p class="font-bold text-primary text-sm" id="void-modal-item-name">Milk 1L</p>
-                    <p class="text-xs text-text-secondary" id="void-modal-item-desc">2 x PKR 280 = PKR 560</p>
-                </div>
-                <span class="bg-danger/10 text-danger text-[10px] font-bold px-2 py-0.5 rounded">VOIDABLE</span>
-            </div>
-
-            <!-- Reason select -->
-            <div class="mb-4">
-                <label class="block text-xs font-bold text-text-secondary uppercase mb-1">Reason Code</label>
-                <select id="void-reason-select" class="w-full bg-surface-secondary border border-border-input rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-danger">
-                    <option>Customer changed mind</option>
-                    <option>Wrong item scanned</option>
-                    <option>Price discrepancy</option>
-                    <option>Item damaged or expired</option>
-                </select>
-            </div>
-
-            <!-- Threshold alert -->
-            <div id="void-threshold-alert" class="p-3 bg-amber-50 border border-amber-100 rounded-lg text-amber-700 text-xs flex gap-2 items-center mb-4 hidden">
-                <span class="material-symbols-outlined text-[18px]">warning</span>
-                <span>This item costs >= PKR 1,000. It requires Manager PIN authorization.</span>
-            </div>
-
-            <!-- Buttons -->
-            <div class="flex gap-3 justify-end">
-                <button onclick="closeVoidItemModal()" class="py-2.5 px-4 bg-surface-secondary text-on-surface rounded-lg text-sm font-semibold hover:bg-surface-container transition-all">Cancel</button>
-                <button id="void-item-approve-btn" onclick="executeVoidImmediately()" class="py-2.5 px-5 bg-danger text-white rounded-lg text-sm font-semibold hover:bg-opacity-95 shadow-md shadow-danger/15 flex items-center gap-1.5 transition-all">
-                    <span class="material-symbols-outlined text-[16px]">trash</span> Confirm Void
-                </button>
-                <button id="void-item-manager-btn" onclick="requestManagerApprovalForVoid()" class="py-2.5 px-5 bg-amber-500 text-white rounded-lg text-sm font-semibold hover:bg-amber-600 shadow-md shadow-amber-500/15 flex items-center gap-1.5 transition-all hidden">
-                    <span class="material-symbols-outlined text-[16px]">lock_open</span> Request Manager
-                </button>
-            </div>
-        </div>
+<!-- Void Item Modal -->
+<div class="modal-backdrop" id="void-item-modal" style="display:none;">
+  <div class="modal-card fade-in">
+    <div class="modal-header" style="background:var(--red);">
+      <h3 style="color:white;">
+        <span class="material-symbols-outlined" style="font-size:20px;">remove_shopping_cart</span>
+        Remove Item
+      </h3>
+      <button class="close-btn" onclick="closeVoidItemModal()">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
     </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);margin-bottom:14px;">
+        <div style="width:44px;height:44px;border-radius:10px;background:#FEF2F2;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--red);flex-shrink:0;" id="void-modal-item-letter">M</div>
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:14px;font-weight:700;color:var(--text);margin:0;" id="void-modal-item-name">Item Name</p>
+          <p style="font-size:12px;color:var(--text-muted);margin:3px 0 0;" id="void-modal-item-desc">—</p>
+        </div>
+        <span style="background:#FEF2F2;color:var(--red);font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1px solid #FCA5A5;white-space:nowrap;">VOID</span>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;">Reason Code</label>
+        <select id="void-reason-select" style="width:100%;padding:10px 12px;border:1.5px solid var(--border-2);border-radius:8px;font-size:13px;background:var(--bg);outline:none;color:var(--text);">
+          <option>Customer changed mind</option>
+          <option>Wrong item scanned</option>
+          <option>Price discrepancy</option>
+          <option>Item damaged or expired</option>
+        </select>
+      </div>
+      <div id="void-threshold-alert" style="display:none;padding:10px 12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:#92400E;">
+        <span class="material-symbols-outlined" style="font-size:16px;">warning</span>
+        This item costs ≥ PKR 1,000 and requires Manager PIN.
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="closeVoidItemModal()" style="padding:10px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);">Cancel</button>
+        <button id="void-item-approve-btn" onclick="executeVoidImmediately()" style="padding:10px 20px;background:var(--red);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--sans);">
+          <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
+          Confirm Void
+        </button>
+        <button id="void-item-manager-btn" onclick="requestManagerApprovalForVoid()" style="display:none;padding:10px 20px;background:var(--amber);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;align-items:center;gap:6px;font-family:var(--sans);">
+          <span class="material-symbols-outlined" style="font-size:16px;">lock_open</span>
+          Request Manager
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- Modal 3: Loyalty Customer Modal -->
-<div class="fixed inset-0 z-[190] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center transition-all opacity-0" id="customer-modal">
-    <div class="bg-white rounded-2xl shadow-2xl border border-border-subtle w-[420px] overflow-hidden transform scale-95 transition-all">
-        <div class="bg-primary text-white p-5 flex justify-between items-center">
-            <div>
-                <h3 class="text-headline-md font-bold flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[28px]">contact_phone</span>
-                    Attach Loyalty Customer
-                </h3>
-                <p class="text-xs opacity-90 mt-0.5">Search or add profile to ledger</p>
-            </div>
-            <button class="material-symbols-outlined text-white/80 hover:text-white" onclick="toggleCustomerModal()">close</button>
-        </div>
-        <div class="p-6 space-y-4">
-            <div>
-                <label class="block text-xs font-bold text-text-secondary uppercase mb-1">Enter Customer Phone or ID</label>
-                <div class="flex gap-2">
-                    <input type="text" id="customer-search-input" class="flex-grow bg-surface-secondary border border-border-input rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-primary" placeholder="+92 300 1234567..." value="+92 300 1234567">
-                    <button onclick="searchAndFillCustomer()" class="px-4 bg-secondary text-white rounded-lg hover:bg-opacity-95 font-semibold text-sm active:scale-95 transition-all flex items-center justify-center">Search</button>
-                </div>
-            </div>
-
-            <!-- Customer Card results -->
-            <div id="customer-result-card" class="hidden p-4 rounded-xl border border-emerald-100 bg-emerald-50/50 flex flex-col gap-2">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold text-emerald-800 uppercase">Customer Found</span>
-                    <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">Tier: Gold</span>
-                </div>
-                <div>
-                    <p class="font-bold text-primary text-base" id="res-cust-name">Ahmed Khan</p>
-                    <p class="text-xs text-text-secondary" id="res-cust-phone">+92 300 1234567</p>
-                </div>
-                <div class="border-t border-emerald-100/50 pt-2 flex justify-between text-xs text-emerald-800">
-                    <span>Accrued Loyalty Points</span>
-                    <span class="font-bold" id="res-cust-points">420 pts</span>
-                </div>
-            </div>
-
-            <!-- Buttons -->
-            <div class="flex gap-3 justify-end border-t border-border-subtle pt-4">
-                <button onclick="toggleCustomerModal()" class="py-2 px-4 bg-surface-secondary text-on-surface rounded-lg text-sm font-semibold hover:bg-surface-container transition-all">Cancel</button>
-                <button onclick="attachFoundCustomer()" id="attach-customer-submit-btn" disabled class="py-2 px-5 bg-secondary text-white rounded-lg text-sm font-semibold opacity-50 cursor-not-allowed hover:bg-opacity-95 flex items-center gap-1.5 transition-all">
-                    <span class="material-symbols-outlined text-[16px]">link</span> Attach to Sale
-                </button>
-            </div>
-        </div>
+<!-- Loyalty Customer Modal -->
+<div class="modal-backdrop" id="customer-modal" style="display:none;">
+  <div class="modal-card fade-in">
+    <div class="modal-header" style="background:var(--navy);">
+      <h3 style="color:white;">
+        <span class="material-symbols-outlined" style="font-size:20px;">contact_phone</span>
+        Attach Loyalty Customer
+      </h3>
+      <button class="close-btn" onclick="toggleCustomerModal()">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
     </div>
+    <div class="modal-body">
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;">Phone or Customer ID</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="customer-search-input" placeholder="+92 300 1234567" value="+92 300 1234567"
+            style="flex:1;padding:10px 12px;border:1.5px solid var(--border-2);border-radius:8px;font-size:13px;outline:none;background:var(--bg);color:var(--text);" />
+          <button onclick="searchAndFillCustomer()" style="padding:10px 16px;background:var(--green);color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);">Search</button>
+        </div>
+      </div>
+      <div id="customer-result-card" style="display:none;padding:14px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:#065F46;">Customer Found</span>
+          <span style="background:#BBF7D0;color:#065F46;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;">Gold Tier</span>
+        </div>
+        <p style="font-size:15px;font-weight:700;color:var(--text);margin:0;" id="res-cust-name">Ahmed Khan</p>
+        <p style="font-size:12px;color:var(--text-muted);margin:2px 0 8px;" id="res-cust-phone">+92 300 1234567</p>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid #BBF7D0;padding-top:8px;font-size:12px;color:#059669;">
+          <span>Loyalty Points</span>
+          <span style="font-weight:700;" id="res-cust-points">420 pts</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--border);padding-top:14px;">
+        <button onclick="toggleCustomerModal()" style="padding:10px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);">Cancel</button>
+        <button onclick="attachFoundCustomer()" id="attach-customer-submit-btn" disabled
+          style="padding:10px 20px;background:var(--green);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:not-allowed;opacity:0.45;display:flex;align-items:center;gap:6px;font-family:var(--sans);">
+          <span class="material-symbols-outlined" style="font-size:16px;">link</span>
+          Attach to Sale
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- Modal 4: Qty Override Keypad Modal -->
-<div class="fixed inset-0 z-[190] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center transition-all opacity-0" id="qty-override-modal">
-    <div class="bg-white rounded-2xl shadow-2xl border border-border-subtle w-[320px] overflow-hidden transform scale-95 transition-all">
-        <div class="bg-secondary text-white p-4 flex justify-between items-center">
-            <span class="font-bold flex items-center gap-2">
-                <span class="material-symbols-outlined text-[20px]">edit_note</span> Qty Override
-            </span>
-            <button class="material-symbols-outlined text-white/80 hover:text-white" onclick="closeQtyOverrideModal()">close</button>
-        </div>
-        <div class="p-4">
-            <div class="mb-4">
-                <input type="text" id="qty-override-input" class="w-full text-center text-display-numeric font-display-numeric py-2 border-2 border-border-input rounded-xl bg-surface-secondary focus:ring-0 focus:border-secondary font-bold text-3xl" readonly value="1">
-            </div>
-            <div class="grid grid-cols-3 gap-2">
-                <button onclick="pressQtyPad('1')" class="h-12 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-lg active:scale-95 transition-all">1</button>
-                <button onclick="pressQtyPad('2')" class="h-12 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-lg active:scale-95 transition-all">2</button>
-                <button onclick="pressQtyPad('3')" class="h-12 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-lg active:scale-95 transition-all">3</button>
-                <button onclick="pressQtyPad('4')" class="h-12 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-lg active:scale-95 transition-all">4</button>
-                <button onclick="pressQtyPad('5')" class="h-12 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-lg active:scale-95 transition-all">5</button>
-                <button onclick="pressQtyPad('6')" class="h-12 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-lg active:scale-95 transition-all">6</button>
-                <button onclick="pressQtyPad('7')" class="h-12 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-lg active:scale-95 transition-all">7</button>
-                <button onclick="pressQtyPad('8')" class="h-12 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-lg active:scale-95 transition-all">8</button>
-                <button onclick="pressQtyPad('9')" class="h-12 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-lg active:scale-95 transition-all">9</button>
-                <button onclick="clearQtyPad()" class="h-12 bg-danger/10 text-danger hover:bg-danger/20 rounded-lg font-bold text-base active:scale-95 transition-all">C</button>
-                <button onclick="pressQtyPad('0')" class="h-12 bg-surface-secondary hover:bg-surface-container rounded-lg font-bold text-lg active:scale-95 transition-all">0</button>
-                <button onclick="submitQtyOverride()" class="h-12 bg-secondary text-white hover:opacity-95 rounded-lg font-bold text-base active:scale-95 transition-all">OK</button>
-            </div>
-        </div>
+<!-- Qty Override Modal -->
+<div class="modal-backdrop" id="qty-override-modal" style="display:none;">
+  <div class="modal-card narrow fade-in">
+    <div class="modal-header" style="background:var(--green);">
+      <h3 style="color:white;">
+        <span class="material-symbols-outlined" style="font-size:18px;">edit_note</span>
+        Set Quantity
+      </h3>
+      <button class="close-btn" onclick="closeQtyOverrideModal()">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
     </div>
+    <div class="modal-body">
+      <input type="text" id="qty-override-input" readonly value="1"
+        style="width:100%;text-align:center;font-size:36px;font-weight:800;font-family:var(--mono);padding:10px;border:2px solid var(--border-2);border-radius:10px;background:var(--bg);margin-bottom:14px;outline:none;color:var(--text);"/>
+      <div class="modal-keypad">
+        <button class="mk-btn" onclick="pressQtyPad('7')">7</button>
+        <button class="mk-btn" onclick="pressQtyPad('8')">8</button>
+        <button class="mk-btn" onclick="pressQtyPad('9')">9</button>
+        <button class="mk-btn" onclick="pressQtyPad('4')">4</button>
+        <button class="mk-btn" onclick="pressQtyPad('5')">5</button>
+        <button class="mk-btn" onclick="pressQtyPad('6')">6</button>
+        <button class="mk-btn" onclick="pressQtyPad('1')">1</button>
+        <button class="mk-btn" onclick="pressQtyPad('2')">2</button>
+        <button class="mk-btn" onclick="pressQtyPad('3')">3</button>
+        <button class="mk-btn danger" onclick="clearQtyPad()">C</button>
+        <button class="mk-btn" onclick="pressQtyPad('0')">0</button>
+        <button class="mk-btn confirm" onclick="submitQtyOverride()">OK</button>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- Global Toast Notification overlay -->
-<div class="fixed bottom-6 right-6 z-[300] flex flex-col gap-2 pointer-events-none" id="toast-wrapper"></div>
+<!-- Toast Container -->
+<div id="toast-wrapper"></div>
 
-<!-- JS Implementation -->
+<!-- Shortcuts Bar -->
+<div class="shortcuts-bar">
+  <span class="sc-label">Shortcuts</span>
+  <button class="sc-btn green" onclick="loadDemoCart()">🛒 Load Demo Cart</button>
+  <button class="sc-btn blue"  onclick="window.location.href='payment_screen.html'">→ Payment</button>
+  <button class="sc-btn amber" onclick="window.location.href='cash_control.html'">💰 Cash Control</button>
+  <button class="sc-btn ghost" onclick="window.location.href='shift_close.html'">→ Close Shift</button>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
 <script>
-// Catalog products
+// ─── DATA ────────────────────────────────────
 const ITEMS = [
-    { id: "I1001", sku: "MLK-1L",   name: "Milk 1L Tetra",       cat: "dairy",     unit: "L",   price: 280, tax: 5, stock: 24, img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBZRQVG3wEhMyo6dgmOF7vOVCr06CwaKn_XUYl0qzAa8n_UGeYqrB739YMiAcrZ206RSfbWSA9pdFSamOj2dNHRI2ePhF3sHrKWcrWDbJ82TuSb1ml0XFTVr4UPBZfP4KnYKuzKhQpBY59No3R4rLwT3Mb_8TstL3E8hPWvlVHVlUv5kblk38ZQLywl5jlxhnMrM_XDkVz8f4TSBfZ1YzKvKJnoFPGeXkcx5oZ_6fZf5AeY9YAHpYsebG59oytkNxqI4BioYIwPJZ-2" },
-    { id: "I1002", sku: "RIC-5KG",  name: "Rice 5kg Premium",    cat: "grocery",   unit: "kg",  price: 1850, tax: 0, stock: 15, img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAxaIG3Cbxz-VvBmnqKRybGibWzC8wAa5WVFvC_JHpz1JipfcUBUtv93ZAJDYTdtMohtZln3SsEvbSLCrQ2S7srDGJWgcMFqSRBpBruHsEFSH3_ckwzISwplRrHWAckzX-X7i9fBqmAOOendwkWsWMGpay6m2gZ_TDakkrFcdzDGZAEGM2bE9-do0Y8rbuaON5E8tU6KobrepkbFURyXtEJruUD2uKsWLjfk_8JDLAMod4obZ-cbgpqgKzCeLi_MWdadgV6-rneyWep" },
-    { id: "I1003", sku: "USB-C-1M", name: "USB-C Cable 1m",     cat: "electron",  unit: "ea",  price: 650, tax: 18, stock: 41 },
-    { id: "I1004", sku: "THM-DIG",  name: "Digital Thermometer", cat: "pharmacy", unit: "ea", price: 1200, tax: 0, stock: 12 },
-    { id: "I1005", sku: "NB-PK5",   name: "Notebook Pack ×5",   cat: "stationery", unit: "pk", price: 480, tax: 12, stock: 58 },
-    { id: "I1006", sku: "MSE-WL",   name: "Wireless Mouse",     cat: "electron",  unit: "ea",  price: 1450, tax: 18, stock: 19 },
-    { id: "I1007", sku: "BIS-200",  name: "Biscuit 200g",       cat: "grocery",   unit: "g",   price: 120, tax: 0, stock: 124 },
-    { id: "I1008", sku: "COL-15L",  name: "Coca Cola 1.5L",     cat: "beverage",  unit: "L",   price: 220, tax: 12, stock: 96, img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBRGgUPCkGA6xBl3B7yfi_gJmBQ21UK4h0wPzlA5JTCjkLo5ZJfjs0DrSLKue_3fJDkqPUhrB-BM-COlbmEaVGeCloi5vaH6BZiOP6KAbRnsX5EZN1rhpbVIKGsmc5V029u8HZDMXkOt_U9o7NESp0FjuIoq24SyqqqiLzXHKepDXTjDBBbgu9WpysuHGwJ0ebyBpU3Le-kYEcm4wrc98oBO38_QW3PWze1S3GLaeYjodx47iDAg8LbN4EKd-pc1gC8rD1ZqIZKqJdb" },
-    { id: "I1009", sku: "SHM-400",  name: "Shampoo 400ml",      cat: "personal",  unit: "ml",  price: 720, tax: 18, stock: 33 },
-    { id: "I1010", sku: "PNK-500",  name: "Paracetamol 500mg",  cat: "pharmacy",  unit: "pk",  price: 95,  tax: 0, stock: 210 },
-    { id: "I1011", sku: "BAT-AA4",  name: "Batteries AA ×4",    cat: "electron",  unit: "pk",  price: 320, tax: 18, stock: 47 },
-    { id: "I1012", sku: "OIL-3L",   name: "Cooking Oil 3L",     cat: "grocery",   unit: "L",   price: 1650, tax: 0, stock: 8, img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDctzzJX61Mv2ZyQKBYiGx4Yvb3SFNR1RDEWYQGLJnfStuX0wj3LjMFGnqtVBm8582ZPbtKgzgXMivVFBORs0pf6PuXtAfJEhc475K0apu9EnYU8RH-UupaWlNsrwl9Jt4FykW4Fc3f8XOBJCpbPr2EJ-DYZHnehzY86SrSIC2b6bmza8IUX5F2mM1q50Ju0C9F5lMkV7FRWW_FryPlz-CnmxxwwZkwG2V3XPNVJGdPjWyX3Da_nnCdFWKZ6xxur98AYqUENGbPgxeV" },
-    { id: "I1013", sku: "PEN-BLK",  name: "Pen Black",          cat: "stationery", unit: "ea", price: 45,  tax: 12, stock: 280 },
-    { id: "I1014", sku: "SOA-150",  name: "Soap Bar 150g",      cat: "personal",  unit: "g",   price: 110, tax: 18, stock: 156 },
-    { id: "I1015", sku: "TEA-500",  name: "Tea Pack 500g",      cat: "grocery",   unit: "g",   price: 950, tax: 0, stock: 3, img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAxdNIH2CgdrOoeGst6-K1si4dcKEPKZL-XqVRsH-UB2CY78EM7goEoPbdcky-k4kiXMFWiy94QEb07MUrFBzHRFG9cYp1sTYWX3AB8m7cw8nV1eO9eIfJJ7iCIpzWsweLyxPKhQHdGNgC0p0JMkkxigDjLqgoG0sEZ4DY6xb9gdPWamQcBUjjnchkfirJwIojH-HliIulMV2-y8wBmwt8_4Rwoi8jak55qt8Afx0wDuIfBnah38tg5dEC9TiIHP4SDXy-1GglO04o0" },
-    { id: "I1016", sku: "WAT-15L",  name: "Mineral Water 1.5L", cat: "beverage",  unit: "L",   price: 90,  tax: 0, stock: 412 },
-    { id: "I1021", sku: "APP-1KG",  name: "Fresh Apple 1kg",    cat: "grocery",   unit: "kg",  price: 350, tax: 5, stock: 12, img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAczJ85zO0f-rGmEcyC9dDMmW4ZA_ODfy5jLbuvQHmO3cNCkjoI7c2N7CD8x013a1lNAvXQLhroPKxSLifrALi1yN7vXmWBWHBQoBRMZTfDpnnIa5ExYLnFh0H6CFCt5zYRdfPdSosoOsfLAo8ur-wAaTLwcoIaxJ28xrZnCQCc0l_GUvGh88uJ5bwx5FzT4M2nxANc8KxDToQB8e2Hr6OHNB7cd2xhh-vVLexpDs_1B4NNTYtRMb8cE4Zu_cZtocJxrSP7yUFLHBjp" },
-    { id: "I1022", sku: "SGR-1KG",  name: "Sugar 1kg",          cat: "grocery",   unit: "kg",  price: 145, tax: 5, stock: 42, img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBXlSofktgDfQlhpfd0fT6vETwucslvgYxZhKKhY2Wvjygg5BXUECyMkASkKeQq7N0GnoMbb3JrW1PKHSJB-GurfcWjeVk4QwK-3U0Up5aNU0bqKvRW8o7VUZwMx99Es-FIL9thkct6OLBpIZrLOnG-E82eI5bP0cXNNtMxUGD0pebuPnSR4S4Y_ZNztAIjFXtz1PkGvoqv5PXXF4U5WBo9wMas0_aspaPjnXu1lCvFZi2sosgbO0984tnaWYpGuAZUkOSYLcxYTXzm" }
+  { id:"I1001", sku:"MLK-1L",  name:"Milk 1L Tetra",       cat:"dairy",     unit:"L",  price:280,  tax:5,  stock:24, img:"https://lh3.googleusercontent.com/aida-public/AB6AXuBZRQVG3wEhMyo6dgmOF7vOVCr06CwaKn_XUYl0qzAa8n_UGeYqrB739YMiAcrZ206RSfbWSA9pdFSamOj2dNHRI2ePhF3sHrKWcrWDbJ82TuSb1ml0XFTVr4UPBZfP4KnYKuzKhQpBY59No3R4rLwT3Mb_8TstL3E8hPWvlVHVlUv5kblk38ZQLywl5jlxhnMrM_XDkVz8f4TSBfZ1YzKvKJnoFPGeXkcx5oZ_6fZf5AeY9YAHpYsebG59oytkNxqI4BioYIwPJZ-2" },
+  { id:"I1002", sku:"RIC-5KG", name:"Rice 5kg Premium",    cat:"grocery",   unit:"kg", price:1850, tax:0,  stock:15, img:"https://lh3.googleusercontent.com/aida-public/AB6AXuAxaIG3Cbxz-VvBmnqKRybGibWzC8wAa5WVFvC_JHpz1JipfcUBUtv93ZAJDYTdtMohtZln3SsEvbSLCrQ2S7srDGJWgcMFqSRBpBruHsEFSH3_ckwzISwplRrHWAckzX-X7i9fBqmAOOendwkWsWMGpay6m2gZ_TDakkrFcdzDGZAEGM2bE9-do0Y8rbuaON5E8tU6KobrepkbFURyXtEJruUD2uKsWLjfk_8JDLAMod4obZ-cbgpqgKzCeLi_MWdadgV6-rneyWep" },
+  { id:"I1003", sku:"USB-C1M", name:"USB-C Cable 1m",      cat:"electron",  unit:"ea", price:650,  tax:18, stock:41 },
+  { id:"I1004", sku:"THM-DIG", name:"Digital Thermometer", cat:"pharmacy",  unit:"ea", price:1200, tax:0,  stock:12 },
+  { id:"I1005", sku:"NB-PK5",  name:"Notebook Pack ×5",   cat:"stationery",unit:"pk", price:480,  tax:12, stock:58 },
+  { id:"I1006", sku:"MSE-WL",  name:"Wireless Mouse",      cat:"electron",  unit:"ea", price:1450, tax:18, stock:19 },
+  { id:"I1007", sku:"BIS-200", name:"Biscuit 200g",        cat:"grocery",   unit:"g",  price:120,  tax:0,  stock:124 },
+  { id:"I1008", sku:"COL-15L", name:"Coca Cola 1.5L",      cat:"beverage",  unit:"L",  price:220,  tax:12, stock:96, img:"https://lh3.googleusercontent.com/aida-public/AB6AXuBRGgUPCkGA6xBl3B7yfi_gJmBQ21UK4h0wPzlA5JTCjkLo5ZJfjs0DrSLKue_3fJDkqPUhrB-BM-COlbmEaVGeCloi5vaH6BZiOP6KAbRnsX5EZN1rhpbVIKGsmc5V029u8HZDMXkOt_U9o7NESp0FjuIoq24SyqqqiLzXHKepDXTjDBBbgu9WpysuHGwJ0ebyBpU3Le-kYEcm4wrc98oBO38_QW3PWze1S3GLaeYjodx47iDAg8LbN4EKd-pc1gC8rD1ZqIZKqJdb" },
+  { id:"I1009", sku:"SHM-400", name:"Shampoo 400ml",       cat:"personal",  unit:"ml", price:720,  tax:18, stock:33 },
+  { id:"I1010", sku:"PNK-500", name:"Paracetamol 500mg",   cat:"pharmacy",  unit:"pk", price:95,   tax:0,  stock:210 },
+  { id:"I1011", sku:"BAT-AA4", name:"Batteries AA ×4",     cat:"electron",  unit:"pk", price:320,  tax:18, stock:47 },
+  { id:"I1012", sku:"OIL-3L",  name:"Cooking Oil 3L",      cat:"grocery",   unit:"L",  price:1650, tax:0,  stock:8,  img:"https://lh3.googleusercontent.com/aida-public/AB6AXuDctzzJX61Mv2ZyQKBYiGx4Yvb3SFNR1RDEWYQGLJnfStuX0wj3LjMFGnqtVBm8582ZPbtKgzgXMivVFBORs0pf6PuXtAfJEhc475K0apu9EnYU8RH-UupaWlNsrwl9Jt4FykW4Fc3f8XOBJCpbPr2EJ-DYZHnehzY86SrSIC2b6bmza8IUX5F2mM1q50Ju0C9F5lMkV7FRWW_FryPlz-CnmxxwwZkwG2V3XPNVJGdPjWyX3Da_nnCdFWKZ6xxur98AYqUENGbPgxeV" },
+  { id:"I1013", sku:"PEN-BLK", name:"Pen Black",           cat:"stationery",unit:"ea", price:45,   tax:12, stock:280 },
+  { id:"I1014", sku:"SOA-150", name:"Soap Bar 150g",        cat:"personal",  unit:"g",  price:110,  tax:18, stock:156 },
+  { id:"I1015", sku:"TEA-500", name:"Tea Pack 500g",        cat:"grocery",   unit:"g",  price:950,  tax:0,  stock:3,  img:"https://lh3.googleusercontent.com/aida-public/AB6AXuAxdNIH2CgdrOoeGst6-K1si4dcKEPKZL-XqVRsH-UB2CY78EM7goEoPbdcky-k4kiXMFWiy94QEb07MUrFBzHRFG9cYp1sTYWX3AB8m7cw8nV1eO9eIfJJ7iCIpzWsweLyxPKhQHdGNgC0p0JMkkxigDjLqgoG0sEZ4DY6xb9gdPWamQcBUjjnchkfirJwIojH-HliIulMV2-y8wBmwt8_4Rwoi8jak55qt8Afx0wDuIfBnah38tg5dEC9TiIHP4SDXy-1GglO04o0" },
+  { id:"I1016", sku:"WAT-15L", name:"Mineral Water 1.5L",  cat:"beverage",  unit:"L",  price:90,   tax:0,  stock:412 },
+  { id:"I1021", sku:"APP-1KG", name:"Fresh Apple 1kg",     cat:"grocery",   unit:"kg", price:350,  tax:5,  stock:12, img:"https://lh3.googleusercontent.com/aida-public/AB6AXuAczJ85zO0f-rGmEcyC9dDMmW4ZA_ODfy5jLbuvQHmO3cNCkjoI7c2N7CD8x013a1lNAvXQLhroPKxSLifrALi1yN7vXmWBWHBQoBRMZTfDpnnIa5ExYLnFh0H6CFCt5zYRdfPdSosoOsfLAo8ur-wAaTLwcoIaxJ28xrZnCQCc0l_GUvGh88uJ5bwx5FzT4M2nxANc8KxDToQB8e2Hr6OHNB7cd2xhh-vVLexpDs_1B4NNTYtRMb8cE4Zu_cZtocJxrSP7yUFLHBjp" },
+  { id:"I1022", sku:"SGR-1KG", name:"Sugar 1kg",           cat:"grocery",   unit:"kg", price:145,  tax:5,  stock:42, img:"https://lh3.googleusercontent.com/aida-public/AB6AXuBXlSofktgDfQlhpfd0fT6vETwucslvgYxZhKKhY2Wvjygg5BXUECyMkASkKeQq7N0GnoMbb3JrW1PKHSJB-GurfcWjeVk4QwK-3U0Up5aNU0bqKvRW8o7VUZwMx99Es-FIL9thkct6OLBpIZrLOnG-E82eI5bP0cXNNtMxUGD0pebuPnSR4S4Y_ZNztAIjFXtz1PkGvoqv5PXXF4U5WBo9wMas0_aspaPjnXu1lCvFZi2sosgbO0984tnaWYpGuAZUkOSYLcxYTXzm" },
 ];
 
 const CATEGORIES = [
-    { id: "all", name: "All Items" },
-    { id: "grocery", name: "Grocery" },
-    { id: "dairy", name: "Dairy" },
-    { id: "beverage", name: "Beverages" },
-    { id: "personal", name: "Personal Care" },
-    { id: "pharmacy", name: "Pharmacy" },
-    { id: "electron", name: "Electronics" },
-    { id: "stationery", name: "Stationery" }
+  { id:"all",        name:"All Items",    icon:"apps" },
+  { id:"grocery",    name:"Grocery",      icon:"shopping_basket" },
+  { id:"dairy",      name:"Dairy",        icon:"egg" },
+  { id:"beverage",   name:"Beverages",    icon:"local_bar" },
+  { id:"personal",   name:"Personal Care",icon:"spa" },
+  { id:"pharmacy",   name:"Pharmacy",     icon:"medication" },
+  { id:"electron",   name:"Electronics",  icon:"devices" },
+  { id:"stationery", name:"Stationery",   icon:"edit" },
 ];
 
 const CAT_COLORS = {
-    all:        { bg:'bg-indigo-50', fg:'text-indigo-600' },
-    grocery:    { bg:'bg-emerald-50', fg:'text-emerald-600' },
-    dairy:      { bg:'bg-blue-50', fg:'text-blue-600' },
-    beverage:   { bg:'bg-orange-50', fg:'text-orange-600' },
-    personal:   { bg:'bg-purple-50', fg:'text-purple-600' },
-    pharmacy:   { bg:'bg-teal-50', fg:'text-teal-600' },
-    electron:   { bg:'bg-violet-50', fg:'text-violet-600' },
-    stationery: { bg:'bg-amber-50', fg:'text-amber-600' }
+  all:        { bg:'#EEF2FF', fg:'#4F46E5' },
+  grocery:    { bg:'#ECFDF5', fg:'#059669' },
+  dairy:      { bg:'#EFF6FF', fg:'#2563EB' },
+  beverage:   { bg:'#FFF7ED', fg:'#EA580C' },
+  personal:   { bg:'#FDF4FF', fg:'#9333EA' },
+  pharmacy:   { bg:'#F0FDFA', fg:'#0D9488' },
+  electron:   { bg:'#F5F3FF', fg:'#7C3AED' },
+  stationery: { bg:'#FFFBEB', fg:'#D97706' },
 };
 
-// State Variables
-let currentCart = [];
+// ─── STATE ───────────────────────────────────
+let currentCart    = [];
 let activeCategory = 'all';
-let searchFilter = '';
-let selectedLineItemId = null;
+let searchFilter   = '';
+let activeDiscount = 0;
 let activeVoidLineItem = null;
 let tempManagerPin = '';
 let qtyOverrideTemp = '';
+let selectedLineId  = null;
+let orderSeq = 42;
 
-// Parent Synchronization
-function syncParentSidebar(stepIndex) {
-    if (window.parent && typeof window.parent.document !== 'undefined') {
-        const doc = window.parent.document;
-        const stepEl = doc.getElementById('step-' + stepIndex);
-        if (stepEl) {
-            doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
-            stepEl.classList.add('flow-step-active');
-        }
-        const urlDisplay = doc.getElementById('simulator-url-display');
-        if (urlDisplay) {
-            const filename = window.location.pathname.split('/').pop();
-            urlDisplay.innerText = 'screens/' + filename;
-        }
-        const openNewTabBtn = doc.getElementById('open-new-tab-btn');
-        if (openNewTabBtn) {
-            const filename = window.location.pathname.split('/').pop();
-            openNewTabBtn.href = 'screens/' + filename;
-        }
-    }
+// ─── UTILS ───────────────────────────────────
+function fmt(n) { return 'PKR ' + new Intl.NumberFormat('en-PK').format(n); }
+function fmtNum(n) { return new Intl.NumberFormat('en-PK').format(n); }
+
+function syncParentSidebar(idx) {
+  try {
+    if (!window.parent || window.parent === window) return;
+    const doc = window.parent.document;
+    doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+    const el = doc.getElementById('step-' + idx);
+    if (el) el.classList.add('flow-step-active');
+    const ud = doc.getElementById('simulator-url-display');
+    if (ud) ud.innerText = 'screens/main_checkout.html';
+  } catch(e) {}
 }
 
-// Format numbers as currency format (e.g. PKR 1,850)
-function fmt(num) {
-    return 'PKR ' + new Intl.NumberFormat('en-PK').format(num);
+// ─── TOAST ───────────────────────────────────
+function showToast(msg, type='success') {
+  const w = document.getElementById('toast-wrapper');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icons = { success:'check_circle', error:'cancel', info:'info', warning:'warning' };
+  t.innerHTML = `<span class="material-symbols-outlined icon-fill" style="font-size:18px;">${icons[type]||'info'}</span><span>${msg}</span>`;
+  w.appendChild(t);
+  requestAnimationFrame(() => { requestAnimationFrame(() => t.classList.add('show')); });
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 300);
+  }, 2800);
+}
+function showHelpToast(m) { showToast(m, 'info'); }
+
+// ─── CLOCK ───────────────────────────────────
+function updateClock() {
+  document.getElementById('tb-clock').textContent =
+    new Date().toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
 }
 
-// Toast notification helper
-function showToast(message, type = 'success') {
-    const wrapper = document.getElementById('toast-wrapper');
-    const toast = document.createElement('div');
-    toast.className = `p-4 mb-2 rounded-xl text-white shadow-xl flex items-center gap-3 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto max-w-sm ${
-        type === 'success' ? 'bg-secondary' : type === 'error' ? 'bg-danger' : 'bg-amber-500'
-    }`;
-    
-    const icon = type === 'success' ? 'check_circle' : type === 'error' ? 'cancel' : 'warning';
-    
-    toast.innerHTML = `
-        <span class="material-symbols-outlined">${icon}</span>
-        <span class="text-xs font-semibold">${message}</span>
-    `;
-    
-    wrapper.appendChild(toast);
-    
-    // Trigger animation
-    setTimeout(() => {
-        toast.classList.remove('translate-y-2', 'opacity-0');
-        toast.classList.add('translate-y-0', 'opacity-100');
-    }, 10);
-    
-    // Disappear
-    setTimeout(() => {
-        toast.classList.remove('translate-y-0', 'opacity-100');
-        toast.classList.add('translate-y-2', 'opacity-0');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-function showHelpToast(msg) {
-    showToast(msg, 'info');
-}
-
-// Log Out
-function doLogout() {
-    sessionStorage.clear();
-    localStorage.removeItem('terminal_operator');
-    window.location.href = 'terminal_login.html';
-}
-
-function navigateToShift() {
-    if (sessionStorage.getItem('pos_shift_open') === 'true') {
-        window.location.href = 'shift_close.html';
-    } else {
-        window.location.href = 'shift_open.html';
-    }
-}
-
-// Document Ready Initializer
+// ─── INIT ────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-    syncParentSidebar(3);
-    
-    // Validate shift open
-    if (sessionStorage.getItem('pos_shift_open') !== 'true') {
-        alert('Please open your shift first!');
-        window.location.href = 'shift_open.html';
-        return;
-    }
-    
-    // Set Header Cashier and Date
-    const cashierName = localStorage.getItem('terminal_operator') || 'Adeel';
-    const headerCashierEl = document.getElementById('header-cashier');
-    if (headerCashierEl) headerCashierEl.textContent = cashierName;
-    
-    const displayDate = document.getElementById('current-date-display');
-    if (displayDate) {
-        displayDate.textContent = new Date().toISOString().split('T')[0];
-    }
-    
-    // Load Customer if attached
-    const attachedCustomer = sessionStorage.getItem('pos_attached_customer');
-    if (attachedCustomer) {
-        showAttachedCustomerIndicator(attachedCustomer);
-    }
-    
-    // Load existing cart or initialize defaults
-    const savedCart = sessionStorage.getItem('pos_cart');
-    if (savedCart) {
-        currentCart = JSON.parse(savedCart);
-    } else {
-        // Mock default order
-        currentCart = [
-            { id: "I1001", name: "Milk 1L Tetra", qty: 2, price: 280, unit: "L", cat: "dairy" },
-            { id: "I1002", name: "Rice 5kg Premium", qty: 1, price: 1850, unit: "kg", cat: "grocery" },
-            { id: "I1008", name: "Coca Cola 1.5L", qty: 2, price: 220, unit: "L", cat: "beverage" }
-        ];
-        saveCartToSession();
-    }
-    
-    renderCategoriesRow();
-    renderProductsGrid();
-    renderCart();
-    
-    // Keyboard listener
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'F1') {
-            e.preventDefault();
-            document.getElementById('catalog-search').focus();
-        }
-    });
+  syncParentSidebar(3);
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  if (sessionStorage.getItem('pos_shift_open') !== 'true') {
+    alert('Please open your shift first.');
+    window.location.href = 'shift_open.html';
+    return;
+  }
+
+  // Load operator
+  const opStr = localStorage.getItem('terminal_operator');
+  if (opStr) {
+    try {
+      const op = JSON.parse(opStr);
+      document.getElementById('op-name').textContent = op.name;
+      document.getElementById('op-avatar').textContent = op.initials || op.name.slice(0,2).toUpperCase();
+      document.getElementById('op-avatar').style.background = op.color || '#10B981';
+      document.getElementById('tb-cashier').textContent = op.name.split(' ')[0];
+    } catch(e) {}
+  }
+
+  // Load config
+  const cfgStr = localStorage.getItem('terminal_config');
+  if (cfgStr) {
+    try {
+      const cfg = JSON.parse(cfgStr);
+      if (cfg.terminalId) document.getElementById('tb-terminal').textContent = cfg.terminalId;
+    } catch(e) {}
+  }
+
+  // Order number
+  orderSeq = Math.floor(Math.random() * 9000) + 1000;
+  document.getElementById('order-number-display').textContent = '#' + orderSeq;
+
+  // Load cart
+  const savedCart = sessionStorage.getItem('pos_cart');
+  if (savedCart) {
+    currentCart = JSON.parse(savedCart);
+  } else {
+    currentCart = [
+      { id:'I1001', name:'Milk 1L Tetra',    qty:2, price:280,  unit:'L',  cat:'dairy' },
+      { id:'I1002', name:'Rice 5kg Premium', qty:1, price:1850, unit:'kg', cat:'grocery' },
+      { id:'I1008', name:'Coca Cola 1.5L',   qty:2, price:220,  unit:'L',  cat:'beverage' },
+    ];
+    saveCartToSession();
+  }
+
+  // Load customer
+  const cust = sessionStorage.getItem('pos_attached_customer');
+  if (cust) {
+    try { showAttachedCustomer(JSON.parse(cust)); } catch(e) {}
+  }
+
+  renderCategories();
+  renderGrid();
+  renderCart();
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'F1') { e.preventDefault(); document.getElementById('catalog-search').focus(); }
+  });
 });
 
-// Save cart helper
-function saveCartToSession() {
-    sessionStorage.setItem('pos_cart', JSON.stringify(currentCart));
+function saveCartToSession() { sessionStorage.setItem('pos_cart', JSON.stringify(currentCart)); }
+
+// ─── DEMO CART ───────────────────────────────
+function loadDemoCart() {
+  currentCart = [
+    { id:'I1001', name:'Milk 1L Tetra',    qty:2, price:280,  unit:'L',  cat:'dairy' },
+    { id:'I1002', name:'Rice 5kg Premium', qty:1, price:1850, unit:'kg', cat:'grocery' },
+    { id:'I1008', name:'Coca Cola 1.5L',   qty:3, price:220,  unit:'L',  cat:'beverage' },
+    { id:'I1005', name:'Notebook Pack ×5', qty:1, price:480,  unit:'pk', cat:'stationery' },
+  ];
+  activeDiscount = 0;
+  saveCartToSession();
+  renderCart();
+  renderGrid();
+  showToast('Demo cart loaded with 4 items.', 'success');
 }
 
-// Category Row Renderer
-function renderCategoriesRow() {
-    const container = document.getElementById('categories-row');
-    container.innerHTML = '';
-    
-    CATEGORIES.forEach(cat => {
-        const btn = document.createElement('button');
-        const isActive = activeCategory === cat.id;
-        
-        btn.className = `px-6 py-2.5 rounded-full text-label-md whitespace-nowrap font-semibold border transition-all ${
-            isActive 
-                ? 'bg-primary text-white border-primary shadow-sm' 
-                : 'bg-surface-secondary text-on-surface border-border-subtle hover:bg-surface-container'
-        }`;
-        
-        btn.textContent = cat.name;
-        btn.onclick = () => {
-            activeCategory = cat.id;
-            renderCategoriesRow();
-            renderProductsGrid();
-        };
-        
-        container.appendChild(btn);
-    });
+// ─── CATEGORIES ──────────────────────────────
+function renderCategories() {
+  const row = document.getElementById('categories-row');
+  row.innerHTML = '';
+  CATEGORIES.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-chip' + (activeCategory === c.id ? ' active' : '');
+    btn.textContent = c.name;
+    btn.onclick = () => { activeCategory = c.id; renderCategories(); renderGrid(); };
+    row.appendChild(btn);
+  });
 }
 
-// Product Grid Renderer
-function renderProductsGrid() {
-    const grid = document.getElementById('products-grid');
-    grid.innerHTML = '';
-    
-    const filtered = ITEMS.filter(item => {
-        const matchesCategory = (activeCategory === 'all' || item.cat === activeCategory);
-        const matchesSearch = (!searchFilter || 
-            item.name.toLowerCase().includes(searchFilter.toLowerCase()) || 
-            item.sku.toLowerCase().includes(searchFilter.toLowerCase())
-        );
-        return matchesCategory && matchesSearch;
-    });
-    
-    if (filtered.length === 0) {
-        grid.innerHTML = `
-            <div class="col-span-full py-16 text-center text-text-secondary flex flex-col items-center justify-center">
-                <span class="material-symbols-outlined text-[48px] text-border-input mb-2">production_quantity_limits</span>
-                <p class="font-medium text-sm">No items found matching the filters</p>
-            </div>
-        `;
-        return;
-    }
-    
-    filtered.forEach(item => {
-        const card = document.createElement('div');
-        card.className = "bg-white border border-border-subtle rounded-xl p-4 flex flex-col hover:border-secondary hover:shadow-md transition-all group cursor-pointer active:scale-[0.98] h-full";
-        
-        const catStyle = CAT_COLORS[item.cat] || { bg: 'bg-indigo-50', fg: 'text-indigo-600' };
-        
-        // Stock status
-        let stockBadge = `<span class="absolute top-2 right-2 px-2 py-0.5 bg-secondary/10 text-secondary text-[11px] font-bold rounded">${item.stock} left</span>`;
-        if (item.stock < 5) {
-            stockBadge = `<span class="absolute top-2 right-2 px-2 py-0.5 bg-danger/10 text-danger text-[11px] font-bold rounded">Low: ${item.stock}</span>`;
-        }
-        
-        let imageMarkup = `
-            <div class="w-full h-full bg-[#E8E8E8] flex items-center justify-center relative">
-                <div class="w-14 h-14 rounded-2xl ${catStyle.bg} flex items-center justify-center">
-                    <span class="text-2xl font-bold ${catStyle.fg}">${item.name[0]}</span>
-                </div>
-                ${stockBadge}
-            </div>
-        `;
-        
-        if (item.img) {
-            imageMarkup = `
-                <div class="w-full h-full relative">
-                    <img alt="${item.name}" class="w-full h-full object-cover" src="${item.img}" onerror="this.style.display='none'"/>
-                    ${stockBadge}
-                </div>
-            `;
-        }
-        
-        card.innerHTML = `
-            <div class="relative w-full aspect-square mb-3 rounded-lg overflow-hidden bg-surface-secondary border border-border-subtle flex-shrink-0">
-                ${imageMarkup}
-            </div>
-            <div class="flex-grow flex flex-col">
-                <span class="text-[11px] font-bold text-text-secondary uppercase tracking-wide mb-0.5">${item.cat}</span>
-                <h3 class="text-label-md font-bold mb-1 text-primary truncate leading-tight">${item.name}</h3>
-                <p class="text-headline-sm font-bold text-primary mb-3">${fmt(item.price)}</p>
-                <button onclick="addToCart('${item.id}'); event.stopPropagation();" class="mt-auto w-full h-10 flex items-center justify-center gap-2 bg-surface-container-low group-hover:bg-secondary group-hover:text-white transition-all rounded-lg font-label-md hover:shadow-sm">
-                    <span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
-                    Add to Cart
-                </button>
-            </div>
-        `;
-        
-        card.onclick = () => addToCart(item.id);
-        grid.appendChild(card);
-    });
+// ─── PRODUCT GRID ────────────────────────────
+function renderGrid() {
+  const grid = document.getElementById('products-grid');
+  grid.innerHTML = '';
+
+  const filtered = ITEMS.filter(item => {
+    const inCat    = activeCategory === 'all' || item.cat === activeCategory;
+    const inSearch = !searchFilter || item.name.toLowerCase().includes(searchFilter.toLowerCase()) || item.sku.toLowerCase().includes(searchFilter.toLowerCase());
+    return inCat && inSearch;
+  });
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;padding:48px;text-align:center;">
+      <span class="material-symbols-outlined" style="font-size:48px;color:#CBD5E1;display:block;margin-bottom:8px;">search_off</span>
+      <p style="font-size:14px;font-weight:600;color:var(--text-muted);">No items found</p>
+    </div>`;
+    return;
+  }
+
+  filtered.forEach(item => {
+    const cc = CAT_COLORS[item.cat] || CAT_COLORS.all;
+    const inCart = currentCart.find(l => l.id === item.id);
+    const stockBadgeClass = item.stock < 5 ? 'stock-low' : 'stock-ok';
+    const stockText = item.stock < 5 ? `Low: ${item.stock}` : `${item.stock}`;
+
+    const imgContent = item.img
+      ? `<img src="${item.img}" alt="${item.name}" onerror="this.parentElement.innerHTML='<div class=product-img-placeholder style=background:${cc.bg};color:${cc.fg}>${item.name[0]}</div>'" />`
+      : `<div class="product-img-placeholder" style="background:${cc.bg};color:${cc.fg};">${item.name[0]}</div>`;
+
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.onclick = () => addToCart(item.id);
+    card.innerHTML = `
+      <div class="product-img-wrap">
+        ${imgContent}
+        <span class="stock-badge ${stockBadgeClass}">${stockText}</span>
+        ${inCart ? `<div style="position:absolute;top:6px;left:6px;background:var(--green);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;">×${inCart.qty}</div>` : ''}
+      </div>
+      <div class="product-body">
+        <div class="product-cat">${item.cat}</div>
+        <div class="product-name">${item.name}</div>
+        <div class="product-price">${fmt(item.price)}</div>
+      </div>
+      <button class="product-add-btn" onclick="addToCart('${item.id}');event.stopPropagation();">
+        <span class="material-symbols-outlined" style="font-size:16px;">add</span>
+        Add to Cart
+      </button>
+    `;
+    grid.appendChild(card);
+  });
 }
 
-// Search Action
-function handleSearch() {
-    searchFilter = document.getElementById('catalog-search').value;
-    renderProductsGrid();
-}
+function handleSearch() { searchFilter = document.getElementById('catalog-search').value; renderGrid(); }
 
 function simulateBarcodeScan() {
-    // Pick a random SKU and fill it
-    const randomItem = ITEMS[Math.floor(Math.random() * ITEMS.length)];
-    const searchInput = document.getElementById('catalog-search');
-    searchInput.value = randomItem.sku;
-    searchFilter = randomItem.sku;
-    renderProductsGrid();
-    showToast(`Scanned SKU: ${randomItem.sku}`, 'success');
-    
-    // Add to cart directly
-    addToCart(randomItem.id);
+  const r = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+  document.getElementById('catalog-search').value = r.sku;
+  searchFilter = r.sku;
+  renderGrid();
+  addToCart(r.id);
+  showToast(`Scanned: ${r.sku} — ${r.name}`, 'success');
 }
 
-// Add Item logic
+// ─── CART ────────────────────────────────────
 function addToCart(itemId) {
-    const item = ITEMS.find(i => i.id === itemId);
-    if (!item) return;
-    
-    const existing = currentCart.find(line => line.id === itemId);
-    if (existing) {
-        existing.qty += 1;
-        showToast(`Incremented ${item.name} quantity`, 'success');
-    } else {
-        currentCart.push({
-            id: item.id,
-            name: item.name,
-            qty: 1,
-            price: item.price,
-            unit: item.unit,
-            cat: item.cat
-        });
-        showToast(`Added ${item.name} to cart`, 'success');
-    }
-    
-    saveCartToSession();
-    renderCart();
+  const item = ITEMS.find(i => i.id === itemId);
+  if (!item) return;
+  const ex = currentCart.find(l => l.id === itemId);
+  if (ex) { ex.qty++; showToast(`${item.name} qty updated`, 'success'); }
+  else { currentCart.push({ id:item.id, name:item.name, qty:1, price:item.price, unit:item.unit, cat:item.cat }); showToast(`Added: ${item.name}`, 'success'); }
+  saveCartToSession();
+  renderCart();
+  renderGrid();
 }
 
-// Increment Qty from Cart row
-function changeLineQty(itemId, amount) {
-    const line = currentCart.find(l => l.id === itemId);
-    if (!line) return;
-    
-    line.qty += amount;
-    if (line.qty <= 0) {
-        // If qty goes to 0, trigger the void override check
-        line.qty = 1;
-        promptVoidItem(itemId);
-    } else {
-        saveCartToSession();
-        renderCart();
-    }
+function changeLineQty(itemId, delta) {
+  const line = currentCart.find(l => l.id === itemId);
+  if (!line) return;
+  if (line.qty + delta <= 0) { promptVoidItem(itemId); return; }
+  line.qty += delta;
+  saveCartToSession();
+  renderCart();
+  renderGrid();
 }
 
-// Select a line in Cart to show secondary actions
-function selectCartLine(itemId) {
-    if (selectedLineItemId === itemId) {
-        selectedLineItemId = null;
-    } else {
-        selectedLineItemId = itemId;
-    }
-    renderCart();
-}
-
-// Render active cart
 function renderCart() {
-    const tbody = document.getElementById('cart-lines-tbody');
-    tbody.innerHTML = '';
-    
-    if (currentCart.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="4" class="px-4 py-16 text-center text-text-secondary">
-                    <div class="flex flex-col items-center justify-center">
-                        <span class="material-symbols-outlined text-[40px] text-border-input mb-2">shopping_cart</span>
-                        <p class="font-medium text-xs">Transaction Cart is Empty</p>
-                        <p class="text-[11px] mt-0.5">Scan SKU or tap catalog tiles to checkout</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-        document.getElementById('cart-item-count').textContent = '0 Items';
-        updateTotals(0);
-        document.getElementById('line-actions-panel').classList.add('hidden');
-        return;
-    }
-    
-    let totalItems = 0;
-    
-    currentCart.forEach(line => {
-        totalItems += line.qty;
-        const isSelected = selectedLineItemId === line.id;
-        const row = document.createElement('tr');
-        row.className = `cursor-pointer transition-all ${
-            isSelected 
-                ? 'bg-secondary/5 border-l-4 border-secondary' 
-                : 'hover:bg-surface-container-low/50'
-        }`;
-        
-        row.innerHTML = `
-            <td class="px-4 py-3 text-body-md font-semibold text-primary leading-snug">
-                ${line.name}
-                <div class="text-[11px] text-text-secondary mt-0.5 font-normal">${fmt(line.price)} / ${line.unit}</div>
-            </td>
-            <td class="px-2 py-3 text-center" onclick="event.stopPropagation()">
-                <div class="inline-flex items-center gap-1.5 bg-surface-secondary p-1 rounded-lg border border-border-subtle">
-                    <button onclick="changeLineQty('${line.id}', -1)" class="w-6 h-6 rounded flex items-center justify-center bg-white border hover:bg-gray-50 active:scale-90 transition-all font-bold text-xs">-</button>
-                    <span class="text-xs font-bold px-1.5 min-w-[16px]">${line.qty}</span>
-                    <button onclick="changeLineQty('${line.id}', 1)" class="w-6 h-6 rounded flex items-center justify-center bg-white border hover:bg-gray-50 active:scale-90 transition-all font-bold text-xs">+</button>
-                </div>
-            </td>
-            <td class="px-3 py-3 text-body-md text-right text-text-secondary">${new Intl.NumberFormat('en-PK').format(line.price)}</td>
-            <td class="px-4 py-3 text-body-md font-bold text-right text-primary">${new Intl.NumberFormat('en-PK').format(line.qty * line.price)}</td>
-        `;
-        
-        row.onclick = () => selectCartLine(line.id);
-        tbody.appendChild(row);
-    });
-    
-    document.getElementById('cart-item-count').textContent = `${totalItems} Item${totalItems !== 1 ? 's' : ''}`;
-    
-    // Update active line editing panel
-    const selectedLine = currentCart.find(l => l.id === selectedLineItemId);
-    const lineActionsPanel = document.getElementById('line-actions-panel');
-    if (selectedLine) {
-        lineActionsPanel.classList.remove('hidden');
-        document.getElementById('selected-line-label').textContent = `${selectedLine.name} (Qty: ${selectedLine.qty})`;
-    } else {
-        lineActionsPanel.classList.add('hidden');
-    }
-    
-    computeCartTotals();
+  const list = document.getElementById('cart-items-list');
+  list.innerHTML = '';
+
+  if (!currentCart.length) {
+    list.innerHTML = `
+      <div class="cart-empty">
+        <div class="cart-empty-icon">
+          <span class="material-symbols-outlined" style="font-size:28px;color:#94A3B8;">shopping_cart</span>
+        </div>
+        <p style="font-size:13px;font-weight:600;color:var(--text-muted);margin:0;">Cart is empty</p>
+        <p style="font-size:12px;color:#94A3B8;margin:4px 0 0;">Scan barcode or tap an item to add</p>
+      </div>`;
+    document.getElementById('cart-item-count').textContent = '0 Items';
+    updateTotals(0);
+    updatePayBtn(0);
+    return;
+  }
+
+  let totalQty = 0;
+  currentCart.forEach(line => {
+    totalQty += line.qty;
+    const row = document.createElement('div');
+    row.className = 'cart-item' + (selectedLineId === line.id ? ' selected' : '');
+    row.onclick = () => { selectedLineId = (selectedLineId === line.id ? null : line.id); renderCart(); };
+    row.innerHTML = `
+      <div class="cart-item-info">
+        <div class="cart-item-name">${line.name}</div>
+        <div class="cart-item-sub">${fmt(line.price)} / ${line.unit}</div>
+      </div>
+      <div class="cart-item-qty">
+        <button class="qty-btn" onclick="event.stopPropagation();changeLineQty('${line.id}',-1)">−</button>
+        <span class="qty-value">${line.qty}</span>
+        <button class="qty-btn" onclick="event.stopPropagation();changeLineQty('${line.id}',1)">+</button>
+      </div>
+      <div class="cart-item-total">${fmtNum(line.qty * line.price)}</div>
+      <button class="cart-item-delete" onclick="event.stopPropagation();promptVoidItem('${line.id}')">
+        <span class="material-symbols-outlined" style="font-size:16px;">close</span>
+      </button>
+    `;
+    list.appendChild(row);
+  });
+
+  document.getElementById('cart-item-count').textContent = `${totalQty} Item${totalQty !== 1 ? 's' : ''}`;
+  computeCartTotals();
 }
 
-// Math logic for cart totals
 function computeCartTotals() {
-    const subtotal = currentCart.reduce((s, line) => s + (line.qty * line.price), 0);
-    updateTotals(subtotal);
+  const subtotal = currentCart.reduce((s, l) => s + l.qty * l.price, 0);
+  updateTotals(subtotal);
 }
 
 function updateTotals(subtotal) {
-    // If cart is empty, discount is 0, else PKR 100 flat
-    const discount = currentCart.length > 0 ? 100 : 0;
-    const taxableAmount = Math.max(0, subtotal - discount);
-    const tax = Math.round(taxableAmount * 0.05); // FBR flat 5% VAT
-    const grandTotal = taxableAmount + tax;
-    
-    document.getElementById('summary-subtotal').textContent = fmt(subtotal);
-    document.getElementById('summary-discount').textContent = `- ${fmt(discount)}`;
-    document.getElementById('summary-tax').textContent = fmt(tax);
-    document.getElementById('summary-total').textContent = fmt(grandTotal);
+  const discountAmt = activeDiscount;
+  const afterDisc   = Math.max(0, subtotal - discountAmt);
+  const tax         = Math.round(afterDisc * 0.05);
+  const grand       = afterDisc + tax;
+
+  document.getElementById('summary-subtotal').textContent = fmt(subtotal);
+  document.getElementById('summary-discount').textContent = discountAmt > 0 ? `— ${fmt(discountAmt)}` : '— PKR 0';
+  document.getElementById('summary-tax').textContent      = fmt(tax);
+  document.getElementById('summary-total').textContent    = fmt(grand);
+  updatePayBtn(grand);
 }
 
-// Void line actions
-function voidSelectedLine() {
-    if (selectedLineItemId) {
-        promptVoidItem(selectedLineItemId);
-    }
+function updatePayBtn(grand) {
+  const btn = document.getElementById('pay-btn');
+  const amt = document.getElementById('pay-btn-amount');
+  if (currentCart.length > 0) {
+    btn.disabled = false;
+    amt.textContent = '· ' + fmt(grand);
+  } else {
+    btn.disabled = true;
+    amt.textContent = '';
+  }
 }
 
-// Prompt for void details
-function promptVoidItem(itemId) {
-    const line = currentCart.find(l => l.id === itemId);
-    if (!line) return;
-    
-    activeVoidLineItem = line;
-    
-    // Set Void Modal content
-    document.getElementById('void-modal-item-name').textContent = line.name;
-    document.getElementById('void-modal-item-desc').textContent = `${line.qty} x ${fmt(line.price)} = ${fmt(line.qty * line.price)}`;
-    document.getElementById('void-modal-item-letter').textContent = line.name[0];
-    
-    // Check threshold (PKR 1,000 unit price threshold)
-    const alertBox = document.getElementById('void-threshold-alert');
-    const normalBtn = document.getElementById('void-item-approve-btn');
-    const managerBtn = document.getElementById('void-item-manager-btn');
-    
-    if (line.price >= 1000) {
-        alertBox.classList.remove('hidden');
-        normalBtn.classList.add('hidden');
-        managerBtn.classList.remove('hidden');
-    } else {
-        alertBox.classList.add('hidden');
-        normalBtn.classList.remove('hidden');
-        managerBtn.classList.add('hidden');
-    }
-    
-    // Show Void Modal
-    const modal = document.getElementById('void-item-modal');
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        modal.querySelector('div').classList.remove('scale-95');
-    }, 10);
+// ─── DISCOUNT ────────────────────────────────
+function applyDiscount() {
+  const val  = parseFloat(document.getElementById('discount-input').value) || 0;
+  const type = document.getElementById('discount-type').value;
+  const subtotal = currentCart.reduce((s, l) => s + l.qty * l.price, 0);
+  activeDiscount = type === 'pct' ? Math.round(subtotal * val / 100) : val;
+  showToast(`Discount applied: ${fmt(activeDiscount)}`, 'success');
+  computeCartTotals();
 }
 
-function closeVoidItemModal() {
-    const modal = document.getElementById('void-item-modal');
-    modal.querySelector('div').classList.add('scale-95');
-    modal.classList.add('opacity-0');
-    setTimeout(() => {
-        modal.classList.add('hidden');
-        activeVoidLineItem = null;
-    }, 200);
-}
-
-// Immediate void for items < 1000
-function executeVoidImmediately() {
-    if (!activeVoidLineItem) return;
-    
-    const reason = document.getElementById('void-reason-select').value;
-    currentCart = currentCart.filter(l => l.id !== activeVoidLineItem.id);
-    selectedLineItemId = null;
-    
-    saveCartToSession();
-    renderCart();
-    
-    showToast(`Voided ${activeVoidLineItem.name} (${reason})`, 'success');
-    closeVoidItemModal();
-}
-
-// Trigger manager verification overlay
-function requestManagerApprovalForVoid() {
-    if (!activeVoidLineItem) return;
-    
-    // Close Void modal temporarily or display on top
-    closeVoidItemModal();
-    
-    // Open Manager PIN modal
-    setTimeout(() => {
-        document.getElementById('manager-modal-subtitle').textContent = `Authorize void for ${activeVoidLineItem.name} (${fmt(activeVoidLineItem.price * activeVoidLineItem.qty)})`;
-        openManagerApprovalModal();
-    }, 250);
-}
-
-function openManagerApprovalModal() {
-    tempManagerPin = '';
-    updatePinDots();
-    
-    const modal = document.getElementById('manager-approval-modal');
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        modal.querySelector('div').classList.remove('scale-95');
-    }, 10);
-}
-
-function closeManagerApprovalModal() {
-    const modal = document.getElementById('manager-approval-modal');
-    modal.querySelector('div').classList.add('scale-95');
-    modal.classList.add('opacity-0');
-    setTimeout(() => {
-        modal.classList.add('hidden');
-        tempManagerPin = '';
-    }, 200);
-}
-
-// Manager Keypad Interactions
-function pressManagerPin(num) {
-    if (tempManagerPin.length < 4) {
-        tempManagerPin += num;
-        updatePinDots();
-    }
-}
-
-function clearManagerPin() {
-    tempManagerPin = '';
-    updatePinDots();
-}
-
-function updatePinDots() {
-    for (let i = 1; i <= 4; i++) {
-        const dot = document.getElementById(`pin-dot-${i}`);
-        if (i <= tempManagerPin.length) {
-            dot.textContent = '●';
-            dot.className = "w-10 h-12 rounded-lg border-2 border-amber-500 flex items-center justify-center text-xl font-bold bg-amber-50 text-amber-600";
-        } else {
-            dot.textContent = '';
-            dot.className = "w-10 h-12 rounded-lg border-2 border-border-input flex items-center justify-center text-xl font-bold bg-surface-secondary";
-        }
-    }
-}
-
-// Submit Manager Pin
-function submitManagerOverride() {
-    if (tempManagerPin.length < 4) {
-        showToast('Please enter full 4-digit PIN', 'error');
-        return;
-    }
-    
-    if (tempManagerPin === '1234') {
-        // Authenticated! Perform void operation
-        if (activeVoidLineItem) {
-            const reason = document.getElementById('manager-reason-select').value;
-            const manager = document.getElementById('manager-id-select').value.split(' — ')[1];
-            
-            // Remove item
-            currentCart = currentCart.filter(l => l.id !== activeVoidLineItem.id);
-            selectedLineItemId = null;
-            
-            saveCartToSession();
-            renderCart();
-            
-            showToast(`Approved by Manager ${manager.split(' · ')[0]} (${reason})`, 'success');
-            closeManagerApprovalModal();
-            activeVoidLineItem = null;
-        } else {
-            // General auth override
-            showToast('Manager Override Authorized', 'success');
-            closeManagerApprovalModal();
-        }
-    } else {
-        showToast('Invalid Manager Override PIN code!', 'error');
-        tempManagerPin = '';
-        updatePinDots();
-    }
-}
-
-// Void entire transaction
+// ─── VOID ────────────────────────────────────
 function voidEntireOrder() {
-    if (currentCart.length === 0) {
-        showToast('Cart is already empty', 'error');
-        return;
-    }
-    
-    // Check if any expensive item is in cart
-    const hasExpensive = currentCart.some(l => l.price >= 1000);
-    
-    if (confirm('Are you sure you want to void the entire transaction?')) {
-        if (hasExpensive) {
-            showToast('Authorization required to void transaction containing expensive items.', 'warning');
-            openManagerApprovalModal();
-            // Bind global success listener to clear all
-            activeVoidLineItem = { id: 'ALL', name: 'Whole Cart', price: 9999, qty: 1 };
-        } else {
-            currentCart = [];
-            selectedLineItemId = null;
-            saveCartToSession();
-            renderCart();
-            showToast('Transaction Voided Successfully', 'success');
-        }
-    }
+  if (!currentCart.length) { showToast('Cart is already empty.', 'info'); return; }
+  if (!confirm('Void the entire order? This cannot be undone.')) return;
+  currentCart = [];
+  activeDiscount = 0;
+  saveCartToSession();
+  renderCart();
+  renderGrid();
+  showToast('Order voided.', 'warning');
 }
 
-// Hold current transaction
 function holdActiveOrder() {
-    if (currentCart.length === 0) {
-        showToast('Cannot hold an empty cart', 'error');
-        return;
-    }
-    
-    sessionStorage.setItem('held_cart', JSON.stringify(currentCart));
-    currentCart = [];
-    selectedLineItemId = null;
-    saveCartToSession();
-    renderCart();
-    
-    showToast('Transaction placed on Hold (#HLD-0418)', 'warning');
+  if (!currentCart.length) { showToast('Nothing to hold.', 'info'); return; }
+  sessionStorage.setItem('pos_held_order', JSON.stringify(currentCart));
+  currentCart = [];
+  activeDiscount = 0;
+  saveCartToSession();
+  renderCart();
+  renderGrid();
+  showToast('Order placed on hold.', 'info');
 }
 
-// Qty Override modal keypad
-function openQtyOverrideKeypad() {
-    if (!selectedLineItemId) return;
-    const line = currentCart.find(l => l.id === selectedLineItemId);
-    if (!line) return;
-    
-    qtyOverrideTemp = '';
-    document.getElementById('qty-override-input').value = line.qty;
-    
-    const modal = document.getElementById('qty-override-modal');
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        modal.querySelector('div').classList.remove('scale-95');
-    }, 10);
+function promptVoidItem(itemId) {
+  const line = currentCart.find(l => l.id === itemId);
+  if (!line) return;
+  activeVoidLineItem = itemId;
+
+  document.getElementById('void-modal-item-letter').textContent = line.name[0].toUpperCase();
+  document.getElementById('void-modal-item-name').textContent   = line.name;
+  document.getElementById('void-modal-item-desc').textContent   = `${line.qty} × ${fmt(line.price)} = ${fmt(line.qty * line.price)}`;
+
+  const needsMgr = (line.qty * line.price) >= 1000;
+  const alert    = document.getElementById('void-threshold-alert');
+  const btnApprove = document.getElementById('void-item-approve-btn');
+  const btnMgr     = document.getElementById('void-item-manager-btn');
+  if (needsMgr) {
+    alert.style.display = 'flex';
+    btnApprove.style.display = 'none';
+    btnMgr.style.display = 'flex';
+  } else {
+    alert.style.display = 'none';
+    btnApprove.style.display = 'flex';
+    btnMgr.style.display = 'none';
+  }
+
+  openModal('void-item-modal');
 }
 
-function closeQtyOverrideModal() {
-    const modal = document.getElementById('qty-override-modal');
-    modal.querySelector('div').classList.add('scale-95');
-    modal.classList.add('opacity-0');
-    setTimeout(() => {
-        modal.classList.add('hidden');
-    }, 200);
+function executeVoidImmediately() {
+  if (!activeVoidLineItem) return;
+  currentCart = currentCart.filter(l => l.id !== activeVoidLineItem);
+  activeVoidLineItem = null;
+  saveCartToSession();
+  renderCart();
+  renderGrid();
+  closeModal('void-item-modal');
+  showToast('Item removed from order.', 'warning');
 }
 
-function pressQtyPad(num) {
-    if (qtyOverrideTemp.length < 3) {
-        qtyOverrideTemp += num;
-        document.getElementById('qty-override-input').value = qtyOverrideTemp;
-    }
+function closeVoidItemModal() { closeModal('void-item-modal'); activeVoidLineItem = null; }
+
+function requestManagerApprovalForVoid() {
+  closeModal('void-item-modal');
+  tempManagerPin = '';
+  updateManagerPinDisplay();
+  openModal('manager-approval-modal');
 }
 
-function clearQtyPad() {
-    qtyOverrideTemp = '';
-    document.getElementById('qty-override-input').value = '1';
+// ─── MANAGER OVERRIDE ────────────────────────
+function pressManagerPin(d) {
+  if (tempManagerPin.length >= 4) return;
+  tempManagerPin += d;
+  updateManagerPinDisplay();
 }
-
-function submitQtyOverride() {
-    const line = currentCart.find(l => l.id === selectedLineItemId);
-    if (!line) return;
-    
-    const val = parseInt(qtyOverrideTemp) || 1;
-    line.qty = Math.max(1, val);
-    
-    saveCartToSession();
-    renderCart();
-    showToast(`Updated quantity to ${line.qty}`, 'success');
-    closeQtyOverrideModal();
-}
-
-// Attachment of Loyalty customers
-function toggleCustomerModal() {
-    const modal = document.getElementById('customer-modal');
-    if (modal.classList.contains('hidden')) {
-        // Show
-        modal.classList.remove('hidden');
-        document.getElementById('customer-search-input').value = '+92 300 1234567';
-        document.getElementById('customer-result-card').classList.add('hidden');
-        
-        const attachBtn = document.getElementById('attach-customer-submit-btn');
-        attachBtn.disabled = true;
-        attachBtn.className = "py-2 px-5 bg-secondary text-white rounded-lg text-sm font-semibold opacity-50 cursor-not-allowed hover:bg-opacity-95 flex items-center gap-1.5 transition-all";
-        
-        setTimeout(() => {
-            modal.classList.remove('opacity-0');
-            modal.querySelector('div').classList.remove('scale-95');
-        }, 10);
+function clearManagerPin() { tempManagerPin = ''; updateManagerPinDisplay(); }
+function updateManagerPinDisplay() {
+  for (let i = 1; i <= 4; i++) {
+    const cell = document.getElementById('pin-dot-' + i);
+    if (!cell) return;
+    if (i <= tempManagerPin.length) {
+      cell.textContent = '•';
+      cell.classList.add('filled');
     } else {
-        // Hide
-        modal.querySelector('div').classList.add('scale-95');
-        modal.classList.add('opacity-0');
-        setTimeout(() => {
-            modal.classList.add('hidden');
-        }, 200);
+      cell.textContent = '';
+      cell.classList.remove('filled');
     }
+  }
 }
+function submitManagerOverride() {
+  if (tempManagerPin !== '1234') { showToast('Wrong manager PIN.', 'error'); return; }
+  closeModal('manager-approval-modal');
+  if (activeVoidLineItem) {
+    currentCart = currentCart.filter(l => l.id !== activeVoidLineItem);
+    activeVoidLineItem = null;
+    saveCartToSession();
+    renderCart();
+    renderGrid();
+    showToast('Manager override approved. Item removed.', 'success');
+  }
+}
+function closeManagerApprovalModal() { closeModal('manager-approval-modal'); }
 
+// ─── CUSTOMER ────────────────────────────────
+function toggleCustomerModal() {
+  const m = document.getElementById('customer-modal');
+  m.style.display = m.style.display === 'none' ? 'flex' : 'none';
+  if (m.style.display === 'flex') setTimeout(() => m.querySelector('.modal-card').style.transform = 'scale(1)', 10);
+}
 function searchAndFillCustomer() {
-    const phone = document.getElementById('customer-search-input').value.trim();
-    if (!phone) return;
-    
-    // Simulate found customer Ahmed Khan
-    const resultCard = document.getElementById('customer-result-card');
-    resultCard.classList.remove('hidden');
-    
-    document.getElementById('res-cust-name').textContent = 'Ahmed Khan';
-    document.getElementById('res-cust-phone').textContent = phone;
-    document.getElementById('res-cust-points').textContent = '420 points (Gold tier)';
-    
-    // Enable submit
-    const attachBtn = document.getElementById('attach-customer-submit-btn');
-    attachBtn.disabled = false;
-    attachBtn.className = "py-2 px-5 bg-secondary text-white rounded-lg text-sm font-semibold hover:bg-opacity-95 flex items-center gap-1.5 transition-all active:scale-95 shadow-md shadow-secondary/15";
+  document.getElementById('customer-result-card').style.display = 'block';
+  const btn = document.getElementById('attach-customer-submit-btn');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.cursor = 'pointer';
 }
-
 function attachFoundCustomer() {
-    const info = 'Ahmed Khan · +92 300 1234567';
-    sessionStorage.setItem('pos_attached_customer', info);
-    showAttachedCustomerIndicator(info);
-    toggleCustomerModal();
-    showToast('Loyalty profile attached successfully!', 'success');
+  const name = document.getElementById('res-cust-name').textContent;
+  const pts  = document.getElementById('res-cust-points').textContent;
+  const cust = { name, pts };
+  sessionStorage.setItem('pos_attached_customer', JSON.stringify(cust));
+  showAttachedCustomer(cust);
+  toggleCustomerModal();
+  showToast(`Customer attached: ${name}`, 'success');
 }
-
-function showAttachedCustomerIndicator(info) {
-    document.getElementById('customer-indicator-bar').classList.remove('hidden');
-    document.getElementById('customer-indicator-name').textContent = info.split(' · ')[0] + ' (' + info.split(' · ')[1] + ')';
-    document.getElementById('guest-customer-btn-wrapper').classList.add('hidden');
+function showAttachedCustomer(cust) {
+  document.getElementById('customer-empty-btn').style.display = 'none';
+  document.getElementById('customer-attached-bar').style.display = 'flex';
+  document.getElementById('customer-name-display').textContent   = cust.name;
+  document.getElementById('customer-points-display').textContent = `${cust.pts} loyalty points`;
 }
-
 function detachCustomer() {
-    sessionStorage.removeItem('pos_attached_customer');
-    document.getElementById('customer-indicator-bar').classList.add('hidden');
-    document.getElementById('guest-customer-btn-wrapper').classList.remove('hidden');
-    showToast('Customer profile detached', 'warning');
+  sessionStorage.removeItem('pos_attached_customer');
+  document.getElementById('customer-empty-btn').style.display = '';
+  document.getElementById('customer-attached-bar').style.display = 'none';
+  showToast('Customer removed.', 'info');
 }
 
-// Proceed to payment screen transition
+// ─── QTY OVERRIDE ────────────────────────────
+function openQtyOverrideKeypad() {
+  if (!selectedLineId) return;
+  qtyOverrideTemp = '';
+  document.getElementById('qty-override-input').value = '1';
+  openModal('qty-override-modal');
+}
+function pressQtyPad(d) {
+  qtyOverrideTemp += d;
+  if (parseInt(qtyOverrideTemp) > 999) qtyOverrideTemp = '999';
+  document.getElementById('qty-override-input').value = qtyOverrideTemp || '0';
+}
+function clearQtyPad() { qtyOverrideTemp = ''; document.getElementById('qty-override-input').value = '0'; }
+function submitQtyOverride() {
+  const qty = parseInt(qtyOverrideTemp) || 1;
+  const line = currentCart.find(l => l.id === selectedLineId);
+  if (line) { line.qty = qty; saveCartToSession(); renderCart(); renderGrid(); }
+  closeModal('qty-override-modal');
+}
+function closeQtyOverrideModal() { closeModal('qty-override-modal'); }
+
+// ─── PAYMENT ────────────────────────────────
 function proceedToPayment() {
-    if (currentCart.length === 0) {
-        showToast('Cart is empty, cannot proceed to payment.', 'error');
-        return;
-    }
-    
-    // Calculate final figures and save
-    const subtotal = currentCart.reduce((s, line) => s + (line.qty * line.price), 0);
-    const discount = currentCart.length > 0 ? 100 : 0;
-    const tax = Math.round((subtotal - discount) * 0.05);
-    const grandTotal = subtotal - discount + tax;
-    
-    sessionStorage.setItem('pos_last_subtotal', subtotal);
-    sessionStorage.setItem('pos_last_discount', discount);
-    sessionStorage.setItem('pos_last_tax', tax);
-    sessionStorage.setItem('pos_last_total', grandTotal);
-    
-    window.location.href = 'payment_screen.html';
+  if (!currentCart.length) { showToast('Cart is empty.', 'warning'); return; }
+  window.location.href = 'payment_screen.html';
+}
+
+// ─── NAVIGATION ─────────────────────────────
+function navigateToShift() {
+  window.location.href = sessionStorage.getItem('pos_shift_open') === 'true' ? 'shift_close.html' : 'shift_open.html';
+}
+function doLogout() {
+  if (!confirm('Sign out? Your shift will remain open.')) return;
+  sessionStorage.removeItem('terminal_operator');
+  window.location.href = 'terminal_login.html';
+}
+
+// ─── MODAL HELPERS ───────────────────────────
+function openModal(id) {
+  const m = document.getElementById(id);
+  m.style.display = 'flex';
+  setTimeout(() => m.querySelector('.modal-card').style.transform = 'scale(1)', 10);
+}
+function closeModal(id) {
+  const m = document.getElementById(id);
+  if (m) m.style.display = 'none';
 }
 </script>
 </body>
+</html>

@@ -1,1059 +1,862 @@
 <!DOCTYPE html>
-<html class="light" lang="en">
+<html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Enterprise POS - Payment Interface</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "on-background": "#111c2d",
-                        "primary": "#0F172A",
-                        "secondary": "#10B981",
-                        "accent": "#3B82F6",
-                        "warning": "#F59E0B",
-                        "danger": "#EF4444",
-                        "darkBg": "#0B0F19",
-                        "darkCard": "#111827",
-                        "darkBorder": "#1F2937",
-                        "border-subtle": "#E2E8F0",
-                        "surface-secondary": "#F8FAFC",
-                        "surface-main": "#FFFFFF",
-                        "text-secondary": "#64748B",
-                        "emerald-pos": "#10B981"
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                    fontFamily: {
-                        sans: ["Inter", "sans-serif"]
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
-        }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-            display: inline-block;
-            vertical-align: middle;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #E2E8F0;
-            border-radius: 10px;
-        }
-        .active-tender {
-            border: 2px solid #10B981;
-            background-color: #ECFDF5;
-        }
-        /* Styling for a realistic receipt */
-        .receipt-paper {
-            font-family: 'Courier New', Courier, monospace;
-            background: #ffffff;
-            color: #000000;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            border-radius: 4px;
-            position: relative;
-        }
-        .receipt-paper::after {
-            content: "";
-            position: absolute;
-            bottom: -8px;
-            left: 0;
-            right: 0;
-            height: 8px;
-            background-image: linear-gradient(135deg, transparent 4px, #ffffff 4px), linear-gradient(-135deg, transparent 4px, #ffffff 4px);
-            background-size: 8px 8px;
-            background-repeat: repeat-x;
-        }
-    </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IMAGYN POS — Payment</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --navy:   #0F172A;
+    --navy-2: #1E293B;
+    --green:  #10B981;
+    --green-l:#ECFDF5;
+    --red:    #EF4444;
+    --red-l:  #FEF2F2;
+    --amber:  #F59E0B;
+    --blue:   #3B82F6;
+    --border: #E2E8F0;
+    --bg:     #F8FAFC;
+    --white:  #FFFFFF;
+    --text:   #0F172A;
+    --muted:  #64748B;
+    --sans:   'Inter', ui-sans-serif, sans-serif;
+    --mono:   'IBM Plex Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height:100%; margin:0; padding:0; overflow:hidden; }
+  body { font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px; -webkit-font-smoothing:antialiased; }
+  .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; display:inline-flex; align-items:center; vertical-align:middle; line-height:1; }
+  .fill { font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24; }
+
+  /* SIDEBAR */
+  #sidebar {
+    position:fixed; left:0; top:0; bottom:0; width:220px;
+    background:var(--navy); display:flex; flex-direction:column; z-index:50;
+    border-right:1px solid rgba(255,255,255,0.07);
+  }
+  .sidebar-logo { padding:20px 16px 16px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:10px; }
+  .sidebar-logo-icon { width:34px; height:34px; border-radius:9px; background:var(--green); display:flex; align-items:center; justify-content:center; }
+  nav a { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; margin:2px 8px; color:rgba(255,255,255,0.55); font-size:13px; font-weight:500; text-decoration:none; transition:all .15s; width:calc(100% - 16px); }
+  nav a:hover { color:white; background:rgba(255,255,255,.07); }
+  nav a.active { color:white; background:rgba(16,185,129,.18); font-weight:600; }
+  nav a.active .material-symbols-outlined { color:var(--green); }
+
+  /* TOPBAR */
+  #topbar { height:56px; background:white; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; flex-shrink:0; }
+  .tb-meta { display:flex; flex-direction:column; }
+  .tb-meta span:first-child { font-size:10px; color:var(--muted); }
+  .tb-meta span:last-child  { font-size:13px; font-weight:700; }
+
+  /* LAYOUT */
+  #content  { margin-left:220px; display:flex; flex-direction:column; height:100vh; }
+  #workspace { flex:1; display:flex; overflow:hidden; }
+
+  /* ORDER SUMMARY (LEFT) */
+  #summary-panel {
+    width:38%; border-right:1px solid var(--border);
+    background:white; display:flex; flex-direction:column; overflow:hidden;
+  }
+  .panel-hdr {
+    padding:14px 16px; border-bottom:1px solid var(--border);
+    font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:space-between;
+  }
+  .order-lines-list { flex:1; overflow-y:auto; padding:6px 0; }
+  .order-lines-list::-webkit-scrollbar { width:3px; }
+  .order-lines-list::-webkit-scrollbar-thumb { background:var(--border); }
+  .order-line {
+    display:flex; align-items:center; gap:8px; padding:9px 16px;
+    border-bottom:1px solid #F8FAFC; font-size:13px;
+  }
+  .order-line-name { flex:1; font-weight:600; color:var(--text); }
+  .order-line-qty { font-size:11px; color:var(--muted); font-weight:600; min-width:28px; text-align:center; }
+  .order-line-total { font-weight:700; font-family:var(--mono); color:var(--text); min-width:72px; text-align:right; }
+
+  .totals-block { padding:12px 16px; border-top:1px solid var(--border); background:#FAFBFC; }
+  .tot-row { display:flex; justify-content:space-between; font-size:12px; padding:3px 0; }
+  .tot-row .l { color:var(--muted); }
+  .tot-row .v { font-weight:600; font-family:var(--mono); }
+  .grand-block {
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--navy); padding:11px 14px; border-radius:10px; margin-top:8px;
+  }
+  .grand-label { font-size:11px; font-weight:700; color:rgba(255,255,255,.5); letter-spacing:.1em; text-transform:uppercase; }
+  .grand-amount { font-size:22px; font-weight:800; color:white; font-family:var(--mono); letter-spacing:-.02em; }
+
+  /* PAYMENT PANEL (RIGHT) */
+  #payment-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+
+  /* AMOUNT DUE HERO */
+  #due-hero {
+    background:var(--navy); padding:20px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-shrink:0;
+  }
+  .due-label { font-size:11px; font-weight:700; color:rgba(255,255,255,.5); letter-spacing:.12em; text-transform:uppercase; margin-bottom:4px; }
+  .due-amount { font-size:40px; font-weight:900; color:white; font-family:var(--mono); letter-spacing:-.03em; line-height:1; }
+  #status-badge {
+    padding:6px 14px; border-radius:20px; font-size:11px; font-weight:700;
+    background:rgba(16,185,129,.15); color:var(--green); border:1px solid rgba(16,185,129,.3);
+    letter-spacing:.06em; text-transform:uppercase; white-space:nowrap;
+  }
+
+  /* TENDER TABS */
+  #tender-tabs {
+    display:flex; gap:6px; padding:14px 20px 10px; background:white;
+    border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .tender-tab {
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    padding:10px 16px; border-radius:10px; border:2px solid var(--border);
+    cursor:pointer; transition:all .15s; background:white; flex:1;
+  }
+  .tender-tab .material-symbols-outlined { font-size:22px; color:var(--muted); }
+  .tender-tab span.label { font-size:11px; font-weight:700; color:var(--muted); }
+  .tender-tab.active { border-color:var(--green); background:var(--green-l); }
+  .tender-tab.active .material-symbols-outlined { color:var(--green); }
+  .tender-tab.active span.label { color:#065F46; }
+  .tender-tab:hover:not(.active) { border-color:#94A3B8; background:var(--bg); }
+
+  /* PAYMENT BODY */
+  #payment-body { flex:1; display:flex; overflow:hidden; }
+
+  /* CASH KEYPAD SIDE */
+  #cash-side { flex:1; padding:16px 20px; display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
+  #cash-side::-webkit-scrollbar { width:0; }
+
+  .amount-display {
+    background:white; border:2px solid var(--border); border-radius:12px;
+    padding:12px 16px; display:flex; align-items:center; gap:10px;
+  }
+  .amount-currency { font-size:16px; font-weight:700; color:var(--muted); font-family:var(--mono); }
+  .amount-value {
+    flex:1; font-size:28px; font-weight:800; color:var(--text); font-family:var(--mono);
+    border:none; outline:none; background:transparent; text-align:right;
+    letter-spacing:-.02em;
+  }
+  .amount-clear {
+    width:34px; height:34px; border-radius:8px; background:var(--bg); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .12s;
+  }
+  .amount-clear:hover { background:#E2E8F0; }
+
+  .quick-amounts { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .qa-btn {
+    height:40px; border-radius:9px; border:1.5px solid var(--border);
+    background:white; font-size:12px; font-weight:700; cursor:pointer;
+    font-family:var(--mono); transition:all .12s; color:var(--text);
+  }
+  .qa-btn:hover { border-color:var(--navy); background:var(--navy); color:white; }
+  .qa-btn:active { transform:scale(.96); }
+
+  /* Numpad */
+  #numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+  .np-btn {
+    height:52px; border-radius:10px; border:1.5px solid var(--border);
+    background:white; font-size:20px; font-weight:700; cursor:pointer;
+    font-family:var(--mono); transition:all .1s; color:var(--text);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .np-btn:hover { background:var(--bg); border-color:#94A3B8; }
+  .np-btn:active { transform:scale(.94); }
+  .np-btn.clear-btn { font-size:11px; font-family:var(--sans); font-weight:700; color:var(--red); background:var(--red-l); border-color:#FECACA; }
+  .np-btn.exact-btn { font-size:11px; font-family:var(--sans); font-weight:700; color:var(--green); background:var(--green-l); border-color:#BBF7D0; }
+
+  /* CHANGE DISPLAY + COMPLETE BUTTON SIDE */
+  #change-side { width:260px; padding:16px 16px 16px 0; display:flex; flex-direction:column; gap:10px; flex-shrink:0; }
+
+  .change-card {
+    background:white; border:1.5px solid var(--border); border-radius:12px; padding:16px;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .change-row { display:flex; justify-content:space-between; align-items:center; font-size:12px; }
+  .change-row .l { color:var(--muted); }
+  .change-row .v { font-weight:700; font-family:var(--mono); }
+  .change-row.highlight .v { font-size:22px; font-weight:800; color:var(--green); }
+  .change-row.over .v    { color:var(--red); }
+
+  .card-tender-info {
+    background:white; border:1.5px solid var(--border); border-radius:12px; padding:16px;
+  }
+
+  #complete-btn {
+    height:56px; border-radius:12px; border:none; cursor:pointer;
+    font-size:15px; font-weight:700; letter-spacing:.03em;
+    transition:all .2s; display:flex; align-items:center; justify-content:center; gap:8px;
+    flex-shrink:0;
+  }
+  #complete-btn.ready {
+    background:var(--green); color:white;
+    box-shadow:0 6px 20px rgba(16,185,129,.35);
+  }
+  #complete-btn.ready:hover { background:#059669; box-shadow:0 8px 28px rgba(16,185,129,.45); }
+  #complete-btn:disabled { background:#E2E8F0; color:#94A3B8; cursor:not-allowed; box-shadow:none; }
+  #complete-btn:active:not(:disabled) { transform:scale(.98); }
+
+  #back-btn {
+    height:40px; border-radius:10px; border:1.5px solid var(--border);
+    background:white; color:var(--muted); cursor:pointer; font-size:13px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; gap:6px; transition:all .15s;
+    flex-shrink:0;
+  }
+  #back-btn:hover { border-color:#94A3B8; background:var(--bg); }
+
+  /* RECEIPT MODAL */
+  .modal-bg {
+    position:fixed; inset:0; background:rgba(15,23,42,.65); backdrop-filter:blur(4px);
+    z-index:300; display:none; align-items:center; justify-content:center;
+  }
+  .receipt-modal { background:white; border-radius:16px; width:460px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.2); }
+  .receipt-hdr { background:var(--green); padding:16px 20px; display:flex; align-items:center; justify-content:space-between; }
+  .receipt-hdr h3 { color:white; font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; margin:0; }
+  .receipt-body { padding:20px; }
+  .receipt-paper {
+    font-family:'Courier New', monospace; font-size:12px; line-height:1.7;
+    background:white; border:1px dashed #CBD5E1; border-radius:6px; padding:16px;
+    margin-bottom:16px; white-space:pre;
+  }
+  .receipt-actions { display:flex; gap:8px; }
+  .r-btn {
+    flex:1; height:44px; border-radius:9px; border:1.5px solid var(--border);
+    background:var(--bg); font-size:13px; font-weight:600; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:6px; transition:all .15s;
+  }
+  .r-btn:hover { border-color:#94A3B8; background:white; }
+  .r-btn.primary { background:var(--navy); color:white; border-color:var(--navy); }
+  .r-btn.primary:hover { background:var(--navy-2); }
+
+  /* TOAST */
+  #toast-w { position:fixed; bottom:20px; right:20px; z-index:500; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+  .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; color:white; font-size:13px; font-weight:500; box-shadow:0 8px 24px rgba(0,0,0,.15); transform:translateY(8px); opacity:0; transition:all .25s cubic-bezier(.16,1,.3,1); pointer-events:auto; max-width:300px; }
+  .toast.show { transform:translateY(0); opacity:1; }
+  .toast.success { background:#064E3B; }
+  .toast.error   { background:#7F1D1D; }
+  .toast.info    { background:var(--navy-2); }
+</style>
 </head>
-<body class="bg-[#f9f9ff] text-on-surface h-screen flex overflow-hidden">
+<body>
 
-<!-- Side Navigation Shell -->
-<aside class="flex flex-col h-full w-[240px] py-6 px-4 border-r border-border-subtle bg-primary z-50 fixed left-0 top-0 text-white">
-    <div class="mb-8 px-4 flex items-center gap-2">
-        <span class="material-symbols-outlined text-secondary text-2xl">point_of_sale</span>
-        <span class="text-lg font-bold tracking-tight text-white">Imtiaz Retail</span>
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">
+      <span class="material-symbols-outlined fill" style="color:white;font-size:18px;">point_of_sale</span>
     </div>
-    <nav class="flex-grow space-y-2">
-        <!-- Sidebar Navigation links -->
-        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="main_checkout.html">
-            <span class="material-symbols-outlined">shopping_cart</span>
-            <span class="text-sm font-semibold">Checkout</span>
-        </a>
-        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="shift_close.html">
-            <span class="material-symbols-outlined">person_pin_circle</span>
-            <span class="text-sm font-semibold">Shift Control</span>
-        </a>
-        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="cash_control.html">
-            <span class="material-symbols-outlined">payments</span>
-            <span class="text-sm font-semibold">Cash Control</span>
-        </a>
-        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" onclick="showHelpToast('Catalog items are managed centrally.')">
-            <span class="material-symbols-outlined">inventory_2</span>
-            <span class="text-sm font-semibold">Catalog</span>
-        </a>
-        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" href="shift_close.html">
-            <span class="material-symbols-outlined">assessment</span>
-            <span class="text-sm font-semibold">Z-Report</span>
-        </a>
-        <a class="flex items-center gap-4 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg px-4 py-3 cursor-pointer transition-all active:scale-95 duration-150" onclick="showHelpToast('Settings are disabled in prototype.')">
-            <span class="material-symbols-outlined">settings</span>
-            <span class="text-sm font-semibold">Settings</span>
-        </a>
-    </nav>
-    <div class="mt-auto border-t border-gray-700 pt-4 space-y-2">
-        <div class="flex items-center gap-3 px-4 py-2 mb-4">
-            <div class="w-8 h-8 rounded-full bg-secondary text-primary flex items-center justify-center text-xs font-bold" id="operator-initials">AS</div>
-            <div class="overflow-hidden">
-                <p class="text-sm font-semibold truncate text-white" id="operator-name">System Operator</p>
-                <p class="text-xs text-gray-400 truncate">POS-01 · Shift Active</p>
-            </div>
-        </div>
-        <a class="flex items-center gap-4 text-gray-400 hover:text-white px-4 py-2 hover:bg-white/5 transition-all text-xs rounded-lg" onclick="showHelpToast('Manager PIN is 1234')">
-            <span class="material-symbols-outlined text-[18px]">help</span>
-            <span>Help Guide</span>
-        </a>
-        <a class="flex items-center gap-4 text-danger hover:bg-red-500/10 px-4 py-2 transition-all text-xs rounded-lg" onclick="doLogout()">
-            <span class="material-symbols-outlined text-[18px]">logout</span>
-            <span>Sign Out</span>
-        </a>
+    <div>
+      <div style="font-size:13px;font-weight:800;color:white;letter-spacing:-.02em;">IMAGYN POS</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.4);font-weight:500;">Imagyn Technologies</div>
     </div>
-</aside>
+  </div>
+  <nav style="flex:1;padding:8px 0;">
+    <a href="main_checkout.html">
+      <span class="material-symbols-outlined" style="font-size:20px;">shopping_cart</span>Checkout
+    </a>
+    <a href="#" onclick="window.location.href='shift_close.html';return false;">
+      <span class="material-symbols-outlined" style="font-size:20px;">schedule</span>Shift
+    </a>
+    <a href="cash_control.html">
+      <span class="material-symbols-outlined" style="font-size:20px;">payments</span>Cash Control
+    </a>
+    <a href="shift_close.html">
+      <span class="material-symbols-outlined" style="font-size:20px;">assessment</span>Z-Report
+    </a>
+  </nav>
+  <div style="border-top:1px solid rgba(255,255,255,.08);padding:12px 8px 8px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0;" id="op-avatar">AS</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="op-name">Operator</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);">POS-01</div>
+      </div>
+    </div>
+    <a href="terminal_login.html" style="color:rgba(239,68,68,.8);">
+      <span class="material-symbols-outlined" style="font-size:18px;">logout</span>Sign Out
+    </a>
+  </div>
+</nav>
 
-<!-- Main Content Canvas -->
-<main class="flex-grow ml-[240px] flex flex-col h-screen relative">
-    
-    <!-- Top Status Bar -->
-    <header class="flex justify-between items-center h-16 px-6 w-full sticky top-0 z-40 bg-white border-b border-border-subtle">
-        <div class="flex items-center gap-6">
-            <div class="flex flex-col">
-                <span class="text-xs text-text-secondary">Store</span>
-                <span class="text-sm font-semibold text-primary">Imtiaz Superstore</span>
-            </div>
-            <div class="flex flex-col">
-                <span class="text-xs text-text-secondary">Location</span>
-                <span class="text-sm font-semibold text-primary">Tariq Road, Karachi</span>
-            </div>
-            <div class="h-8 w-px bg-border-subtle"></div>
-            <div class="flex flex-col">
-                <span class="text-xs text-text-secondary">Terminal</span>
-                <span class="text-sm font-semibold text-primary">POS-01</span>
-            </div>
+<!-- CONTENT -->
+<div id="content">
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div style="display:flex;align-items:center;gap:20px;">
+      <div class="tb-meta"><span>Store</span><span>Imagyn Technologies</span></div>
+      <div style="width:1px;height:28px;background:var(--border);"></div>
+      <div class="tb-meta"><span>Terminal</span><span id="tb-terminal">POS-01</span></div>
+      <div style="width:1px;height:28px;background:var(--border);"></div>
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#FFF7ED;border:1px solid #FDE68A;border-radius:20px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:block;"></span>
+        <span style="font-size:11px;font-weight:700;color:#92400E;">Awaiting Payment</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-size:12px;font-weight:600;color:var(--muted);font-family:var(--mono);" id="tb-clock">--:--</div>
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:20px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:block;"></span>
+        <span style="font-size:11px;font-weight:700;color:#065F46;">Shift Active</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORKSPACE -->
+  <div id="workspace">
+
+    <!-- ORDER SUMMARY -->
+    <div id="summary-panel">
+      <div class="panel-hdr">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="material-symbols-outlined fill" style="font-size:16px;color:var(--green);">receipt_long</span>
+          Order Summary
         </div>
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-border-subtle">
-                <span class="material-symbols-outlined text-secondary text-lg">schedule</span>
-                <span class="text-sm font-semibold text-on-surface" id="current-date-display">2026-05-22</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
-                <span class="text-xs font-semibold text-text-secondary">Shift Connected</span>
-            </div>
+        <span style="font-size:11px;font-weight:600;background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:6px;font-family:var(--mono);" id="order-num">#—</span>
+      </div>
+
+      <div class="order-lines-list" id="order-lines-list">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="totals-block">
+        <div class="tot-row"><span class="l">Subtotal</span><span class="v" id="pay-subtotal">PKR 0</span></div>
+        <div class="tot-row"><span class="l">Discount</span><span class="v" id="pay-discount" style="color:var(--red);">— PKR 0</span></div>
+        <div class="tot-row"><span class="l">Tax (5% GST)</span><span class="v" id="pay-tax">PKR 0</span></div>
+        <div class="grand-block">
+          <span class="grand-label">Due</span>
+          <span class="grand-amount" id="pay-grand">PKR 0</span>
         </div>
-    </header>
+      </div>
+    </div>
 
-    <!-- Split Workspace -->
-    <div class="flex flex-grow overflow-hidden">
-        
-        <!-- Left Panel: Cart Summary (40%) -->
-        <section class="w-[38%] border-r border-border-subtle bg-slate-50 flex flex-col">
-            <div class="p-6 border-b border-border-subtle bg-white">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-lg font-bold text-primary">Cart Summary</h2>
-                    <span class="text-xs bg-slate-100 text-text-secondary px-2.5 py-1 rounded-full font-bold" id="cart-item-count">0 Items</span>
-                </div>
-            </div>
-            
-            <!-- Cart Items Scrollable List -->
-            <div class="flex-grow overflow-y-auto custom-scrollbar p-6 space-y-3" id="cart-items-list">
-                <!-- Dynamically loaded items will go here -->
-            </div>
-            
-            <!-- Price Summary Panel -->
-            <div class="p-6 bg-white border-t border-border-subtle shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.03)]">
-                <div class="space-y-2 mb-4">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-text-secondary">Subtotal</span>
-                        <span class="text-primary font-medium" id="summary-subtotal">PKR 0</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-text-secondary">Discount</span>
-                        <span class="text-danger font-medium" id="summary-discount">-PKR 0</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-text-secondary">Tax (5% VAT)</span>
-                        <span class="text-primary font-medium" id="summary-tax">PKR 0</span>
-                    </div>
-                </div>
-                <div class="pt-4 border-t border-border-subtle flex flex-col">
-                    <span class="text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-0.5">Grand Total</span>
-                    <div class="text-3xl font-extrabold text-primary font-mono tracking-tight" id="summary-total">PKR 0</div>
-                </div>
-            </div>
-        </section>
+    <!-- PAYMENT PANEL -->
+    <div id="payment-panel">
 
-        <!-- Right Panel: Payment Interface (62%) -->
-        <section class="w-[62%] p-8 bg-white flex flex-col overflow-y-auto custom-scrollbar">
-            <div class="mb-6 flex justify-between items-start">
+      <!-- AMOUNT DUE HERO -->
+      <div id="due-hero">
+        <div>
+          <div class="due-label">Amount Due</div>
+          <div class="due-amount" id="hero-due">PKR 0</div>
+        </div>
+        <div style="text-align:right;">
+          <div id="status-badge">Awaiting Tender</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:6px;" id="hero-cashier">Cashier: —</div>
+        </div>
+      </div>
+
+      <!-- TENDER TABS -->
+      <div id="tender-tabs">
+        <button class="tender-tab active" id="tab-cash" onclick="selectTender('cash')">
+          <span class="material-symbols-outlined fill">payments</span>
+          <span class="label">Cash</span>
+        </button>
+        <button class="tender-tab" id="tab-card" onclick="selectTender('card')">
+          <span class="material-symbols-outlined">credit_card</span>
+          <span class="label">Debit/Credit</span>
+        </button>
+        <button class="tender-tab" id="tab-wallet" onclick="selectTender('wallet')">
+          <span class="material-symbols-outlined">account_balance_wallet</span>
+          <span class="label">Wallet</span>
+        </button>
+        <button class="tender-tab" id="tab-split" onclick="selectTender('split')">
+          <span class="material-symbols-outlined">call_split</span>
+          <span class="label">Split Pay</span>
+        </button>
+      </div>
+
+      <!-- PAYMENT BODY (keypad + change) -->
+      <div id="payment-body">
+
+        <!-- LEFT: Input area -->
+        <div id="cash-side">
+
+          <!-- Cash view -->
+          <div id="view-cash">
+            <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:8px;">Cash Received (PKR)</label>
+            <div class="amount-display" style="margin-bottom:10px;">
+              <span class="amount-currency">PKR</span>
+              <input type="text" class="amount-value" id="cash-input" readonly placeholder="0" />
+              <button class="amount-clear" onclick="numPress('back')">
+                <span class="material-symbols-outlined" style="font-size:18px;">backspace</span>
+              </button>
+            </div>
+
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;">Quick Amounts</div>
+            <div class="quick-amounts" style="margin-bottom:12px;" id="quick-amounts-grid"></div>
+
+            <div id="numpad">
+              <button class="np-btn" onclick="numPress('7')">7</button>
+              <button class="np-btn" onclick="numPress('8')">8</button>
+              <button class="np-btn" onclick="numPress('9')">9</button>
+              <button class="np-btn" onclick="numPress('4')">4</button>
+              <button class="np-btn" onclick="numPress('5')">5</button>
+              <button class="np-btn" onclick="numPress('6')">6</button>
+              <button class="np-btn" onclick="numPress('1')">1</button>
+              <button class="np-btn" onclick="numPress('2')">2</button>
+              <button class="np-btn" onclick="numPress('3')">3</button>
+              <button class="np-btn clear-btn" onclick="numPress('clear')">CLEAR</button>
+              <button class="np-btn" onclick="numPress('0')">0</button>
+              <button class="np-btn exact-btn" onclick="setExact()">EXACT</button>
+            </div>
+          </div>
+
+          <!-- Card view -->
+          <div id="view-card" style="display:none;">
+            <div style="background:white;border:1.5px solid var(--border);border-radius:12px;padding:20px;">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <div style="width:48px;height:48px;border-radius:12px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;">
+                  <span class="material-symbols-outlined fill" style="font-size:24px;color:var(--blue);">contactless</span>
+                </div>
                 <div>
-                    <h1 class="text-2xl font-extrabold text-primary tracking-tight">Collect Payment</h1>
-                    <p class="text-sm text-text-secondary mt-1">Select tender method and record the payment amount.</p>
+                  <div style="font-size:14px;font-weight:700;">Card Terminal</div>
+                  <div style="font-size:12px;color:var(--muted);">Pax A920 Pinpad · POS-01</div>
                 </div>
-                <button onclick="window.location.href='main_checkout.html'" class="px-4 py-2 border border-border-subtle rounded-lg text-xs font-semibold text-text-secondary hover:bg-slate-50 transition-all flex items-center gap-1.5">
-                    <span class="material-symbols-outlined text-[16px]">arrow_back</span>
-                    Modify Cart
-                </button>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+                  <span style="color:var(--muted);">Charge Amount</span>
+                  <span style="font-weight:700;font-family:var(--mono);" id="card-charge-display">PKR 0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;">
+                  <span style="color:var(--muted);">Pinpad Status</span>
+                  <span style="color:var(--green);font-weight:600;">Connected</span>
+                </div>
+              </div>
+              <button onclick="simulateCardPay()" style="width:100%;height:48px;background:var(--navy);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <span class="material-symbols-outlined" style="font-size:18px;">wifi_tethering</span>
+                Trigger Pinpad Payment
+              </button>
             </div>
+          </div>
 
-            <!-- Remaining Due Large Hero -->
-            <div class="bg-primary text-white rounded-xl p-5 mb-6 flex items-center justify-between shadow-lg shadow-slate-900/10">
-                <div class="flex items-center gap-3.5">
-                    <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-secondary">
-                        <span class="material-symbols-outlined text-2xl">point_of_sale</span>
-                    </div>
-                    <div>
-                        <span class="text-xs text-gray-400 font-bold uppercase tracking-wider block">AMOUNT DUE</span>
-                        <span class="text-3xl font-black font-mono tracking-tight text-white" id="payment-due-total">PKR 0</span>
-                    </div>
+          <!-- Wallet view -->
+          <div id="view-wallet" style="display:none;">
+            <div style="background:white;border:1.5px solid var(--border);border-radius:12px;padding:20px;">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <div style="width:48px;height:48px;border-radius:12px;background:#F5F3FF;display:flex;align-items:center;justify-content:center;">
+                  <span class="material-symbols-outlined fill" style="font-size:24px;color:#7C3AED;">qr_code_scanner</span>
                 </div>
-                <div class="bg-secondary/15 border border-secondary/35 text-secondary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                    Awaiting Tender
+                <div>
+                  <div style="font-size:14px;font-weight:700;">Mobile Wallet</div>
+                  <div style="font-size:12px;color:var(--muted);">Easypaisa · JazzCash · Nayapay</div>
                 </div>
+              </div>
+              <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Customer Phone</label>
+              <input type="text" id="wallet-phone" value="+92 300 1234567" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;margin-bottom:12px;" />
+              <button onclick="simulateWalletPay()" style="width:100%;height:48px;background:#7C3AED;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <span class="material-symbols-outlined" style="font-size:18px;">send_to_mobile</span>
+                Push Payment Request
+              </button>
             </div>
+          </div>
 
-            <!-- Tender Selection -->
-            <div class="mb-6">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-text-secondary mb-3">Select Payment Method</h3>
-                <div class="grid grid-cols-5 gap-3" id="tender-selection-grid">
-                    <button id="tender-cash" onclick="setTender('Cash')" class="active-tender rounded-xl p-3 border-2 border-transparent flex flex-col items-center justify-center gap-1.5 transition-all hover:shadow-md cursor-pointer active:scale-95 duration-100">
-                        <span class="material-symbols-outlined text-emerald-pos text-2xl">payments</span>
-                        <span class="text-xs font-bold text-emerald-pos">Cash</span>
-                    </button>
-                    <button id="tender-debit" onclick="setTender('Debit Card')" class="bg-slate-50 border border-border-subtle rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all hover:border-text-secondary cursor-pointer active:scale-95 duration-100">
-                        <span class="material-symbols-outlined text-text-secondary text-2xl">credit_card</span>
-                        <span class="text-xs font-bold text-primary">Debit Card</span>
-                    </button>
-                    <button id="tender-credit" onclick="setTender('Credit Card')" class="bg-slate-50 border border-border-subtle rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all hover:border-text-secondary cursor-pointer active:scale-95 duration-100">
-                        <span class="material-symbols-outlined text-text-secondary text-2xl">credit_card_heart</span>
-                        <span class="text-xs font-bold text-primary">Credit Card</span>
-                    </button>
-                    <button id="tender-wallet" onclick="setTender('Mobile Wallet')" class="bg-slate-50 border border-border-subtle rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all hover:border-text-secondary cursor-pointer active:scale-95 duration-100">
-                        <span class="material-symbols-outlined text-text-secondary text-2xl">account_balance_wallet</span>
-                        <span class="text-xs font-bold text-primary">Wallet</span>
-                    </button>
-                    <button id="tender-split" onclick="setTender('Split')" class="bg-slate-50 border border-border-subtle rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all hover:border-text-secondary cursor-pointer active:scale-95 duration-100">
-                        <span class="material-symbols-outlined text-text-secondary text-2xl">call_split</span>
-                        <span class="text-xs font-bold text-primary">Split Pay</span>
-                    </button>
+          <!-- Split view -->
+          <div id="view-split" style="display:none;">
+            <div style="background:white;border:1.5px solid var(--border);border-radius:12px;padding:16px;">
+              <div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:16px;color:var(--muted);">call_split</span>
+                Split Tender
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;">Cash (PKR)</label>
+                  <input type="number" id="split-cash" oninput="calcSplit()" value="0" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;font-family:var(--mono);outline:none;text-align:right;" />
                 </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;">Card (PKR)</label>
+                  <input type="number" id="split-card" oninput="calcSplit()" value="0" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;font-family:var(--mono);outline:none;text-align:right;" />
+                </div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--muted);">Total Due</span><span style="font-weight:700;font-family:var(--mono);" id="split-due">PKR 0</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--muted);">Total Paid</span><span style="font-weight:700;font-family:var(--mono);" id="split-paid">PKR 0</span></div>
+                <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;"><span style="color:var(--muted);font-weight:600;">Remaining</span><span style="font-weight:700;font-family:var(--mono);color:var(--red);" id="split-rem">PKR 0</span></div>
+              </div>
             </div>
+          </div>
 
-            <!-- Dynamic Tender Section Viewports -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6 flex-grow">
-                
-                <!-- Center Input and Suggestions (7 cols) -->
-                <div class="lg:col-span-7 flex flex-col gap-5">
-                    
-                    <!-- Cash Interface -->
-                    <div id="tender-viewport-cash" class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-text-secondary mb-2">Amount Received (PKR)</label>
-                            <div class="relative flex items-center">
-                                <span class="absolute left-4 text-lg font-bold text-text-secondary font-mono">PKR</span>
-                                <input id="cash-amount-received" readonly class="w-full text-2xl font-extrabold font-mono pl-14 pr-12 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-secondary transition-all text-left bg-slate-50" type="text" value="0"/>
-                                <button onclick="clearAmountReceived()" class="absolute right-3 w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-text-secondary flex items-center justify-center active:scale-95 transition-all">
-                                    <span class="material-symbols-outlined text-[18px]">backspace</span>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-text-secondary mb-2">Quick Cash Suggestions</label>
-                            <div class="grid grid-cols-2 gap-2" id="quick-cash-container">
-                                <!-- Suggested Cash notes will go here -->
-                            </div>
-                        </div>
-                    </div>
+        </div><!-- /cash-side -->
 
-                    <!-- Card Interface -->
-                    <div id="tender-viewport-card" class="hidden space-y-4 bg-slate-50 p-5 rounded-xl border border-slate-200">
-                        <div class="flex items-center gap-3">
-                            <span class="material-symbols-outlined text-secondary text-3xl">contactless</span>
-                            <div>
-                                <h4 class="text-sm font-bold text-primary">Credit/Debit Card Terminal</h4>
-                                <p class="text-xs text-text-secondary">POS-01 is linked to Pax A920 Smart Pinpad.</p>
-                            </div>
-                        </div>
-                        
-                        <div class="border-t border-slate-200 pt-4 space-y-3">
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="text-text-secondary">Expected charge</span>
-                                <span class="font-bold text-primary font-mono" id="card-charge-total">PKR 0</span>
-                            </div>
-                            <button id="simulate-card-pay-btn" onclick="simulateCardPayment()" class="w-full py-3 bg-primary hover:bg-slate-800 text-white rounded-lg font-bold text-sm shadow flex items-center justify-center gap-2 active:scale-95 duration-100">
-                                <span class="material-symbols-outlined text-[18px]">wifi_tethering</span>
-                                Trigger Pinpad Payment
-                            </button>
-                        </div>
-                    </div>
+        <!-- RIGHT: Change + complete button -->
+        <div id="change-side">
 
-                    <!-- Wallet Interface -->
-                    <div id="tender-viewport-wallet" class="hidden space-y-4 bg-slate-50 p-5 rounded-xl border border-slate-200">
-                        <div class="flex items-center gap-3">
-                            <span class="material-symbols-outlined text-accent text-3xl">qr_code_scanner</span>
-                            <div>
-                                <h4 class="text-sm font-bold text-primary">Mobile Wallet Integration</h4>
-                                <p class="text-xs text-text-secondary">Supports Easypaisa, JazzCash, Nayapay & HBL Konnect.</p>
-                            </div>
-                        </div>
-                        
-                        <div class="border-t border-slate-200 pt-4 space-y-3">
-                            <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-text-secondary block">Customer Phone / Account Number</label>
-                                <input id="wallet-account-input" type="text" placeholder="+92 300 1234567" class="w-full border-slate-200 rounded-lg text-sm focus:border-secondary focus:ring-0" value="+92 300 1234567"/>
-                            </div>
-                            <button onclick="simulateWalletPayment()" class="w-full py-3 bg-accent hover:bg-accent/90 text-white rounded-lg font-bold text-sm shadow flex items-center justify-center gap-2 active:scale-95 duration-100">
-                                <span class="material-symbols-outlined text-[18px]">send_to_mobile</span>
-                                Push Wallet Payment Request
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Split Pay Interface -->
-                    <div id="tender-viewport-split" class="hidden space-y-4 bg-slate-50 p-5 rounded-xl border border-slate-200">
-                        <h4 class="text-sm font-bold text-primary flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-secondary text-lg">call_split</span>
-                            Split Tender Setup
-                        </h4>
-                        
-                        <div class="grid grid-cols-2 gap-4 border-t border-slate-200 pt-4">
-                            <div>
-                                <label class="text-xs font-bold text-text-secondary block mb-1">Cash Tendered (PKR)</label>
-                                <input id="split-cash-amount" oninput="calculateSplitPay()" type="number" class="w-full border-slate-200 rounded-lg text-sm font-mono focus:border-secondary focus:ring-0 text-right" value="0"/>
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-text-secondary block mb-1">Card Tendered (PKR)</label>
-                                <input id="split-card-amount" oninput="calculateSplitPay()" type="number" class="w-full border-slate-200 rounded-lg text-sm font-mono focus:border-secondary focus:ring-0 text-right" value="0"/>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-3 rounded-lg border border-slate-200 text-xs space-y-1">
-                            <div class="flex justify-between">
-                                <span class="text-text-secondary">Total Due:</span>
-                                <span id="split-due-lbl" class="font-bold text-primary font-mono">PKR 0</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-text-secondary">Combined Paid:</span>
-                                <span id="split-paid-lbl" class="font-bold text-primary font-mono">PKR 0</span>
-                            </div>
-                            <div class="flex justify-between border-t border-slate-100 pt-1 font-bold">
-                                <span class="text-text-secondary">Remaining:</span>
-                                <span id="split-rem-lbl" class="text-danger font-mono">PKR 0</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Change Due/Balance Feedback Status card -->
-                    <div id="change-due-card" class="p-4 bg-amber-50 border-2 border-dashed border-amber-300 rounded-xl transition-all">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-bold text-amber-800" id="change-card-label">Remaining Balance</span>
-                            <span class="text-xl font-extrabold text-amber-800 font-mono" id="change-card-amount">PKR 0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Numeric Touch Keyboard (5 cols) -->
-                <div class="lg:col-span-5 flex flex-col justify-between">
-                    <div id="payment-num-keypad" class="bg-slate-100 p-3 rounded-xl border border-slate-200 grid grid-cols-3 gap-2 h-full">
-                        <button onclick="pressTenderKey('1')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">1</button>
-                        <button onclick="pressTenderKey('2')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">2</button>
-                        <button onclick="pressTenderKey('3')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">3</button>
-                        
-                        <button onclick="pressTenderKey('4')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">4</button>
-                        <button onclick="pressTenderKey('5')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">5</button>
-                        <button onclick="pressTenderKey('6')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">6</button>
-                        
-                        <button onclick="pressTenderKey('7')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">7</button>
-                        <button onclick="pressTenderKey('8')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">8</button>
-                        <button onclick="pressTenderKey('9')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">9</button>
-                        
-                        <button onclick="pressTenderKey('C')" class="h-12 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-sm font-bold text-danger flex items-center justify-center active:scale-95 duration-100">Clear</button>
-                        <button onclick="pressTenderKey('0')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-lg font-bold text-primary flex items-center justify-center active:scale-95 duration-100">0</button>
-                        <button onclick="pressTenderKey('00')" class="h-12 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-primary flex items-center justify-center active:scale-95 duration-100">00</button>
-                    </div>
-                </div>
+          <div class="change-card">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;">Transaction</div>
+            <div class="change-row"><span class="l">Amount Due</span><span class="v" id="ch-due">PKR 0</span></div>
+            <div class="change-row"><span class="l">Tendered</span><span class="v" id="ch-tendered" style="color:var(--navy);">PKR 0</span></div>
+            <div style="height:1px;background:var(--border);"></div>
+            <div class="change-row highlight" id="change-row-display">
+              <span class="l" style="font-size:13px;font-weight:700;">Change Due</span>
+              <span class="v" id="ch-change">PKR 0</span>
             </div>
+          </div>
 
-            <!-- Action panel -->
-            <div class="flex gap-4 pt-6 border-t border-border-subtle mt-auto">
-                <button onclick="window.location.href='main_checkout.html'" class="flex-1 py-4 px-6 border border-slate-200 text-text-secondary rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 active:scale-95 duration-150">
-                    <span class="material-symbols-outlined">arrow_back</span>
-                    Cancel / Go Back
-                </button>
-                <button id="complete-payment-btn" onclick="executePaymentComplete()" class="flex-[2] py-4 px-6 bg-secondary text-white rounded-xl font-bold text-md shadow-lg shadow-secondary/15 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span class="material-symbols-outlined">receipt</span>
-                    Complete Payment &amp; Print Receipt
-                </button>
-            </div>
-        </section>
-    </div>
+          <!-- Refund type info -->
+          <div style="background:#FFF7ED;border:1px solid #FDE68A;border-radius:10px;padding:12px;font-size:12px;color:#92400E;display:flex;align-items:flex-start;gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:16px;flex-shrink:0;margin-top:1px;">info</span>
+            <span>Always verify cash amount before completing the transaction.</span>
+          </div>
 
-    <!-- Thermal Receipt Modal Overlay -->
-    <div id="receipt-modal" class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="w-full max-w-sm transform scale-95 opacity-0 transition-all duration-300 flex flex-col items-center">
-            
-            <!-- Real Printed Slip -->
-            <div class="w-full receipt-paper p-6 flex flex-col select-text">
-                <div class="text-center space-y-1 mb-4">
-                    <h3 class="text-base font-extrabold tracking-wide uppercase font-mono">IMTIAZ SUPERSTORE</h3>
-                    <p class="text-[11px] font-mono">Tariq Road Branch, Karachi</p>
-                    <p class="text-[11px] font-mono">Tel: +92 21 111 468 429</p>
-                    <p class="text-[10px] font-mono">FBR NTN: 4218392-4</p>
-                </div>
-                
-                <div class="border-t-2 border-dashed border-black py-2.5 text-[11px] space-y-0.5 font-mono">
-                    <div class="flex justify-between">
-                        <span>Receipt ID:</span>
-                        <span id="receipt-ord-id" class="font-bold">ORD-260519-0012</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Date/Time:</span>
-                        <span id="receipt-datetime">2026-05-22 14:38</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Terminal:</span>
-                        <span>POS-01</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Cashier:</span>
-                        <span id="receipt-cashier">Adeel</span>
-                    </div>
-                    <div id="receipt-customer-row" class="flex justify-between hidden">
-                        <span>Customer:</span>
-                        <span id="receipt-customer-name">Ahmed Khan</span>
-                    </div>
-                </div>
+          <button id="complete-btn" disabled onclick="completeTransaction()">
+            <span class="material-symbols-outlined fill" style="font-size:20px;">check_circle</span>
+            Complete Sale
+          </button>
 
-                <!-- Receipt Cart Items List -->
-                <div class="border-t-2 border-dashed border-black py-3 text-[11px] font-mono">
-                    <div class="flex justify-between font-bold border-b border-black pb-1 mb-2">
-                        <span class="w-[60%]">Item Name</span>
-                        <span class="w-[15%] text-center">Qty</span>
-                        <span class="w-[25%] text-right">Price</span>
-                    </div>
-                    <div class="space-y-1.5 mb-2" id="receipt-items-list">
-                        <!-- Printed item list will go here -->
-                    </div>
-                </div>
+          <button id="back-btn" onclick="window.location.href='main_checkout.html'">
+            <span class="material-symbols-outlined" style="font-size:18px;">arrow_back</span>
+            Modify Order
+          </button>
 
-                <!-- Totals Breakdown -->
-                <div class="border-t-2 border-dashed border-black pt-3 pb-2 text-[11.5px] font-mono space-y-1">
-                    <div class="flex justify-between">
-                        <span>Subtotal:</span>
-                        <span id="receipt-subtotal">PKR 0</span>
-                    </div>
-                    <div class="flex justify-between text-danger">
-                        <span>Discount:</span>
-                        <span id="receipt-discount">-PKR 0</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Taxes (5% VAT):</span>
-                        <span id="receipt-tax">PKR 0</span>
-                    </div>
-                    <div class="flex justify-between font-bold text-sm border-t border-black pt-1.5 mt-1">
-                        <span>GRAND TOTAL:</span>
-                        <span id="receipt-grandtotal">PKR 0</span>
-                    </div>
-                </div>
-
-                <!-- Payments tender breakdown -->
-                <div class="border-t border-black pt-2 pb-4 text-[11px] font-mono space-y-0.5">
-                    <div class="flex justify-between">
-                        <span>Tender Method:</span>
-                        <span id="receipt-tender-type">Cash</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Amount Paid:</span>
-                        <span id="receipt-received-amount">PKR 0</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Change Returned:</span>
-                        <span id="receipt-change-amount" class="font-bold">PKR 0</span>
-                    </div>
-                </div>
-
-                <!-- FBR QR Verification Block -->
-                <div class="border-t-2 border-dashed border-black pt-4 pb-2 text-center flex flex-col items-center gap-1.5 font-mono">
-                    <div class="w-24 h-24 border border-black p-1 bg-white">
-                        <svg class="w-full h-full" viewBox="0 0 100 100">
-                            <!-- Simulated clean QR code design -->
-                            <rect x="5" y="5" width="20" height="20" fill="black"/>
-                            <rect x="9" y="9" width="12" height="12" fill="white"/>
-                            <rect x="75" y="5" width="20" height="20" fill="black"/>
-                            <rect x="79" y="9" width="12" height="12" fill="white"/>
-                            <rect x="5" y="75" width="20" height="20" fill="black"/>
-                            <rect x="9" y="79" width="12" height="12" fill="white"/>
-                            <rect x="40" y="20" width="15" height="15" fill="black"/>
-                            <rect x="60" y="45" width="20" height="20" fill="black"/>
-                            <rect x="35" y="65" width="20" height="15" fill="black"/>
-                        </svg>
-                    </div>
-                    <span class="text-[9px] font-bold tracking-wider">FBR INVOICE VERIFIED</span>
-                    <span class="text-[8px] text-gray-500">Invoice Ref: FBR-PK-08429-260519-POS01</span>
-                </div>
-                
-                <div class="text-center text-[10px] mt-4 font-mono pb-2">
-                    <p class="font-bold">THANK YOU FOR SHOPPING!</p>
-                    <p class="text-[9px] text-gray-500 mt-1">Software: Antigravity Enterprise POS</p>
-                </div>
-            </div>
-
-            <!-- Start New Transaction CTA -->
-            <button onclick="startNewOrder()" class="mt-6 w-full py-4 bg-secondary hover:bg-secondary/90 text-white rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 duration-150">
-                <span class="material-symbols-outlined">add_shopping_cart</span>
-                Start New Transaction
-            </button>
         </div>
+
+      </div><!-- /payment-body -->
+    </div><!-- /payment-panel -->
+
+  </div><!-- /workspace -->
+</div><!-- /content -->
+
+<!-- RECEIPT MODAL -->
+<div class="modal-bg" id="receipt-modal">
+  <div class="receipt-modal">
+    <div class="receipt-hdr">
+      <h3>
+        <span class="material-symbols-outlined fill" style="font-size:20px;">receipt_long</span>
+        Payment Complete
+      </h3>
+      <button onclick="closeReceiptAndNew()" style="width:30px;height:30px;border-radius:7px;border:none;background:rgba(255,255,255,.2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:white;">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
     </div>
+    <div class="receipt-body">
+      <div class="receipt-paper" id="receipt-text"></div>
+      <div class="receipt-actions">
+        <button class="r-btn" onclick="printReceipt()">
+          <span class="material-symbols-outlined" style="font-size:16px;">print</span>Print Receipt
+        </button>
+        <button class="r-btn" onclick="sendReceipt()">
+          <span class="material-symbols-outlined" style="font-size:16px;">sms</span>SMS Receipt
+        </button>
+        <button class="r-btn primary" onclick="closeReceiptAndNew()">
+          <span class="material-symbols-outlined" style="font-size:16px;">add_shopping_cart</span>New Sale
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
-    <!-- Active Global Toast Notification Wrapper -->
-    <div id="toast-wrapper" class="fixed bottom-6 right-6 z-50 flex flex-col pointer-events-none"></div>
-
-</main>
+<div id="toast-w"></div>
 
 <script>
-    // State management variables
-    let cart = [];
-    let subtotal = 0;
-    let discount = 0;
-    let tax = 0;
-    let total = 0;
-    let activeTender = 'Cash';
-    let amountReceivedStr = '0';
-    let splitCashPaid = 0;
-    let splitCardPaid = 0;
+// ─── STATE ─────────────────────────────────────
+let dueAmount  = 0;
+let cashInputVal = 0;
+let activeTender = 'cash';
+let cart = [];
 
-    // Toast helper
-    function showToast(message, type = 'success') {
-        const wrapper = document.getElementById('toast-wrapper');
-        const toast = document.createElement('div');
-        toast.className = `p-4 mb-2 rounded-xl text-white shadow-xl flex items-center gap-3 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto max-w-sm ${
-            type === 'success' ? 'bg-secondary' : type === 'error' ? 'bg-danger' : 'bg-amber-500'
-        }`;
-        
-        const icon = type === 'success' ? 'check_circle' : type === 'error' ? 'cancel' : 'warning';
-        
-        toast.innerHTML = `
-            <span class="material-symbols-outlined">${icon}</span>
-            <span class="text-xs font-semibold">${message}</span>
-        `;
-        
-        wrapper.appendChild(toast);
-        setTimeout(() => {
-            toast.classList.remove('translate-y-2', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-        }, 10);
-        
-        setTimeout(() => {
-            toast.classList.remove('translate-y-0', 'opacity-100');
-            toast.classList.add('translate-y-2', 'opacity-0');
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+// ─── UTILS ──────────────────────────────────────
+function fmt(n)    { return 'PKR ' + new Intl.NumberFormat('en-PK').format(Math.round(n)); }
+function fmtN(n)   { return new Intl.NumberFormat('en-PK').format(Math.round(n)); }
+function parsePKR(s) { return parseFloat((s || '0').replace(/[^0-9.]/g, '')) || 0; }
+
+function toast(msg, type='success') {
+  const w = document.getElementById('toast-w');
+  const t = document.createElement('div');
+  const icons = { success:'check_circle', error:'cancel', info:'info' };
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span class="material-symbols-outlined fill" style="font-size:18px;">${icons[type]||'info'}</span><span>${msg}</span>`;
+  w.appendChild(t);
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
+}
+
+function syncParent(idx) {
+  try {
+    if (!window.parent || window.parent === window) return;
+    const d = window.parent.document;
+    d.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+    const el = d.getElementById('step-' + idx);
+    if (el) el.classList.add('flow-step-active');
+  } catch(e) {}
+}
+
+// ─── INIT ───────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  syncParent(4);
+
+  // Clock
+  const clk = () => document.getElementById('tb-clock').textContent =
+    new Date().toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+  clk(); setInterval(clk, 1000);
+
+  // Operator
+  try {
+    const op = JSON.parse(localStorage.getItem('terminal_operator') || '{}');
+    if (op.name) {
+      document.getElementById('op-name').textContent = op.name;
+      document.getElementById('op-avatar').textContent = op.initials || op.name.slice(0,2).toUpperCase();
+      if (op.color) document.getElementById('op-avatar').style.background = op.color;
+      document.getElementById('hero-cashier').textContent = 'Cashier: ' + op.name.split(' ')[0];
     }
+  } catch(e) {}
 
-    function showHelpToast(msg) {
-        showToast(msg, 'info');
-    }
+  // Config
+  try {
+    const cfg = JSON.parse(localStorage.getItem('terminal_config') || '{}');
+    if (cfg.terminalId) document.getElementById('tb-terminal').textContent = cfg.terminalId;
+  } catch(e) {}
 
-    function syncParentSidebar(stepIndex) {
-        if (window.parent && typeof window.parent.document !== 'undefined') {
-            const doc = window.parent.document;
-            const stepEl = doc.getElementById('step-' + stepIndex);
-            if (stepEl) {
-                doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
-                stepEl.classList.add('flow-step-active');
-            }
-            const urlDisplay = doc.getElementById('simulator-url-display');
-            if (urlDisplay) {
-                const filename = window.location.pathname.split('/').pop();
-                urlDisplay.innerText = 'screens/' + filename;
-            }
-            const openNewTabBtn = doc.getElementById('open-new-tab-btn');
-            if (openNewTabBtn) {
-                const filename = window.location.pathname.split('/').pop();
-                openNewTabBtn.href = 'screens/' + filename;
-            }
-        }
-    }
+  // Order number
+  const seq = Math.floor(Math.random() * 9000) + 1000;
+  document.getElementById('order-num').textContent = '#' + seq;
 
-    // Format currency helper
-    function fmt(val) {
-        return 'PKR ' + new Intl.NumberFormat('en-PK').format(val);
-    }
+  // Load cart
+  const saved = sessionStorage.getItem('pos_cart');
+  cart = saved ? JSON.parse(saved) : [
+    { id:'I1001', name:'Milk 1L Tetra',    qty:2, price:280,  unit:'L',  cat:'dairy' },
+    { id:'I1002', name:'Rice 5kg Premium', qty:1, price:1850, unit:'kg', cat:'grocery' },
+    { id:'I1008', name:'Coca Cola 1.5L',   qty:2, price:220,  unit:'L',  cat:'beverage' },
+  ];
 
-    // On page DOM load
-    window.addEventListener('DOMContentLoaded', () => {
-        syncParentSidebar(4);
+  renderOrderSummary();
+  renderQuickAmounts();
+  updateChangeDisplay(0, dueAmount);
+});
 
-        // Fetch Cashier and dates
-        const operatorName = localStorage.getItem('terminal_operator') || 'Adeel';
-        document.getElementById('operator-name').textContent = operatorName;
-        document.getElementById('operator-initials').textContent = operatorName.split(' ').map(n=>n[0]).join('').toUpperCase();
-        document.getElementById('current-date-display').textContent = new Date().toISOString().split('T')[0];
+// ─── ORDER SUMMARY ──────────────────────────────
+function renderOrderSummary() {
+  const list = document.getElementById('order-lines-list');
+  list.innerHTML = '';
 
-        // Fetch totals
-        const savedSubtotal = parseFloat(sessionStorage.getItem('pos_last_subtotal')) || 0;
-        const savedDiscount = parseFloat(sessionStorage.getItem('pos_last_discount')) || 0;
-        const savedTax = parseFloat(sessionStorage.getItem('pos_last_tax')) || 0;
-        const savedTotal = parseFloat(sessionStorage.getItem('pos_last_total')) || 0;
+  let sub = 0;
+  cart.forEach(l => {
+    sub += l.qty * l.price;
+    const row = document.createElement('div');
+    row.className = 'order-line';
+    row.innerHTML = `
+      <div class="order-line-name">${l.name}</div>
+      <span class="order-line-qty">×${l.qty}</span>
+      <span class="order-line-total">${fmtN(l.qty * l.price)}</span>
+    `;
+    list.appendChild(row);
+  });
 
-        subtotal = savedSubtotal;
-        discount = savedDiscount;
-        tax = savedTax;
-        total = savedTotal;
+  const disc  = 0;
+  const tax   = Math.round((sub - disc) * 0.05);
+  const grand = sub - disc + tax;
+  dueAmount   = grand;
 
-        // Render checkout calculations
-        document.getElementById('summary-subtotal').textContent = fmt(subtotal);
-        document.getElementById('summary-discount').textContent = `- ${fmt(discount)}`;
-        document.getElementById('summary-tax').textContent = fmt(tax);
-        document.getElementById('summary-total').textContent = fmt(total);
-        document.getElementById('payment-due-total').textContent = fmt(total);
-        document.getElementById('card-charge-total').textContent = fmt(total);
+  document.getElementById('pay-subtotal').textContent = fmt(sub);
+  document.getElementById('pay-discount').textContent = `— ${fmt(disc)}`;
+  document.getElementById('pay-tax').textContent      = fmt(tax);
+  document.getElementById('pay-grand').textContent    = fmt(grand);
+  document.getElementById('hero-due').textContent     = fmt(grand);
+  document.getElementById('ch-due').textContent       = fmt(grand);
 
-        // Load items from pos_cart
-        const savedCart = sessionStorage.getItem('pos_cart');
-        if (savedCart) {
-            cart = JSON.parse(savedCart);
-        }
-        renderCartList();
+  // Split view update
+  document.getElementById('split-due').textContent = fmt(grand);
+  // Card charge update
+  const cd = document.getElementById('card-charge-display');
+  if (cd) cd.textContent = fmt(grand);
+}
 
-        // Render quick cash recommendations
-        generateQuickCashSuggestions();
+// ─── TENDER TABS ────────────────────────────────
+function selectTender(t) {
+  activeTender = t;
+  ['cash','card','wallet','split'].forEach(id => {
+    const tab  = document.getElementById('tab-' + id);
+    const view = document.getElementById('view-' + id);
+    if (tab)  tab.classList.toggle('active', id === t);
+    if (view) view.style.display = (id === t) ? 'block' : 'none';
+  });
+  checkReady();
+}
 
-        // Initialize change cards
-        updateChangeDueCalculation();
-    });
+// ─── NUMPAD ─────────────────────────────────────
+let rawInput = '';
+function numPress(k) {
+  if (k === 'clear') { rawInput = ''; }
+  else if (k === 'back') { rawInput = rawInput.slice(0, -1); }
+  else { if (rawInput.length >= 9) return; rawInput += k; }
+  cashInputVal = parseFloat(rawInput) || 0;
+  document.getElementById('cash-input').value = rawInput ? fmtN(cashInputVal) : '';
+  updateChangeDisplay(cashInputVal, dueAmount);
+  checkReady();
+}
 
-    // Render cart summary items
-    function renderCartList() {
-        const container = document.getElementById('cart-items-list');
-        container.innerHTML = '';
+function setExact() {
+  cashInputVal = dueAmount;
+  rawInput = String(Math.round(dueAmount));
+  document.getElementById('cash-input').value = fmtN(dueAmount);
+  updateChangeDisplay(dueAmount, dueAmount);
+  checkReady();
+}
 
-        if (cart.length === 0) {
-            container.innerHTML = `
-                <div class="py-12 text-center text-text-secondary">
-                    <span class="material-symbols-outlined text-[36px] text-slate-300">shopping_cart</span>
-                    <p class="text-xs font-semibold mt-1">Empty Cart Summary</p>
-                </div>
-            `;
-            document.getElementById('cart-item-count').textContent = '0 Items';
-            return;
-        }
+function renderQuickAmounts() {
+  const grid = document.getElementById('quick-amounts-grid');
+  const notes = [500, 1000, 2000, 5000, 10000];
+  // Find smallest note >= due
+  const base = notes.find(n => n >= dueAmount) || dueAmount;
+  const suggestions = [];
+  // Round up to next 500/1000
+  [500, 1000, 2000, 5000, 10000].forEach(n => {
+    if (n >= dueAmount) suggestions.push(n);
+  });
+  // Add exact
+  suggestions.unshift(Math.ceil(dueAmount / 100) * 100);
+  const unique = [...new Set(suggestions)].slice(0, 6);
 
-        let totalQtyCount = 0;
-        cart.forEach(item => {
-            totalQtyCount += item.qty;
-            const cardItem = document.createElement('div');
-            cardItem.className = "bg-white p-4 rounded-xl border border-border-subtle flex justify-between items-center shadow-sm hover:border-slate-300 transition-all duration-150";
-            cardItem.innerHTML = `
-                <div>
-                    <p class="text-sm font-bold text-primary">${item.name}</p>
-                    <p class="text-xs text-text-secondary mt-0.5">x${item.qty} @ ${fmt(item.price)}</p>
-                </div>
-                <p class="text-sm font-extrabold text-primary font-mono">${fmt(item.qty * item.price)}</p>
-            `;
-            container.appendChild(cardItem);
-        });
+  unique.forEach(amt => {
+    const btn = document.createElement('button');
+    btn.className = 'qa-btn';
+    btn.textContent = fmtN(amt);
+    btn.onclick = () => {
+      cashInputVal = amt;
+      rawInput = String(amt);
+      document.getElementById('cash-input').value = fmtN(amt);
+      updateChangeDisplay(amt, dueAmount);
+      checkReady();
+    };
+    grid.appendChild(btn);
+  });
+}
 
-        document.getElementById('cart-item-count').textContent = `${totalQtyCount} Item${totalQtyCount !== 1 ? 's' : ''}`;
-    }
+// ─── CHANGE DISPLAY ─────────────────────────────
+function updateChangeDisplay(tendered, due) {
+  const change = tendered - due;
+  document.getElementById('ch-tendered').textContent = tendered > 0 ? fmt(tendered) : 'PKR 0';
+  const chEl = document.getElementById('ch-change');
+  const row   = document.getElementById('change-row-display');
+  if (change >= 0) {
+    chEl.textContent = fmt(change);
+    chEl.style.color = '#059669';
+    row.style.background = 'none';
+  } else if (tendered > 0) {
+    chEl.textContent = '— ' + fmt(Math.abs(change));
+    chEl.style.color = 'var(--red)';
+  } else {
+    chEl.textContent = 'PKR 0';
+    chEl.style.color = '#059669';
+  }
+}
 
-    // Generate Cash suggestions based on invoice total
-    function generateQuickCashSuggestions() {
-        const container = document.getElementById('quick-cash-container');
-        container.innerHTML = '';
+function calcSplit() {
+  const cash = parseFloat(document.getElementById('split-cash').value) || 0;
+  const card = parseFloat(document.getElementById('split-card').value) || 0;
+  const paid = cash + card;
+  const rem  = dueAmount - paid;
+  document.getElementById('split-paid').textContent = fmt(paid);
+  document.getElementById('split-rem').textContent  = rem > 0 ? fmt(rem) : 'PKR 0';
+  checkReady();
+}
 
-        const exact = total;
-        // Find rounded notes Suggestions
-        // Examples: if Total is 2340: Exact, 2500, 3000, 5000
-        const roundTo500 = Math.ceil(total / 500) * 500;
-        const roundTo1000 = Math.ceil(total / 1000) * 1000;
-        const suggestions = [exact];
+// ─── READY CHECK ────────────────────────────────
+function checkReady() {
+  const btn = document.getElementById('complete-btn');
+  let ready = false;
+  if (activeTender === 'cash')   ready = cashInputVal >= dueAmount;
+  if (activeTender === 'card')   ready = false; // done via pinpad button
+  if (activeTender === 'wallet') ready = false; // done via push button
+  if (activeTender === 'split') {
+    const cash = parseFloat(document.getElementById('split-cash').value) || 0;
+    const card = parseFloat(document.getElementById('split-card').value) || 0;
+    ready = (cash + card) >= dueAmount;
+  }
+  btn.disabled = !ready;
+  btn.className = ready ? 'ready' : '';
+  btn.style.cursor = ready ? 'pointer' : 'not-allowed';
+}
 
-        if (roundTo500 > total && !suggestions.includes(roundTo500)) {
-            suggestions.push(roundTo500);
-        }
-        if (roundTo1000 > total && !suggestions.includes(roundTo1000)) {
-            suggestions.push(roundTo1000);
-        }
-        
-        // Push high bank bills
-        if (total < 1000 && !suggestions.includes(1000)) suggestions.push(1000);
-        if (total < 2000 && !suggestions.includes(2000)) suggestions.push(2000);
-        if (total < 5000 && !suggestions.includes(5000)) suggestions.push(5000);
+// ─── PAYMENT SIMULATION ─────────────────────────
+function simulateCardPay() {
+  const btn = event.target.closest('button');
+  btn.textContent = ''; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;animation:spin .7s linear infinite;">sync</span> Processing…';
+  setTimeout(() => {
+    btn.innerHTML = '<span class="material-symbols-outlined fill" style="font-size:18px;color:white;">check_circle</span> Approved ✓';
+    btn.style.background = 'var(--green)';
+    const cb = document.getElementById('complete-btn');
+    cb.disabled = false; cb.className = 'ready'; cb.style.cursor = 'pointer';
+    updateChangeDisplay(dueAmount, dueAmount);
+    toast('Card payment approved.', 'success');
+  }, 1800);
+}
 
-        // Keep top unique sorted Suggestions up to 4
-        const uniqueSuggestions = [...new Set(suggestions)].sort((a,b)=>a-b).slice(0, 4);
+function simulateWalletPay() {
+  toast('Payment request sent. Awaiting confirmation…', 'info');
+  setTimeout(() => {
+    const cb = document.getElementById('complete-btn');
+    cb.disabled = false; cb.className = 'ready'; cb.style.cursor = 'pointer';
+    updateChangeDisplay(dueAmount, dueAmount);
+    toast('Wallet payment confirmed.', 'success');
+  }, 2200);
+}
 
-        uniqueSuggestions.forEach((val, idx) => {
-            const btn = document.createElement('button');
-            const isExact = val === exact;
-            
-            btn.className = `py-3 px-4 rounded-xl text-xs font-bold transition-all duration-150 border active:scale-95 ${
-                isExact 
-                    ? 'bg-secondary text-white border-secondary hover:brightness-105 shadow-sm' 
-                    : 'bg-slate-50 text-primary border-slate-200 hover:bg-slate-100 hover:border-slate-300'
-            }`;
-            
-            btn.textContent = isExact ? `Exact (${fmt(exact)})` : fmt(val);
-            btn.onclick = () => {
-                amountReceivedStr = String(val);
-                document.getElementById('cash-amount-received').value = new Intl.NumberFormat('en-PK').format(val);
-                updateChangeDueCalculation();
-                
-                // Highlight button
-                document.querySelectorAll('#quick-cash-container button').forEach(b => {
-                    b.classList.remove('bg-primary', 'text-white', 'shadow-md');
-                });
-                btn.className = 'py-3 px-4 rounded-xl text-xs font-bold bg-primary text-white border-primary shadow-md active:scale-95 duration-100';
-            };
-            container.appendChild(btn);
-        });
-    }
+// ─── COMPLETE ────────────────────────────────────
+function completeTransaction() {
+  const rcpt = buildReceipt();
+  document.getElementById('receipt-text').textContent = rcpt;
+  document.getElementById('receipt-modal').style.display = 'flex';
+  sessionStorage.setItem('pos_cart', JSON.stringify([]));
+  sessionStorage.setItem('pos_last_receipt', rcpt);
+  const badge = document.getElementById('status-badge');
+  badge.textContent = 'PAID ✓';
+  badge.style.background = 'rgba(16,185,129,.2)';
+  badge.style.color = 'var(--green)';
+  badge.style.borderColor = 'rgba(16,185,129,.4)';
+}
 
-    // Toggle tender types
-    function setTender(tenderName) {
-        activeTender = tenderName;
-        
-        // Reset highlights
-        const tenderButtons = document.querySelectorAll('#tender-selection-grid button');
-        tenderButtons.forEach(btn => {
-            btn.className = "bg-slate-50 border border-border-subtle rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 transition-all hover:border-text-secondary cursor-pointer active:scale-95 duration-100";
-            
-            const icon = btn.querySelector('.material-symbols-outlined');
-            const text = btn.querySelector('span:not(.material-symbols-outlined)');
-            if (icon) icon.className = "material-symbols-outlined text-text-secondary text-2xl";
-            if (text) text.className = "text-xs font-bold text-primary";
-        });
+function buildReceipt() {
+  const now   = new Date();
+  const dstr  = now.toLocaleDateString('en-PK');
+  const tstr  = now.toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit' });
+  const seq   = document.getElementById('order-num').textContent;
+  const line  = '─'.repeat(38);
+  let items = '';
+  let sub = 0;
+  cart.forEach(l => {
+    sub += l.qty * l.price;
+    const total = fmtN(l.qty * l.price);
+    const name  = l.name.length > 20 ? l.name.slice(0,18) + '…' : l.name;
+    items += `${(name).padEnd(24)}${String(l.qty + ' × ' + fmtN(l.price)).padStart(8)}  ${total.padStart(6)}\n`;
+  });
+  const tax   = Math.round(sub * 0.05);
+  const grand = sub + tax;
+  const change = Math.max(0, cashInputVal - grand);
+  const tendered = activeTender === 'cash' ? cashInputVal : grand;
+  return `        IMAGYN POS
+        Imagyn Technologies
+        Tariq Road, Karachi
+${line}
+Date: ${dstr}        Time: ${tstr}
+Order: ${seq}       Terminal: POS-01
+Cashier: ${(localStorage.getItem('terminal_operator') ? JSON.parse(localStorage.getItem('terminal_operator')).name : 'Operator').split(' ')[0]}
+${line}
+ITEM                    QTY × PRICE   TOTAL
+${line}
+${items}${line}
+Subtotal:                          ${fmtN(sub).padStart(8)}
+Tax (5% GST):                      ${fmtN(tax).padStart(8)}
+${line}
+TOTAL DUE:                      ${fmtN(grand).padStart(8)}
+Cash Tendered:                  ${fmtN(tendered).padStart(8)}
+Change Due:                      ${fmtN(change).padStart(8)}
+${line}
+Payment: ${activeTender.toUpperCase().padEnd(20)}  FBR #${Math.random().toString(36).slice(2,10).toUpperCase()}
+${line}
+   Thank you for shopping with us!
+   Please retain this receipt.
+`;
+}
 
-        // Set active button styles
-        const activeBtn = document.getElementById('tender-' + (tenderName === 'Debit Card' ? 'debit' : tenderName === 'Credit Card' ? 'credit' : tenderName === 'Mobile Wallet' ? 'wallet' : tenderName.toLowerCase()));
-        if (activeBtn) {
-            activeBtn.className = "active-tender rounded-xl p-3 border-2 border-transparent flex flex-col items-center justify-center gap-1.5 transition-all hover:shadow-md cursor-pointer active:scale-95 duration-100";
-            const icon = activeBtn.querySelector('.material-symbols-outlined');
-            const text = activeBtn.querySelector('span:not(.material-symbols-outlined)');
-            if (icon) icon.className = "material-symbols-outlined text-emerald-pos text-2xl";
-            if (text) text.className = "text-xs font-bold text-emerald-pos";
-        }
+function printReceipt() { toast('Sending to receipt printer…', 'info'); }
+function sendReceipt()  { toast('SMS receipt sent to customer.', 'success'); }
+function closeReceiptAndNew() {
+  document.getElementById('receipt-modal').style.display = 'none';
+  window.location.href = 'main_checkout.html';
+}
 
-        // Toggle sections
-        document.getElementById('tender-viewport-cash').classList.add('hidden');
-        document.getElementById('tender-viewport-card').classList.add('hidden');
-        document.getElementById('tender-viewport-wallet').classList.add('hidden');
-        document.getElementById('tender-viewport-split').classList.add('hidden');
-        document.getElementById('payment-num-keypad').classList.add('hidden');
-
-        if (tenderName === 'Cash') {
-            document.getElementById('tender-viewport-cash').classList.remove('hidden');
-            document.getElementById('payment-num-keypad').classList.remove('hidden');
-        } else if (tenderName === 'Debit Card' || tenderName === 'Credit Card') {
-            document.getElementById('tender-viewport-card').classList.remove('hidden');
-        } else if (tenderName === 'Mobile Wallet') {
-            document.getElementById('tender-viewport-wallet').classList.remove('hidden');
-        } else if (tenderName === 'Split') {
-            document.getElementById('tender-viewport-split').classList.remove('hidden');
-            calculateSplitPay();
-        }
-
-        updateChangeDueCalculation();
-    }
-
-    // Keypad touches
-    function pressTenderKey(key) {
-        if (key === 'C') {
-            clearAmountReceived();
-            return;
-        }
-
-        if (amountReceivedStr === '0') {
-            amountReceivedStr = '';
-        }
-
-        if (amountReceivedStr.length < 9) {
-            amountReceivedStr += key;
-            const parsed = parseFloat(amountReceivedStr) || 0;
-            document.getElementById('cash-amount-received').value = new Intl.NumberFormat('en-PK').format(parsed);
-            updateChangeDueCalculation();
-        }
-    }
-
-    function clearAmountReceived() {
-        amountReceivedStr = '0';
-        document.getElementById('cash-amount-received').value = '0';
-        updateChangeDueCalculation();
-    }
-
-    // Live Change calculations
-    function updateChangeDueCalculation() {
-        const changeCard = document.getElementById('change-due-card');
-        const changeLabel = document.getElementById('change-card-label');
-        const changeAmount = document.getElementById('change-card-amount');
-        const completeBtn = document.getElementById('complete-payment-btn');
-
-        if (activeTender === 'Cash') {
-            const received = parseFloat(amountReceivedStr) || 0;
-            const diff = received - total;
-
-            if (diff >= 0) {
-                // Change Due State
-                changeCard.className = "p-4 bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-xl transition-all";
-                changeLabel.className = "text-sm font-bold text-emerald-800";
-                changeLabel.textContent = "Change Due";
-                changeAmount.className = "text-xl font-extrabold text-emerald-800 font-mono";
-                changeAmount.textContent = fmt(diff);
-                completeBtn.removeAttribute('disabled');
-            } else {
-                // Insufficient cash State
-                changeCard.className = "p-4 bg-amber-50 border-2 border-dashed border-amber-300 rounded-xl transition-all";
-                changeLabel.className = "text-sm font-bold text-amber-800";
-                changeLabel.textContent = "Remaining Balance Due";
-                changeAmount.className = "text-xl font-extrabold text-amber-800 font-mono";
-                changeAmount.textContent = fmt(Math.abs(diff));
-                completeBtn.setAttribute('disabled', 'true');
-            }
-        } else if (activeTender === 'Split') {
-            const paid = splitCashPaid + splitCardPaid;
-            const diff = paid - total;
-
-            if (diff >= 0) {
-                // Fully Paid split
-                changeCard.className = "p-4 bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-xl transition-all";
-                changeLabel.className = "text-sm font-bold text-emerald-800";
-                changeLabel.textContent = "Split Complete (Change)";
-                changeAmount.className = "text-xl font-extrabold text-emerald-800 font-mono";
-                changeAmount.textContent = fmt(diff);
-                completeBtn.removeAttribute('disabled');
-            } else {
-                changeCard.className = "p-4 bg-amber-50 border-2 border-dashed border-amber-300 rounded-xl transition-all";
-                changeLabel.className = "text-sm font-bold text-amber-800";
-                changeLabel.textContent = "Remaining Split Balance";
-                changeAmount.className = "text-xl font-extrabold text-amber-800 font-mono";
-                changeAmount.textContent = fmt(Math.abs(diff));
-                completeBtn.setAttribute('disabled', 'true');
-            }
-        } else {
-            // Card, Wallet integrations
-            changeCard.className = "p-4 bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-xl transition-all";
-            changeLabel.className = "text-sm font-bold text-emerald-800";
-            changeLabel.textContent = "Electronic Settlement Approved";
-            changeAmount.className = "text-xl font-extrabold text-emerald-800 font-mono";
-            changeAmount.textContent = fmt(0);
-            completeBtn.removeAttribute('disabled');
-        }
-    }
-
-    // Split pay dynamic calculations
-    function calculateSplitPay() {
-        const cashVal = parseFloat(document.getElementById('split-cash-amount').value) || 0;
-        const cardVal = parseFloat(document.getElementById('split-card-amount').value) || 0;
-
-        splitCashPaid = cashVal;
-        splitCardPaid = cardVal;
-
-        const combined = splitCashPaid + splitCardPaid;
-        const remaining = Math.max(0, total - combined);
-
-        document.getElementById('split-due-lbl').textContent = fmt(total);
-        document.getElementById('split-paid-lbl').textContent = fmt(combined);
-        document.getElementById('split-rem-lbl').textContent = fmt(remaining);
-
-        updateChangeDueCalculation();
-    }
-
-    // Simulated card pinpad terminal triggers
-    function simulateCardPayment() {
-        const btn = document.getElementById('simulate-card-pay-btn');
-        btn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">sync</span> Connecting Pax Pinpad...`;
-        btn.disabled = true;
-
-        setTimeout(() => {
-            btn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-pulse">check_circle</span> Approved! swipe client card`;
-            showToast('PINPAD: Transaction authorized successfully!', 'success');
-            
-            // Auto complete payment
-            setTimeout(() => {
-                executePaymentComplete();
-            }, 1000);
-        }, 1500);
-    }
-
-    // Mobile Wallet Simulator triggers
-    function simulateWalletPayment() {
-        const number = document.getElementById('wallet-account-input').value;
-        if (!number) {
-            showToast('Please enter customer mobile wallet number', 'error');
-            return;
-        }
-        showToast(`Sent payment push request to customer mobile wallet...`, 'warning');
-        
-        setTimeout(() => {
-            showToast(`CUSTOMER APPROVED: Wallet payment PKR ${new Intl.NumberFormat('en-PK').format(total)} debited`, 'success');
-            executePaymentComplete();
-        }, 2000);
-    }
-
-    // Action to finalize and save to ledger
-    function executePaymentComplete() {
-        const received = activeTender === 'Cash' 
-            ? (parseFloat(amountReceivedStr) || 0) 
-            : activeTender === 'Split'
-                ? (splitCashPaid + splitCardPaid)
-                : total;
-
-        const change = received - total;
-
-        if (received < total) {
-            showToast('Insufficient payment received!', 'error');
-            return;
-        }
-
-        // Generate receipt values
-        const receiptNo = 'ORD-' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '-' + Math.floor(1000 + Math.random() * 9000);
-        const datetime = new Date().toISOString().replace('T', ' ').slice(0, 19);
-        const cashierName = localStorage.getItem('terminal_operator') || 'Adeel';
-
-        // Prepare the receipt object
-        const newReceipt = {
-            id: receiptNo,
-            timestamp: new Date().toLocaleTimeString('en-US', {hour12: false}).slice(0,5),
-            datetimeStr: datetime,
-            items: cart,
-            subtotal: subtotal,
-            discount: discount,
-            tax: tax,
-            total: total,
-            tender: activeTender,
-            splitCash: activeTender === 'Split' ? splitCashPaid : 0,
-            splitCard: activeTender === 'Split' ? splitCardPaid : 0,
-            received: received,
-            change: change,
-            by: cashierName
-        };
-
-        // Write to finished ledger in sessionStorage
-        let ledger = [];
-        const existingLedger = sessionStorage.getItem('pos_completed_transactions');
-        if (existingLedger) {
-            ledger = JSON.parse(existingLedger);
-        }
-        ledger.push(newReceipt);
-        sessionStorage.setItem('pos_completed_transactions', JSON.stringify(ledger));
-
-        // Adjust cash drawer total internally
-        // Expected drawer cash += cash received (excluding change)
-        if (activeTender === 'Cash') {
-            let floatTotal = parseFloat(sessionStorage.getItem('pos_shift_float')) || 5000;
-            // Expected actual cash drawer increases by Net Cash paid
-            // Net cash paid is exactly total (received - change)
-            // Let's store expected drawer balance
-        }
-
-        // Pop the thermal receipt dialog
-        populateReceiptView(newReceipt);
-    }
-
-    // Populate printed bill elements
-    function populateReceiptView(rec) {
-        document.getElementById('receipt-ord-id').textContent = rec.id;
-        document.getElementById('receipt-datetime').textContent = rec.datetimeStr;
-        document.getElementById('receipt-cashier').textContent = rec.by;
-
-        // Loyalty profile
-        const attachedCustomer = sessionStorage.getItem('pos_attached_customer');
-        const customerRow = document.getElementById('receipt-customer-row');
-        if (attachedCustomer) {
-            customerRow.classList.remove('hidden');
-            document.getElementById('receipt-customer-name').textContent = attachedCustomer.split(' · ')[0];
-        } else {
-            customerRow.classList.add('hidden');
-        }
-
-        // Render list
-        const listContainer = document.getElementById('receipt-items-list');
-        listContainer.innerHTML = '';
-        rec.items.forEach(item => {
-            const line = document.createElement('div');
-            line.className = "flex justify-between";
-            line.innerHTML = `
-                <span class="w-[60%] truncate">${item.name}</span>
-                <span class="w-[15%] text-center">${item.qty}</span>
-                <span class="w-[25%] text-right font-bold">${new Intl.NumberFormat('en-PK').format(item.qty * item.price)}</span>
-            `;
-            listContainer.appendChild(line);
-        });
-
-        // Totals
-        document.getElementById('receipt-subtotal').textContent = fmt(rec.subtotal);
-        document.getElementById('receipt-discount').textContent = `- ${fmt(rec.discount)}`;
-        document.getElementById('receipt-tax').textContent = fmt(rec.tax);
-        document.getElementById('receipt-grandtotal').textContent = fmt(rec.total);
-
-        // Tender totals
-        document.getElementById('receipt-tender-type').textContent = rec.tender;
-        document.getElementById('receipt-received-amount').textContent = fmt(rec.received);
-        document.getElementById('receipt-change-amount').textContent = fmt(rec.change);
-
-        // Show Modal Dialog
-        const modal = document.getElementById('receipt-modal');
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modal.querySelector('div').classList.remove('scale-95', 'opacity-0');
-            modal.querySelector('div').classList.add('scale-100', 'opacity-100');
-        }, 10);
-
-        showToast('Receipt printed successfully!', 'success');
-    }
-
-    // New order initializer
-    function startNewOrder() {
-        // Wipe active cart transactions
-        sessionStorage.removeItem('pos_cart');
-        sessionStorage.removeItem('pos_last_subtotal');
-        sessionStorage.removeItem('pos_last_discount');
-        sessionStorage.removeItem('pos_last_tax');
-        sessionStorage.removeItem('pos_last_total');
-        sessionStorage.removeItem('pos_attached_customer');
-
-        // Go back to Checkout screen
-        window.location.href = 'main_checkout.html';
-    }
-
-    function doLogout() {
-        sessionStorage.clear();
-        localStorage.removeItem('terminal_operator');
-        window.location.href = 'terminal_login.html';
-    }
+const spinStyle = document.createElement('style');
+spinStyle.textContent = '@keyframes spin { to { transform:rotate(360deg); } }';
+document.head.appendChild(spinStyle);
 </script>
 </body>
 </html>

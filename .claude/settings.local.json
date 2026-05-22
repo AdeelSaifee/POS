@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"A:\\\\Ps\\\\POS\\\\docs\\\\ui-prototype\\\\\" /b /a)",
+      "Read(//mnt/a/Ps/POS/docs/**)",
+      "Bash(dir /b \"A:\\\\\\\\Ps\\\\\\\\POS\\\\\\\\docs\\\\\\\\ui-prototype\")"
+    ]
+  }
+}

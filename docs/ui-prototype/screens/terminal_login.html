@@ -382,6 +382,39 @@
             90% { transform: translateX(2px); }
         }
         .shake { animation: shake 0.4s ease; }
+
+    /* ── Quick Shortcuts floating bar ── */
+    .shortcuts-bar {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 300;
+      background: rgba(12,20,38,0.88); backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.14); border-radius: 40px;
+      padding: 7px 14px; display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(16,185,129,0.08);
+      white-space: nowrap; overflow-x: auto; max-width: 95vw;
+    }
+    .shortcuts-bar::-webkit-scrollbar { display: none; }
+    .sc-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+      color: var(--text-dim); text-transform: uppercase;
+      padding-right: 8px; border-right: 1px solid rgba(255,255,255,0.14);
+      margin-right: 2px; white-space: nowrap;
+    }
+    .sc-btn {
+      padding: 5px 13px; border-radius: 20px; border: none; cursor: pointer;
+      font-size: 10px; font-weight: 700; transition: all 0.13s;
+      font-family: var(--sans); white-space: nowrap; letter-spacing: 0.02em;
+    }
+    .sc-btn:active { transform: scale(0.95); }
+    .sc-btn.green { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.25); color: #6EE7B7; }
+    .sc-btn.green:hover { background: rgba(16,185,129,0.22); }
+    .sc-btn.amber { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.22); color: #FCD34D; }
+    .sc-btn.amber:hover { background: rgba(245,158,11,0.17); }
+    .sc-btn.blue  { background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.22); color: #93C5FD; }
+    .sc-btn.blue:hover  { background: rgba(59,130,246,0.18); }
+    .sc-btn.ghost { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); }
+    .sc-btn.ghost:hover { background: rgba(255,255,255,0.1); color: var(--text); }
     </style>
 
     <script>
@@ -590,6 +623,36 @@
             // Clear any stale session
             sessionStorage.removeItem('pos_shift_open');
         });
+
+        // ── Demo quick-login shortcuts ──
+        function demoQuickLogin(opId) {
+            const op = operators.find(o => o.id === opId);
+            if (!op) return;
+            selectOperator(op);
+            // Animate PIN digits filling in one by one
+            pinValue = '';
+            updatePinDots();
+            const demoPin = '1234';
+            let i = 0;
+            const fillNext = () => {
+                if (i >= demoPin.length) {
+                    updateLoginBtn();
+                    return;
+                }
+                pinValue += demoPin[i++];
+                updatePinDots();
+                setTimeout(fillNext, 100);
+            };
+            setTimeout(fillNext, 180);
+        }
     </script>
+    <!-- ── Quick Shortcuts floating bar ── -->
+    <div class="shortcuts-bar">
+        <span class="sc-label">Shortcuts</span>
+        <button class="sc-btn green" onclick="demoQuickLogin('OP001')">⚡ Demo: Cashier (Adeel + 1234)</button>
+        <button class="sc-btn amber" onclick="demoQuickLogin('MGR01')">👔 Demo: Manager (Nadia + 1234)</button>
+        <button class="sc-btn blue"  onclick="demoQuickLogin('OP002')">👤 Demo: Cashier 2 (Ahmed + 1234)</button>
+        <button class="sc-btn ghost" onclick="window.location.href='provision_terminal.html'">← Provision</button>
+    </div>
 </body>
 </html>

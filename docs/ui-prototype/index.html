@@ -1,314 +1,331 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>IMAGYN POS — Interactive UI Prototype</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#0F172A",
-                        secondary: "#10B981",
-                        accent: "#3B82F6",
-                        warning: "#F59E0B",
-                        danger: "#EF4444",
-                        darkBg: "#0B0F19",
-                        darkCard: "#111827",
-                        darkBorder: "#1F2937"
-                    },
-                    fontFamily: {
-                        sans: ["Inter", "sans-serif"]
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0B0F19;
-            color: #F3F4F6;
-        }
-        .simulator-iframe {
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .flow-step-active {
-            border-color: #10B981;
-            background-color: rgba(16, 185, 129, 0.1);
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #111827;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #374151;
-            border-radius: 10px;
-        }
-    </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IMAGYN POS — Interactive UI Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:  #0F172A;
+      --navy2: #1E293B;
+      --navy3: #334155;
+      --green: #10B981;
+      --muted: #94A3B8;
+      --text:  #E2E8F0;
+      --border:#334155;
+      --sans:  'Inter', sans-serif;
+      --mono:  'IBM Plex Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: var(--sans); }
+    body { background: #0B0F19; display: flex; }
+
+    .icon {
+      font-family: 'Material Symbols Outlined';
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block; vertical-align: middle; line-height: 1; user-select: none;
+    }
+
+    /* ── Sidebar ── */
+    .sim-sidebar {
+      width: 260px; min-width: 260px; height: 100vh;
+      background: var(--navy); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    .sim-brand {
+      padding: 20px 20px 16px; border-bottom: 1px solid var(--border);
+    }
+    .brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+    .brand-icon { color: var(--green); font-size: 22px; }
+    .brand-name { font-size: 15px; font-weight: 800; color: white; letter-spacing: -0.3px; }
+    .brand-tag  { font-size: 9px; font-weight: 700; color: rgba(16,185,129,0.65); letter-spacing: 2px; text-transform: uppercase; display: block; margin-top: -2px; }
+    .brand-sub  { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+    .section-header {
+      padding: 14px 20px 8px; font-size: 9px; font-weight: 700; color: var(--muted);
+      letter-spacing: 1.2px; text-transform: uppercase; flex-shrink: 0;
+    }
+
+    .flow-steps { flex: 1; overflow-y: auto; padding: 0 12px; }
+    .flow-steps::-webkit-scrollbar { width: 3px; }
+    .flow-steps::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .flow-step {
+      display: flex; align-items: flex-start; gap: 12px; padding: 10px 10px;
+      border-radius: 8px; cursor: pointer; margin-bottom: 2px; transition: background 0.13s;
+      text-decoration: none; position: relative;
+    }
+    .flow-step:hover { background: rgba(255,255,255,0.05); }
+    .flow-step-active { background: rgba(16,185,129,0.1) !important; }
+
+    .step-num {
+      width: 22px; height: 22px; border-radius: 50%; background: var(--navy2);
+      border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800; color: var(--muted); flex-shrink: 0; margin-top: 1px;
+      font-family: var(--mono); transition: all 0.13s;
+    }
+    .flow-step-active .step-num { background: var(--green); border-color: var(--green); color: var(--navy); }
+    .step-content { flex: 1; min-width: 0; }
+    .step-title { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.55); transition: color 0.13s; }
+    .flow-step-active .step-title { color: #A7F3D0; }
+    .flow-step:hover .step-title { color: rgba(255,255,255,0.8); }
+    .step-desc { font-size: 10px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+    .step-arrow { font-size: 14px; color: var(--muted); margin-top: 2px; opacity: 0; transition: opacity 0.13s; }
+    .flow-step:hover .step-arrow, .flow-step-active .step-arrow { opacity: 1; }
+    .flow-step-active .step-arrow { color: var(--green); }
+
+    /* Connector lines */
+    .flow-step:not(:last-child)::after {
+      content: '';
+      position: absolute; left: 21px; bottom: -6px;
+      width: 1px; height: 8px; background: var(--border);
+    }
+
+    /* Sidebar footer */
+    .sim-footer {
+      border-top: 1px solid var(--border); padding: 14px 18px; flex-shrink: 0;
+    }
+    .url-bar {
+      background: var(--navy2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 7px 10px; display: flex; align-items: center; gap: 7px; margin-bottom: 10px;
+    }
+    .url-bar .icon { font-size: 14px; color: var(--green); }
+    .url-text {
+      font-family: var(--mono); font-size: 11px; color: var(--muted); flex: 1;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .footer-actions { display: flex; gap: 7px; }
+    .footer-btn {
+      flex: 1; height: 34px; border-radius: 7px; border: none; cursor: pointer;
+      font-size: 11px; font-weight: 700; display: flex; align-items: center;
+      justify-content: center; gap: 5px; transition: all 0.13s; font-family: var(--sans);
+      text-decoration: none;
+    }
+    .footer-btn:active { transform: scale(0.96); }
+    .footer-btn .icon { font-size: 15px; }
+    .footer-btn.outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .footer-btn.outline:hover { border-color: #475569; color: var(--text); }
+    .footer-btn.green  { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25); color: #6EE7B7; }
+    .footer-btn.green:hover { background: rgba(16,185,129,0.18); }
+
+    .sim-credit { font-size: 10px; color: #3F4F63; text-align: center; margin-top: 10px; }
+
+    /* ── Main iframe area ── */
+    .sim-main {
+      flex: 1; height: 100vh; display: flex; flex-direction: column;
+      background: #141B2D;
+    }
+    .sim-topbar {
+      height: 44px; background: #0D1320; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; flex-shrink: 0;
+    }
+    .sim-topbar-left { display: flex; align-items: center; gap: 8px; }
+    .win-btn { width: 12px; height: 12px; border-radius: 50%; border: none; cursor: pointer; }
+    .win-btn.red  { background: #FF5F57; }
+    .win-btn.amber{ background: #FEBC2E; }
+    .win-btn.green{ background: #28C840; }
+    .sim-url-text {
+      background: var(--navy2); border: 1px solid var(--border); border-radius: 6px;
+      padding: 3px 12px; font-family: var(--mono); font-size: 11px; color: var(--muted);
+      min-width: 260px; text-align: center; margin-left: 12px;
+    }
+    .sim-topbar-right { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+    .iframe-wrap {
+      flex: 1; overflow: hidden; position: relative;
+    }
+    .sim-frame {
+      width: 100%; height: 100%; border: none; display: block;
+      background: white;
+    }
+
+    /* ── Info panel at the very bottom ── */
+    .sim-info-bar {
+      height: 36px; background: #0D1320; border-top: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 16px; gap: 16px; flex-shrink: 0;
+    }
+    .info-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+    .info-item .icon { font-size: 14px; }
+    .info-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col overflow-hidden">
+<body>
 
-    <!-- Top Navigation Header -->
-    <header class="bg-darkCard border-b border-darkBorder h-16 flex items-center justify-between px-6 z-50">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center text-primary font-bold">
-                <span class="material-symbols-outlined">point_of_sale</span>
-            </div>
-            <div>
-                <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                    IMAGYN POS
-                    <span class="text-xs bg-accent/20 text-accent font-semibold px-2 py-0.5 rounded">UI Prototype</span>
-                </h1>
-                <p class="text-xs text-gray-400">Enterprise POS · Terminal Interactive Flow</p>
-            </div>
-        </div>
+<!-- ═══ SIMULATOR SIDEBAR ═══ -->
+<div class="sim-sidebar">
+  <div class="sim-brand">
+    <div class="brand-row">
+      <span class="icon brand-icon">point_of_sale</span>
+      <div>
+        <div class="brand-name">IMAGYN POS</div>
+        <span class="brand-tag">Enterprise Terminal</span>
+      </div>
+    </div>
+    <div class="brand-sub">Interactive UI Prototype · 7 Screens</div>
+  </div>
 
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2 text-xs text-gray-400 bg-black/30 border border-darkBorder px-3 py-1.5 rounded-lg">
-                <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-                <span>Interactive Simulator</span>
-            </div>
-            <a href="https://github.com/AdeelSaifee/POS" target="_blank" class="flex items-center gap-2 text-sm text-gray-300 hover:text-white bg-darkBorder hover:bg-gray-800 transition px-3 py-1.5 rounded-lg">
-                <span class="material-symbols-outlined text-[18px]">terminal</span>
-                <span>GitHub Repository</span>
-            </a>
-        </div>
-    </header>
+  <div class="section-header">Terminal Flow</div>
 
-    <!-- Main Workspace -->
-    <div class="flex flex-1 overflow-hidden">
-        
-        <!-- Left Panel: Flow & Screen Selection -->
-        <aside class="w-80 bg-darkCard border-r border-darkBorder flex flex-col overflow-y-auto custom-scrollbar">
-            <!-- Project Brief -->
-            <div class="p-5 border-b border-darkBorder bg-black/10">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Design Tokens</h3>
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div class="flex items-center gap-1.5 bg-black/40 p-2 rounded border border-darkBorder">
-                        <span class="w-3 h-3 rounded-full bg-primary block border border-gray-600"></span>
-                        <span class="text-gray-300 font-mono">#0F172A</span>
-                    </div>
-                    <div class="flex items-center gap-1.5 bg-black/40 p-2 rounded border border-darkBorder">
-                        <span class="w-3 h-3 rounded-full bg-secondary block"></span>
-                        <span class="text-gray-300 font-mono">#10B981</span>
-                    </div>
-                    <div class="flex items-center gap-1.5 bg-black/40 p-2 rounded border border-darkBorder">
-                        <span class="w-3 h-3 rounded-full bg-warning block"></span>
-                        <span class="text-gray-300 font-mono">#F59E0B</span>
-                    </div>
-                    <div class="flex items-center gap-1.5 bg-black/40 p-2 rounded border border-darkBorder">
-                        <span class="w-3 h-3 rounded-full bg-danger block"></span>
-                        <span class="text-gray-300 font-mono">#EF4444</span>
-                    </div>
-                </div>
-            </div>
+  <div class="flow-steps">
 
-            <!-- Workflow Guide -->
-            <div class="p-5">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4 flex items-center gap-1.5">
-                    <span class="material-symbols-outlined text-[16px] text-secondary">alt_route</span>
-                    POS Terminal Workflow
-                </h3>
-                
-                <div class="space-y-3" id="flow-steps-container">
-                    <!-- Step 0: Provision Terminal -->
-                    <div onclick="selectScreen('screens/provision_terminal.html', 0)" id="step-0" class="flow-step cursor-pointer group p-3 rounded-lg border border-darkBorder bg-black/20 hover:bg-black/40 transition">
-                        <div class="flex items-start gap-3">
-                            <span class="w-6 h-6 rounded-full bg-darkBorder text-gray-400 text-xs flex items-center justify-center font-bold font-mono group-hover:bg-accent group-hover:text-white transition">0</span>
-                            <div>
-                                <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white">Provision Terminal</h4>
-                                <p class="text-xs text-gray-400 mt-0.5">Register terminal & sync SQLite catalog from server.</p>
-                                <div class="flex gap-2 mt-2">
-                                    <span class="text-[10px] bg-darkBorder text-gray-300 px-1.5 py-0.5 rounded">One-time Setup</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 1: Login -->
-                    <div onclick="selectScreen('screens/terminal_login.html', 1)" id="step-1" class="flow-step cursor-pointer group p-3 rounded-lg border border-darkBorder bg-black/20 hover:bg-black/40 transition">
-                        <div class="flex items-start gap-3">
-                            <span class="w-6 h-6 rounded-full bg-darkBorder text-gray-400 text-xs flex items-center justify-center font-bold font-mono group-hover:bg-accent group-hover:text-white transition">1</span>
-                            <div>
-                                <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white">Operator Login</h4>
-                                <p class="text-xs text-gray-400 mt-0.5">Select operator from list, enter PIN to authenticate.</p>
-                                <div class="flex gap-2 mt-2">
-                                    <span class="text-[10px] bg-darkBorder text-gray-300 px-1.5 py-0.5 rounded">Security</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 2: Open Shift -->
-                    <div onclick="selectScreen('screens/shift_open.html', 2)" id="step-2" class="flow-step cursor-pointer group p-3 rounded-lg border border-darkBorder bg-black/20 hover:bg-black/40 transition">
-                        <div class="flex items-start gap-3">
-                            <span class="w-6 h-6 rounded-full bg-darkBorder text-gray-400 text-xs flex items-center justify-center font-bold font-mono group-hover:bg-accent group-hover:text-white transition">2</span>
-                            <div>
-                                <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white">Shift Open</h4>
-                                <p class="text-xs text-gray-400 mt-0.5">Declare initial float cash drawer values.</p>
-                                <div class="flex gap-2 mt-2">
-                                    <span class="text-[10px] bg-darkBorder text-gray-300 px-1.5 py-0.5 rounded">Compliance</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 3: Checkout -->
-                    <div onclick="selectScreen('screens/main_checkout.html', 3)" id="step-3" class="flow-step cursor-pointer group p-3 rounded-lg border border-darkBorder bg-black/20 hover:bg-black/40 transition">
-                        <div class="flex items-start gap-3">
-                            <span class="w-6 h-6 rounded-full bg-darkBorder text-gray-400 text-xs flex items-center justify-center font-bold font-mono group-hover:bg-accent group-hover:text-white transition">3</span>
-                            <div>
-                                <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white">POS Checkout</h4>
-                                <p class="text-xs text-gray-400 mt-0.5">Scan Items, select customers, modify cart.</p>
-                                <div class="flex gap-2 mt-2">
-                                    <span class="text-[10px] bg-darkBorder text-gray-300 px-1.5 py-0.5 rounded">Core Sales</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 4: Take Payment -->
-                    <div onclick="selectScreen('screens/payment_screen.html', 4)" id="step-4" class="flow-step cursor-pointer group p-3 rounded-lg border border-darkBorder bg-black/20 hover:bg-black/40 transition">
-                        <div class="flex items-start gap-3">
-                            <span class="w-6 h-6 rounded-full bg-darkBorder text-gray-400 text-xs flex items-center justify-center font-bold font-mono group-hover:bg-accent group-hover:text-white transition">4</span>
-                            <div>
-                                <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white">Tender & Payment</h4>
-                                <p class="text-xs text-gray-400 mt-0.5">Select mixed tenders, calculate change.</p>
-                                <div class="flex gap-2 mt-2">
-                                    <span class="text-[10px] bg-darkBorder text-gray-300 px-1.5 py-0.5 rounded">Checkout</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 5: Cash Control -->
-                    <div onclick="selectScreen('screens/cash_control.html', 5)" id="step-5" class="flow-step cursor-pointer group p-3 rounded-lg border border-darkBorder bg-black/20 hover:bg-black/40 transition">
-                        <div class="flex items-start gap-3">
-                            <span class="w-6 h-6 rounded-full bg-darkBorder text-gray-400 text-xs flex items-center justify-center font-bold font-mono group-hover:bg-accent group-hover:text-white transition">5</span>
-                            <div>
-                                <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white">Cash Control</h4>
-                                <p class="text-xs text-gray-400 mt-0.5">Drawer limit tracking & safe drop audits.</p>
-                                <div class="flex gap-2 mt-2">
-                                    <span class="text-[10px] bg-darkBorder text-gray-300 px-1.5 py-0.5 rounded">Cash Control</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 6: Close Shift -->
-                    <div onclick="selectScreen('screens/shift_close.html', 6)" id="step-6" class="flow-step cursor-pointer group p-3 rounded-lg border border-darkBorder bg-black/20 hover:bg-black/40 transition">
-                        <div class="flex items-start gap-3">
-                            <span class="w-6 h-6 rounded-full bg-darkBorder text-gray-400 text-xs flex items-center justify-center font-bold font-mono group-hover:bg-accent group-hover:text-white transition">6</span>
-                            <div>
-                                <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white">Shift Close</h4>
-                                <p class="text-xs text-gray-400 mt-0.5">Count terminal drawer cash & sign Z-Report.</p>
-                                <div class="flex gap-2 mt-2">
-                                    <span class="text-[10px] bg-darkBorder text-gray-300 px-1.5 py-0.5 rounded">Z-Report</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Right Panel: Frame Simulator Viewport -->
-        <main class="flex-1 flex flex-col bg-darkBg relative p-6">
-            <!-- Simulated Browser Control Bar -->
-            <div class="bg-darkCard border border-darkBorder border-b-0 rounded-t-xl px-4 py-3 flex items-center justify-between">
-                <div class="flex items-center gap-3 flex-1">
-                    <div class="flex items-center gap-1.5">
-                        <span class="w-3 h-3 rounded-full bg-danger/80 block"></span>
-                        <span class="w-3 h-3 rounded-full bg-warning/80 block"></span>
-                        <span class="w-3 h-3 rounded-full bg-secondary/80 block"></span>
-                    </div>
-                    
-                    <!-- URL Bar -->
-                    <div class="bg-black/40 border border-darkBorder rounded-lg px-4 py-1.5 flex items-center justify-between text-xs text-gray-400 flex-1 max-w-xl font-mono">
-                        <div class="flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[14px] text-secondary">lock</span>
-                            <span id="simulator-url-display">screens/terminal_login.html</span>
-                        </div>
-                        <span class="material-symbols-outlined text-[14px] cursor-pointer hover:text-white" onclick="reloadIframe()">refresh</span>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-3">
-                    <button onclick="changeIframeView('desktop')" id="view-desktop-btn" class="p-1.5 bg-accent/20 text-accent border border-accent/30 rounded hover:bg-accent/30 transition flex items-center justify-center">
-                        <span class="material-symbols-outlined text-[18px]">desktop_windows</span>
-                    </button>
-                    <button onclick="changeIframeView('tablet')" id="view-tablet-btn" class="p-1.5 text-gray-400 border border-darkBorder rounded hover:bg-gray-800 transition flex items-center justify-center">
-                        <span class="material-symbols-outlined text-[18px]">tablet_mac</span>
-                    </button>
-                    <a id="open-new-tab-btn" href="screens/terminal_login.html" target="_blank" class="p-1.5 text-gray-400 border border-darkBorder rounded hover:bg-gray-800 transition flex items-center justify-center" title="Open screen in full tab">
-                        <span class="material-symbols-outlined text-[18px]">open_in_new</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Viewport Container -->
-            <div class="flex-1 border border-darkBorder border-t-0 rounded-b-xl overflow-hidden relative bg-gray-900 flex justify-center items-center">
-                <iframe id="simulator-frame" src="screens/terminal_login.html" class="w-full h-full simulator-iframe border-0"></iframe>
-            </div>
-        </main>
+    <div class="flow-step" id="step-0" onclick="loadScreen('screens/provision_terminal.html', 0)">
+      <div class="step-num">0</div>
+      <div class="step-content">
+        <div class="step-title">Provision Terminal</div>
+        <div class="step-desc">One-time setup — enter Store ID, sync SQLite catalog</div>
+      </div>
+      <span class="icon step-arrow">chevron_right</span>
     </div>
 
-    <!-- Simulator Controller Logic -->
-    <script>
-        const frame = document.getElementById('simulator-frame');
-        const urlDisplay = document.getElementById('simulator-url-display');
-        const openNewTabBtn = document.getElementById('open-new-tab-btn');
+    <div class="flow-step" id="step-1" onclick="loadScreen('screens/terminal_login.html', 1)">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Operator Login</div>
+        <div class="step-desc">Select operator from grid → enter 4-digit PIN</div>
+      </div>
+      <span class="icon step-arrow">chevron_right</span>
+    </div>
 
-        function selectScreen(path, index) {
-            // Update iframe src
-            frame.src = path;
-            urlDisplay.innerText = path;
-            openNewTabBtn.href = path;
+    <div class="flow-step" id="step-2" onclick="loadScreen('screens/shift_open.html', 2)">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Shift Open</div>
+        <div class="step-desc">Declare opening float cash, unlock POS operations</div>
+      </div>
+      <span class="icon step-arrow">chevron_right</span>
+    </div>
 
-            // Highlight step
-            document.querySelectorAll('.flow-step').forEach(step => {
-                step.classList.remove('flow-step-active');
-            });
-            document.getElementById('step-' + index).classList.add('flow-step-active');
-        }
+    <div class="flow-step" id="step-3" onclick="loadScreen('screens/main_checkout.html', 3)">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Main Checkout</div>
+        <div class="step-desc">Scan items, manage cart, apply discounts</div>
+      </div>
+      <span class="icon step-arrow">chevron_right</span>
+    </div>
 
-        function reloadIframe() {
-            frame.contentWindow.location.reload();
-        }
+    <div class="flow-step" id="step-4" onclick="loadScreen('screens/payment_screen.html', 4)">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Payment</div>
+        <div class="step-desc">Cash, card, wallet, split tender + change calc</div>
+      </div>
+      <span class="icon step-arrow">chevron_right</span>
+    </div>
 
-        function changeIframeView(view) {
-            const frameContainer = frame.parentElement;
-            const desktopBtn = document.getElementById('view-desktop-btn');
-            const tabletBtn = document.getElementById('view-tablet-btn');
+    <div class="flow-step" id="step-5" onclick="loadScreen('screens/cash_control.html', 5)">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">Cash Control</div>
+        <div class="step-desc">Safe drops, float injections, drawer ledger</div>
+      </div>
+      <span class="icon step-arrow">chevron_right</span>
+    </div>
 
-            if (view === 'desktop') {
-                frame.style.width = '100%';
-                frame.style.height = '100%';
-                desktopBtn.className = "p-1.5 bg-accent/20 text-accent border border-accent/30 rounded flex items-center justify-center";
-                tabletBtn.className = "p-1.5 text-gray-400 border border-darkBorder rounded hover:bg-gray-800 flex items-center justify-center";
-            } else {
-                frame.style.width = '1024px';
-                frame.style.height = '768px';
-                tabletBtn.className = "p-1.5 bg-accent/20 text-accent border border-accent/30 rounded flex items-center justify-center";
-                desktopBtn.className = "p-1.5 text-gray-400 border border-darkBorder rounded hover:bg-gray-800 flex items-center justify-center";
-            }
-        }
+    <div class="flow-step" id="step-6" onclick="loadScreen('screens/shift_close.html', 6)">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <div class="step-title">Shift Close &amp; Z-Report</div>
+        <div class="step-desc">Count drawer, reconcile, print Z-Report, lock terminal</div>
+      </div>
+      <span class="icon step-arrow">chevron_right</span>
+    </div>
 
-        // Initialize view selection
-        window.addEventListener('DOMContentLoaded', () => {
-            selectScreen('screens/terminal_login.html', 1);
-        });
-    </script>
+  </div><!-- end flow-steps -->
+
+  <div class="sim-footer">
+    <div class="url-bar">
+      <span class="icon">link</span>
+      <span class="url-text" id="simulator-url-display">screens/terminal_login.html</span>
+    </div>
+    <div class="footer-actions">
+      <a class="footer-btn outline" id="open-new-tab-btn" href="screens/terminal_login.html" target="_blank">
+        <span class="icon">open_in_new</span>New Tab
+      </a>
+      <button class="footer-btn green" onclick="reloadFrame()">
+        <span class="icon">refresh</span>Reload
+      </button>
+    </div>
+    <div class="sim-credit">IMAGYN POS · Imagyn Technologies Pvt. Ltd.</div>
+  </div>
+</div><!-- end sidebar -->
+
+<!-- ═══ MAIN AREA ═══ -->
+<div class="sim-main">
+  <!-- Fake browser chrome -->
+  <div class="sim-topbar">
+    <div class="sim-topbar-left">
+      <button class="win-btn red"></button>
+      <button class="win-btn amber"></button>
+      <button class="win-btn green"></button>
+      <div class="sim-url-text" id="topbar-url">screens/terminal_login.html</div>
+    </div>
+    <div class="sim-topbar-right">IMAGYN POS — Enterprise Terminal Prototype</div>
+  </div>
+
+  <!-- Screen iframe -->
+  <div class="iframe-wrap">
+    <iframe class="sim-frame" id="sim-frame"
+            src="screens/terminal_login.html"
+            title="IMAGYN POS Screen">
+    </iframe>
+  </div>
+
+  <!-- Status bar -->
+  <div class="sim-info-bar">
+    <div class="info-item"><div class="info-dot"></div>Prototype Mode</div>
+    <div class="info-item"><span class="icon">devices</span>POS Terminal 1366×768</div>
+    <div class="info-item"><span class="icon">touch_app</span>Touch-Optimised UI</div>
+    <div class="info-item"><span class="icon">storage</span>SQLite Offline-First</div>
+    <div class="info-item"><span class="icon">sync</span>FBR Integration Ready</div>
+  </div>
+</div>
+
+<script>
+  let currentStep = 1;
+
+  function loadScreen(url, stepIndex) {
+    // Update iframe
+    const frame = document.getElementById('sim-frame');
+    frame.src = url;
+
+    // Update step highlight
+    document.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+    const el = document.getElementById('step-' + stepIndex);
+    if (el) el.classList.add('flow-step-active');
+
+    // Update URL displays
+    document.getElementById('simulator-url-display').textContent = url;
+    document.getElementById('topbar-url').textContent = url;
+    document.getElementById('open-new-tab-btn').href = url;
+
+    currentStep = stepIndex;
+  }
+
+  function reloadFrame() {
+    const frame = document.getElementById('sim-frame');
+    frame.contentWindow.location.reload();
+  }
+
+  // Initialise — highlight login step
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('step-1').classList.add('flow-step-active');
+  });
+
+  // Listen for messages from child iframes (screens call syncParentSidebar)
+  // The screens already try to update via window.parent.document — that works
+  // when same-origin. This handler is a fallback for cross-origin cases.
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'pos-navigate') {
+      loadScreen(e.data.url, e.data.step);
+    }
+  });
+</script>
 </body>
 </html>

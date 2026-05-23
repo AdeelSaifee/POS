@@ -40,9 +40,47 @@ public sealed class WebViewHost
 
         _isInitialized = true;
 
+        RenderPlaceholderPage();
+
         // TODO: ConfigureVirtualHostMapping (Phase 2)
         // TODO: RegisterMessageBridge (Phase 3)
         // TODO: NavigateToInitialScreen (Phase 2)
+    }
+
+    /// <summary>
+    /// Task 1.3.7: Renders a minimal placeholder page to verify WebView2 rendering.
+    /// </summary>
+    private void RenderPlaceholderPage()
+    {
+        EnsureInitialized();
+
+        const string html = @"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { 
+                        background-color: #202020; 
+                        color: #A8E63D; 
+                        font-family: sans-serif; 
+                        display: flex; 
+                        flex-direction: column; 
+                        justify-content: center; 
+                        align-items: center; 
+                        height: 100vh; 
+                        margin: 0; 
+                    }
+                    h1 { font-size: 3rem; margin-bottom: 1rem; }
+                    p { font-size: 1.5rem; opacity: 0.8; }
+                </style>
+            </head>
+            <body>
+                <h1>IMAGYN POS Desktop Shell</h1>
+                <p>WebView2 initialized successfully.</p>
+            </body>
+            </html>";
+
+        _webView.CoreWebView2.NavigateToString(html);
     }
 
     /// <summary>

@@ -1,11 +1,7 @@
-using System.IO;
 using System.Windows;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using POS.Desktop.Configuration;
-using POS.Desktop.Data;
-using POS.Desktop.Services.Provisioning;
-using POS.Shared.Contracts;
 
 namespace POS.Desktop;
 
@@ -14,25 +10,32 @@ namespace POS.Desktop;
 /// </summary>
 public partial class App : Application
 {
-    public IServiceProvider Services { get; private set; } = null!;
+    private readonly IHost _host;
 
-    protected override void OnStartup(StartupEventArgs e)
+    public IServiceProvider Services => _host.Services;
+
+    public App()
+    {
+        _host = DesktopHostBuilder.CreateHostBuilder(Array.Empty<string>()).Build();
+    }
+
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
-        var services = new ServiceCollection();
-        ConfigureServices(services);
-        Services = services.BuildServiceProvider();
+        await _host.StartAsync();
+
+        var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+        mainWindow.Show();
     }
 
-    private static void ConfigureServices(IServiceCollection services)
+    protected override async void OnExit(ExitEventArgs e)
     {
-        services.AddScoped<IProvisionedTerminalContext, NoProvisionedTerminalContext>();
-
-        services.AddDbContext<PosLocalDbContext>((serviceProvider, options) =>
+        using (_host)
         {
-            var connectionString = LocalDatabaseConfigurationGuard.GetRequiredConnectionString();
-            options.UseSqlite(connectionString);
-        });
+            await _host.StopAsync();
+        }
+
+        base.OnExit(e);
     }
 }

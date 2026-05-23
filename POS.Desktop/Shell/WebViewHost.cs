@@ -1,5 +1,7 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Web.WebView2.Wpf;
 
 namespace POS.Desktop.Shell;
@@ -10,10 +12,12 @@ namespace POS.Desktop.Shell;
 public sealed class WebViewHost
 {
     private readonly WebView2 _webView;
+    private readonly IConfiguration _configuration;
 
-    public WebViewHost(WebView2 webView)
+    public WebViewHost(WebView2 webView, IConfiguration configuration)
     {
         _webView = webView ?? throw new ArgumentNullException(nameof(webView));
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     }
 
     /// <summary>
@@ -30,11 +34,14 @@ public sealed class WebViewHost
     }
 
     /// <summary>
-    /// TODO Task 1.3.4: Defines the location for the WebView2 user data folder.
+    /// Task 1.3.4: Defines the location for the WebView2 user data folder.
+    /// Resolves to %LocalAppData% + WebView2:UserDataFolder configuration.
     /// </summary>
     private string ConfigureUserDataFolder()
     {
-        return string.Empty;
+        var subFolder = _configuration["WebView2:UserDataFolder"] ?? "IMAGYN/POS/Desktop/WebView2";
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        return Path.Combine(localAppData, subFolder);
     }
 
     /// <summary>

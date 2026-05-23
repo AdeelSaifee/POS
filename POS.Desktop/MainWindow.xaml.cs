@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using Microsoft.Extensions.Configuration;
 using POS.Desktop.Shell;
 
 namespace POS.Desktop
@@ -10,10 +11,10 @@ namespace POS.Desktop
     {
         private readonly WebViewHost _webViewHost;
 
-        public MainWindow()
+        public MainWindow(IConfiguration configuration)
         {
             InitializeComponent();
-            _webViewHost = new WebViewHost(MainWebView);
+            _webViewHost = new WebViewHost(MainWebView, configuration);
         }
     }
 }

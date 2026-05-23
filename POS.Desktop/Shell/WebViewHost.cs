@@ -14,6 +14,7 @@ public sealed class WebViewHost
 {
     private readonly WebView2 _webView;
     private readonly IConfiguration _configuration;
+    private bool _isInitialized;
 
     public WebViewHost(WebView2 webView, IConfiguration configuration)
     {
@@ -37,9 +38,22 @@ public sealed class WebViewHost
 
         await _webView.EnsureCoreWebView2Async(environment);
 
+        _isInitialized = true;
+
         // TODO: ConfigureVirtualHostMapping (Phase 2)
         // TODO: RegisterMessageBridge (Phase 3)
         // TODO: NavigateToInitialScreen (Phase 2)
+    }
+
+    /// <summary>
+    /// Guard to ensure WebView2 is initialized before dependent operations.
+    /// </summary>
+    private void EnsureInitialized()
+    {
+        if (!_isInitialized || _webView.CoreWebView2 is null)
+        {
+            throw new InvalidOperationException("WebView2 must be initialized before navigation or bridge operations.");
+        }
     }
 
     /// <summary>
@@ -58,6 +72,7 @@ public sealed class WebViewHost
     /// </summary>
     private void ConfigureVirtualHostMapping()
     {
+        EnsureInitialized();
     }
 
     /// <summary>
@@ -65,6 +80,7 @@ public sealed class WebViewHost
     /// </summary>
     private void RegisterMessageBridge()
     {
+        EnsureInitialized();
     }
 
     /// <summary>
@@ -72,5 +88,6 @@ public sealed class WebViewHost
     /// </summary>
     private void NavigateToInitialScreen()
     {
+        EnsureInitialized();
     }
 }

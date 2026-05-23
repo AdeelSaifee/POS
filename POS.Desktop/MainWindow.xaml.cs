@@ -26,7 +26,8 @@ namespace POS.Desktop
             }
             catch (System.Exception ex)
             {
-                MessageBox.Show($"WebView2 initialization failed: {ex.Message}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"WebView2 initialization failed: {ex.Message}\n\nThe application will now shut down.", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Application.Current.Shutdown();
             }
         }
     }

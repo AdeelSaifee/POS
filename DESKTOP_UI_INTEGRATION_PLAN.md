@@ -17,6 +17,8 @@ The goal is to turn those exact prototype screens into the real terminal **witho
 >
 > `docs/ui-prototype/index.html` is **only a simulator/launcher** (an iframe wrapper). It is **not** the app design. The individual screen files are the source of truth.
 
+> **Architecture Note:** `POS.Desktop` targets `net8.0-windows` and uses **WebView2 (SDK v1.0.2903.40)** to host the existing HTML prototype as the production UI. This ensures visual parity and avoids a costly redesign. Deployment requires the **Microsoft Edge WebView2 Evergreen Runtime** on all terminals. This dependency is strictly for the Desktop UI shell, not the backend API.
+
 ---
 
 ## 2. Verified current state (ground truth)
@@ -382,6 +384,13 @@ Response DTO (JSON) travels back up the same path → screen renders authoritati
 
 ## 20. Honest gaps & assumptions
 
+- **Technical Dependency Baseline (WebView2):**
+  - **Rationale:** Chosen to host the existing high-fidelity HTML prototype directly, ensuring 100% visual parity and zero redesign risk.
+  - **SDK Version:** `Microsoft.Web.WebView2` v1.0.2903.40.
+  - **Target Framework:** `net8.0-windows`.
+  - **Runtime Baseline:** Microsoft Edge WebView2 Evergreen Runtime.
+  - **Scope:** Strictly for hosting the Desktop Terminal UI; this is NOT a replacement for the ASP.NET Core `POS.Api`.
+  - **Deployment:** The runtime must be installed or bootstrapped on all terminal machines. The app verifies presence at startup.
 - **POS.Api `Sync/` is empty** — the central ingest endpoint must be built before Phase 6 completes.
 - **POS.Desktop.Hardware is empty** — all device interfaces are net-new (Phase 7).
 - **Catalog seeding** from the API isn't implemented; Phase 4 uses a minimal local seed so offline checkout works before sync exists.

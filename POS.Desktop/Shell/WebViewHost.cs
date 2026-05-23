@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 
 namespace POS.Desktop.Shell;
@@ -21,16 +22,24 @@ public sealed class WebViewHost
     }
 
     /// <summary>
-    /// TODO Task 1.3.5+: Asynchronously initializes the CoreWebView2 environment.
+    /// Task 1.3.5: Asynchronously initializes the CoreWebView2 environment.
     /// </summary>
     public async Task InitializeAsync()
     {
-        // TODO: ConfigureUserDataFolder (Task 1.3.4)
-        // TODO: EnsureCoreWebView2Async
+        var userDataFolder = ConfigureUserDataFolder();
+
+        if (!Directory.Exists(userDataFolder))
+        {
+            Directory.CreateDirectory(userDataFolder);
+        }
+
+        var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
+
+        await _webView.EnsureCoreWebView2Async(environment);
+
         // TODO: ConfigureVirtualHostMapping (Phase 2)
         // TODO: RegisterMessageBridge (Phase 3)
         // TODO: NavigateToInitialScreen (Phase 2)
-        await Task.CompletedTask;
     }
 
     /// <summary>
@@ -62,13 +71,6 @@ public sealed class WebViewHost
     /// TODO Phase 2: Navigates to the initial application screen.
     /// </summary>
     private void NavigateToInitialScreen()
-    {
-    }
-
-    /// <summary>
-    /// TODO: Handles WebView2 initialization failures gracefully.
-    /// </summary>
-    private void HandleInitializationFailure(Exception ex)
     {
     }
 }

@@ -390,6 +390,11 @@ Response DTO (JSON) travels back up the same path → screen renders authoritati
   - **Target Framework:** `net8.0-windows`.
   - **Runtime Baseline:** Microsoft Edge WebView2 Evergreen Runtime.
   - **Scope:** Strictly for hosting the Desktop Terminal UI; this is NOT a replacement for the ASP.NET Core `POS.Api`.
+  - **Startup Guard:** The application explicitly checks for runtime presence during startup. If missing, it displays a friendly "POS Startup Requirement" message and shuts down cleanly to prevent unhandled crashes.
+  - **Runtime Data Paths (%LocalAppData%):**
+    - **Database:** `IMAGYN/POS/Desktop/Data/pos_local.db`
+    - **WebView2:** `IMAGYN/POS/Desktop/WebView2`
+    - **Logs:** `IMAGYN/POS/Desktop/Logs/pos-desktop.log`
   - **Deployment:** The runtime must be installed or bootstrapped on all terminal machines. The app verifies presence at startup.
 - **POS.Api `Sync/` is empty** — the central ingest endpoint must be built before Phase 6 completes.
 - **POS.Desktop.Hardware is empty** — all device interfaces are net-new (Phase 7).

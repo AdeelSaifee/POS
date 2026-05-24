@@ -17,6 +17,17 @@ A multi-tenant, offline-first Point-of-Sale platform built on **.NET 8**. The sy
 - .NET 8 SDK
 - SQL Server (LocalDB or full) for the central API database
 - Windows (the desktop client targets `net8.0-windows`)
+- **Microsoft Edge WebView2 Evergreen Runtime** (Required for `POS.Desktop` UI)
+
+## Runtime Data (%LocalAppData%)
+
+`POS.Desktop` stores all mutable state and diagnostic data in the user's local application data folder to ensure compatibility with locked-down terminal environments. It does not depend on its installation directory for writable access.
+
+- **Local Database:** `%LocalAppData%/IMAGYN/POS/Desktop/Data/pos_local.db`
+- **WebView2 User Data:** `%LocalAppData%/IMAGYN/POS/Desktop/WebView2`
+- **Diagnostic Logs:** `%LocalAppData%/IMAGYN/POS/Desktop/Logs/pos-desktop.log`
+
+**Deployment Note:** Install or ensure the Microsoft Edge WebView2 Evergreen Runtime is present on the target machine before launching `POS.Desktop`.
 
 ## Getting Started
 

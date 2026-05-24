@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using POS.Desktop.Configuration;
 using POS.Desktop.Data;
 
@@ -40,19 +41,35 @@ public partial class App : Application
     /// </summary>
     private async Task ApplyLocalDatabaseStartupAsync()
     {
+        var logger = _host.Services.GetRequiredService<ILogger<App>>();
         var config = _host.Services.GetRequiredService<IConfiguration>();
         var applyMigrations = config.GetValue<bool>("Database:ApplyMigrationsOnStartup", true);
 
-        if (applyMigrations)
+        try
         {
-            // Task 1.4.2: Resolve PosLocalDbContext in a startup scope
             using (var scope = _host.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<PosLocalDbContext>();
 
-                // Task 1.4.3: Execute Database.MigrateAsync()
-                await dbContext.Database.MigrateAsync();
+                if (applyMigrations)
+                {
+                    logger.LogInformation("Checking/applying local database migrations...");
+                    await dbContext.Database.MigrateAsync();
+                }
+
+                // Task 1.4.7: Explicit connectivity check
+                if (!await dbContext.Database.CanConnectAsync())
+                {
+                    throw new InvalidOperationException("Could not connect to the local SQLite database.");
+                }
+
+                logger.LogInformation("Local database connectivity verified.");
             }
+        }
+        catch (System.Exception ex)
+        {
+            logger.LogCritical(ex, "Local database readiness check failed.");
+            throw; // Propagate to let existing top-level handler show MessageBox
         }
     }
 

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using POS.Desktop.Data;
 using Microsoft.EntityFrameworkCore;
 using POS.Shared.Contracts;
@@ -27,6 +28,19 @@ public static class DesktopHostBuilder
                 config.SetBasePath(AppContext.BaseDirectory);
                 config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
                 config.AddEnvironmentVariables();
+            })
+            .ConfigureLogging((context, logging) =>
+            {
+                // Task 1.5.4: Configure minimal shell-level logging sinks.
+                // Host.CreateDefaultBuilder already adds Console, Debug, EventSource, and EventLog.
+                // We explicitly ensure Console and Debug are active for development and shell diagnostics.
+                logging.ClearProviders();
+                logging.AddConfiguration(context.Configuration.GetSection("Logging"));
+                logging.AddConsole();
+                logging.AddDebug();
+                
+                // EventLog is added by default on Windows by CreateDefaultBuilder, 
+                // but we keep providers minimal for now.
             })
             .ConfigureServices((hostContext, services) =>
             {

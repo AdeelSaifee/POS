@@ -5,6 +5,7 @@ using POS.Desktop.Data;
 using Microsoft.EntityFrameworkCore;
 using POS.Shared.Contracts;
 using POS.Desktop.Services.Provisioning;
+using System.IO;
 
 namespace POS.Desktop.Configuration;
 
@@ -37,12 +38,19 @@ public static class DesktopHostBuilder
 
                 services.AddDbContext<PosLocalDbContext>((serviceProvider, options) =>
                 {
-                    var connectionString = hostContext.Configuration.GetConnectionString("LocalDatabase");
+                    var dataFolder = hostContext.Configuration["Database:DataFolder"] ?? "IMAGYN/POS/Desktop/Data";
+                    var dbName = hostContext.Configuration["Database:DatabaseName"] ?? "pos_local.db";
                     
-                    if (string.IsNullOrWhiteSpace(connectionString))
+                    var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    var fullDataDirPath = Path.Combine(localAppData, dataFolder);
+
+                    if (!Directory.Exists(fullDataDirPath))
                     {
-                        throw new InvalidOperationException("Required connection string 'LocalDatabase' is missing or empty in POS.Desktop appsettings.");
+                        Directory.CreateDirectory(fullDataDirPath);
                     }
+
+                    var dbPath = Path.Combine(fullDataDirPath, dbName);
+                    var connectionString = $"Data Source={dbPath}";
 
                     options.UseSqlite(connectionString);
                 });

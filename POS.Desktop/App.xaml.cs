@@ -55,6 +55,14 @@ public partial class App : Application
         catch (System.Exception)
         {
             // Note: Exception is already logged with details in ApplyLocalDatabaseStartupAsync
+            
+            MessageBox.Show(
+                "A technical error occurred while preparing the local database. The application must shut down.\n\n" +
+                "If this problem persists, please contact technical support.",
+                "Startup Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+
             // Shutdown ensures the app does not remain in a zombie/partially-started state.
             Application.Current.Shutdown(1);
         }
@@ -69,32 +77,35 @@ public partial class App : Application
         var config = _host.Services.GetRequiredService<IConfiguration>();
         var applyMigrations = config.GetValue<bool>("Database:ApplyMigrationsOnStartup", true);
 
-        try
+        await Task.Run(async () =>
         {
-            using (var scope = _host.Services.CreateScope())
+            try
             {
-                var dbContext = scope.ServiceProvider.GetRequiredService<PosLocalDbContext>();
-
-                if (applyMigrations)
+                using (var scope = _host.Services.CreateScope())
                 {
-                    logger.LogInformation("Checking/applying local database migrations...");
-                    await dbContext.Database.MigrateAsync();
-                }
+                    var dbContext = scope.ServiceProvider.GetRequiredService<PosLocalDbContext>();
 
-                // Task 1.4.7: Explicit connectivity check
-                if (!await dbContext.Database.CanConnectAsync())
-                {
-                    throw new InvalidOperationException("Could not connect to the local SQLite database.");
-                }
+                    if (applyMigrations)
+                    {
+                        logger.LogInformation("Checking/applying local database migrations...");
+                        await dbContext.Database.MigrateAsync().ConfigureAwait(false);
+                    }
 
-                logger.LogInformation("Local database connectivity verified.");
+                    // Task 1.4.7: Explicit connectivity check
+                    if (!await dbContext.Database.CanConnectAsync().ConfigureAwait(false))
+                    {
+                        throw new InvalidOperationException("Could not connect to the local SQLite database.");
+                    }
+
+                    logger.LogInformation("Local database connectivity verified.");
+                }
             }
-        }
-        catch (System.Exception ex)
-        {
-            logger.LogCritical(ex, "Local database readiness check failed. The application cannot continue startup.");
-            throw; // Rethrow to let OnStartup handle clean shutdown
-        }
+            catch (System.Exception ex)
+            {
+                logger.LogCritical(ex, "Local database readiness check failed. The application cannot continue startup.");
+                throw;
+            }
+        });
     }
 
     protected override async void OnExit(ExitEventArgs e)

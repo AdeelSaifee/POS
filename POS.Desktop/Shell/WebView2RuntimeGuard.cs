@@ -8,6 +8,13 @@ namespace POS.Desktop.Shell;
 /// </summary>
 public static class WebView2RuntimeGuard
 {
+    public const string FallbackTitle = "POS Startup Requirement";
+
+    public const string FallbackMessage = 
+        "IMAGYN POS cannot start because the Microsoft Edge WebView2 Runtime is not installed or is not available on this device.\n\n" +
+        "Please install or repair the Microsoft Edge WebView2 Evergreen Runtime, then restart the POS application.\n\n" +
+        "If this problem continues, contact technical support.";
+
     /// <summary>
     /// Represents the result of a WebView2 runtime presence check.
     /// </summary>

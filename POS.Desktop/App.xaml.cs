@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using POS.Desktop.Configuration;
 using POS.Desktop.Data;
+using POS.Desktop.Shell;
 
 namespace POS.Desktop;
 
@@ -30,6 +31,20 @@ public partial class App : Application
             base.OnStartup(e);
 
             await _host.StartAsync();
+
+            // Task 1.5.3: Branch startup on runtime presence
+            var runtimeStatus = WebView2RuntimeGuard.GetRuntimeStatus();
+            if (!runtimeStatus.IsAvailable)
+            {
+                MessageBox.Show(
+                    WebView2RuntimeGuard.FallbackMessage,
+                    WebView2RuntimeGuard.FallbackTitle,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                Application.Current.Shutdown(1);
+                return;
+            }
 
             // Task 1.4.1: Startup database migration/readiness hook
             await ApplyLocalDatabaseStartupAsync();

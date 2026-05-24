@@ -52,13 +52,22 @@ public partial class App : Application
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
             mainWindow.Show();
         }
-        catch (System.Exception)
+        catch (System.Exception ex)
         {
-            // Note: Exception is already logged with details in ApplyLocalDatabaseStartupAsync
-            
+            try
+            {
+                _host.Services
+                    .GetService<ILogger<App>>()?
+                    .LogCritical(ex, "Unhandled startup failure. The application cannot continue startup.");
+            }
+            catch
+            {
+                // Do not throw another exception while handling startup failure.
+            }
+
             MessageBox.Show(
-                "A technical error occurred while preparing the local database. The application must shut down.\n\n" +
-                "If this problem persists, please contact technical support.",
+                "IMAGYN POS could not complete startup because of a technical problem.\n\n" +
+                "Please restart the application. If the problem continues, contact technical support.",
                 "Startup Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);

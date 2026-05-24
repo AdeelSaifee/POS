@@ -25,15 +25,24 @@ public partial class App : Application
 
     protected override async void OnStartup(StartupEventArgs e)
     {
-        base.OnStartup(e);
+        try
+        {
+            base.OnStartup(e);
 
-        await _host.StartAsync();
+            await _host.StartAsync();
 
-        // Task 1.4.1: Startup database migration/readiness hook
-        await ApplyLocalDatabaseStartupAsync();
+            // Task 1.4.1: Startup database migration/readiness hook
+            await ApplyLocalDatabaseStartupAsync();
 
-        var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-        mainWindow.Show();
+            var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+            mainWindow.Show();
+        }
+        catch (System.Exception)
+        {
+            // Note: Exception is already logged with details in ApplyLocalDatabaseStartupAsync
+            // Shutdown ensures the app does not remain in a zombie/partially-started state.
+            Application.Current.Shutdown(1);
+        }
     }
 
     /// <summary>
@@ -68,8 +77,8 @@ public partial class App : Application
         }
         catch (System.Exception ex)
         {
-            logger.LogCritical(ex, "Local database readiness check failed.");
-            throw; // Propagate to let existing top-level handler show MessageBox
+            logger.LogCritical(ex, "Local database readiness check failed. The application cannot continue startup.");
+            throw; // Rethrow to let OnStartup handle clean shutdown
         }
     }
 

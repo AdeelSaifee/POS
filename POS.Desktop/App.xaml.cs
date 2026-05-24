@@ -1,7 +1,10 @@
 using System.Windows;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using POS.Desktop.Configuration;
+using POS.Desktop.Data;
 
 namespace POS.Desktop;
 
@@ -37,9 +40,20 @@ public partial class App : Application
     /// </summary>
     private async Task ApplyLocalDatabaseStartupAsync()
     {
-        // TODO Task 1.4.2: Resolve PosLocalDbContext in a startup scope
-        // TODO Task 1.4.3: Execute Database.Migrate()
-        await Task.CompletedTask;
+        var config = _host.Services.GetRequiredService<IConfiguration>();
+        var applyMigrations = config.GetValue<bool>("Database:ApplyMigrationsOnStartup", true);
+
+        if (applyMigrations)
+        {
+            // Task 1.4.2: Resolve PosLocalDbContext in a startup scope
+            using (var scope = _host.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<PosLocalDbContext>();
+
+                // Task 1.4.3: Execute Database.MigrateAsync()
+                await dbContext.Database.MigrateAsync();
+            }
+        }
     }
 
     protected override async void OnExit(ExitEventArgs e)

@@ -6,6 +6,7 @@ using POS.Desktop.Data;
 using Microsoft.EntityFrameworkCore;
 using POS.Shared.Contracts;
 using POS.Desktop.Services.Provisioning;
+using POS.Desktop.Shell;
 using System.IO;
 
 namespace POS.Desktop.Configuration;
@@ -32,15 +33,24 @@ public static class DesktopHostBuilder
             .ConfigureLogging((context, logging) =>
             {
                 // Task 1.5.4: Configure minimal shell-level logging sinks.
-                // Host.CreateDefaultBuilder already adds Console, Debug, EventSource, and EventLog.
-                // We explicitly ensure Console and Debug are active for development and shell diagnostics.
                 logging.ClearProviders();
                 logging.AddConfiguration(context.Configuration.GetSection("Logging"));
                 logging.AddConsole();
                 logging.AddDebug();
-                
-                // EventLog is added by default on Windows by CreateDefaultBuilder, 
-                // but we keep providers minimal for now.
+
+                // Task 1.5.6: Add minimal file logging for shell diagnostics.
+                var logDir = context.Configuration["Logging:File:Directory"] ?? "IMAGYN/POS/Desktop/Logs";
+                var logFile = context.Configuration["Logging:File:FileName"] ?? "pos-desktop.log";
+                var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                var fullLogDirPath = Path.Combine(localAppData, logDir);
+
+                if (!Directory.Exists(fullLogDirPath))
+                {
+                    Directory.CreateDirectory(fullLogDirPath);
+                }
+
+                var fullLogPath = Path.Combine(fullLogDirPath, logFile);
+                logging.AddProvider(new MinimalFileLoggerProvider(fullLogPath));
             })
             .ConfigureServices((hostContext, services) =>
             {

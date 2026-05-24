@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 
@@ -14,12 +15,14 @@ public sealed class WebViewHost
 {
     private readonly WebView2 _webView;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<WebViewHost> _logger;
     private bool _isInitialized;
 
-    public WebViewHost(WebView2 webView, IConfiguration configuration)
+    public WebViewHost(WebView2 webView, IConfiguration configuration, ILogger<WebViewHost> logger)
     {
         _webView = webView ?? throw new ArgumentNullException(nameof(webView));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -27,24 +30,39 @@ public sealed class WebViewHost
     /// </summary>
     public async Task InitializeAsync()
     {
-        var userDataFolder = ConfigureUserDataFolder();
+        _logger.LogInformation("Starting WebView2 initialization...");
 
-        if (!Directory.Exists(userDataFolder))
+        try
         {
-            Directory.CreateDirectory(userDataFolder);
+            var userDataFolder = ConfigureUserDataFolder();
+            _logger.LogDebug($"Resolved WebView2 user data folder: {userDataFolder}");
+
+            if (!Directory.Exists(userDataFolder))
+            {
+                _logger.LogInformation("Creating WebView2 user data folder...");
+                Directory.CreateDirectory(userDataFolder);
+            }
+
+            _logger.LogInformation("Creating CoreWebView2 environment...");
+            var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
+
+            _logger.LogInformation("Ensuring CoreWebView2 is ready...");
+            await _webView.EnsureCoreWebView2Async(environment);
+
+            _isInitialized = true;
+            _logger.LogInformation("WebView2 initialized successfully.");
+
+            RenderPlaceholderPage();
+
+            // TODO: ConfigureVirtualHostMapping (Phase 2)
+            // TODO: RegisterMessageBridge (Phase 3)
+            // TODO: NavigateToInitialScreen (Phase 2)
         }
-
-        var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
-
-        await _webView.EnsureCoreWebView2Async(environment);
-
-        _isInitialized = true;
-
-        RenderPlaceholderPage();
-
-        // TODO: ConfigureVirtualHostMapping (Phase 2)
-        // TODO: RegisterMessageBridge (Phase 3)
-        // TODO: NavigateToInitialScreen (Phase 2)
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Failed to initialize WebView2.");
+            throw;
+        }
     }
 
     /// <summary>
@@ -53,6 +71,8 @@ public sealed class WebViewHost
     private void RenderPlaceholderPage()
     {
         EnsureInitialized();
+
+        _logger.LogInformation("Rendering minimal placeholder page...");
 
         const string html = @"
             <!DOCTYPE html>

@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using POS.Desktop.Shell;
 
 namespace POS.Desktop
@@ -11,10 +12,10 @@ namespace POS.Desktop
     {
         private readonly WebViewHost _webViewHost;
 
-        public MainWindow(IConfiguration configuration)
+        public MainWindow(IConfiguration configuration, ILogger<WebViewHost> logger)
         {
             InitializeComponent();
-            _webViewHost = new WebViewHost(MainWebView, configuration);
+            _webViewHost = new WebViewHost(MainWebView, configuration, logger);
             Loaded += MainWindow_Loaded;
         }
 

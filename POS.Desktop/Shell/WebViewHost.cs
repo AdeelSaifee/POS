@@ -52,17 +52,38 @@ public sealed class WebViewHost
             _isInitialized = true;
             _logger.LogInformation("WebView2 initialized successfully.");
 
+            var assetsPath = GetAssetsUiPath();
+            _logger.LogDebug($"UI assets folder verified at: {assetsPath}");
+
             RenderPlaceholderPage();
 
-            // TODO: ConfigureVirtualHostMapping (Phase 2)
+            // TODO: ConfigureVirtualHostMapping (Phase 2 - Task 2.2.2)
             // TODO: RegisterMessageBridge (Phase 3)
-            // TODO: NavigateToInitialScreen (Phase 2)
+            // TODO: NavigateToInitialScreen (Phase 2 - Task 2.2.4)
         }
         catch (Exception ex)
         {
-            _logger.LogCritical(ex, "Failed to initialize WebView2.");
+            _logger.LogCritical(ex, "Failed to initialize WebView2 shell.");
             throw;
         }
+    }
+
+    /// <summary>
+    /// Task 2.2.1: Resolves the absolute runtime path to the UI assets folder.
+    /// Uses AppContext.BaseDirectory to ensure path is relative to the application output.
+    /// </summary>
+    private string GetAssetsUiPath()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "ui");
+
+        if (!Directory.Exists(path))
+        {
+            var error = $"CRITICAL: UI assets folder missing at: {path}. Check project Content globs.";
+            _logger.LogError(error);
+            throw new DirectoryNotFoundException(error);
+        }
+
+        return path;
     }
 
     /// <summary>

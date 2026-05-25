@@ -60,12 +60,12 @@
 
   /* ── Sidebar (Slim premium style) ── */
   .sidebar {
-    width: 76px; min-width: 76px; height: 100vh;
+    width: 104px; min-width: 104px; height: 100vh;
     background: var(--navy); display: flex; flex-direction: column;
-    align-items: center; padding: 20px 0; position: fixed; left: 0; top: 0; z-index: 100;
+    align-items: center; padding: 16px 0; position: fixed; left: 0; top: 0; z-index: 100;
   }
   .sidebar-brand {
-    margin-bottom: 24px; flex-shrink: 0;
+    margin-bottom: 16px; flex-shrink: 0;
   }
   .brand-circle {
     width: 44px; height: 44px; border-radius: 50%;
@@ -75,30 +75,54 @@
     color: #202020; font-size: 22px; font-variation-settings: 'FILL' 1;
   }
   .sidebar-nav {
-    flex: 1; display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center;
+    flex: 1; display: flex; flex-direction: column; gap: 7px; width: 100%; align-items: center;
   }
   .nav-btn {
-    width: 44px; height: 44px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    text-decoration: none; transition: all 0.1s;
-    background: transparent; color: rgba(255,255,255,0.55);
-    cursor: pointer; border: none; outline: none;
-  }
-  .nav-btn:hover {
-    background: rgba(255,255,255,0.05);
-    color: #FFFFFF;
-  }
-  .nav-btn.active {
-    background: var(--green);
-    color: #202020;
-  }
-  .nav-btn.active .icon {
-    font-variation-settings: 'FILL' 1;
-  }
-  .nav-btn.locked {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
+  width: 88px;
+  min-height: 54px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: all .1s;
+  background: transparent;
+  color: rgba(255,255,255,.68);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  padding: 6px 4px;
+}
+.nav-btn:hover {
+  background: rgba(255,255,255,.08);
+  color: #fff;
+}
+.nav-btn.active {
+  background: var(--green);
+  color: #202020;
+  box-shadow: 0 6px 14px rgba(168,230,61,.22);
+}
+.nav-btn.active .icon {
+  font-variation-settings: 'FILL' 1;
+}
+.nav-btn.locked {
+  opacity: .42;
+  cursor: not-allowed;
+}
+.nav-label {
+  display: block;
+  max-width: 80px;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: .02em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
   .sidebar-footer {
     width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;
@@ -111,15 +135,23 @@
     font-size: 12px; font-weight: 700; cursor: pointer;
   }
   .logout-btn {
-    width: 44px; height: 44px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    text-decoration: none; color: rgba(255,255,255,0.55);
-    transition: all 0.1s;
-  }
-  .logout-btn:hover {
-    background: rgba(239,68,68,0.1);
-    color: var(--red);
-  }
+  width: 88px;
+  min-height: 52px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-decoration: none;
+  color: rgba(255,255,255,.68);
+  transition: all .1s;
+  padding: 6px 4px;
+}
+.logout-btn:hover {
+  background: rgba(239,68,68,.1);
+  color: var(--red);
+}
 
   /* ── HEADER ─────────────────────────────── */
   #topbar {
@@ -134,7 +166,7 @@
   .topbar-meta span:last-child  { font-size: 13px; color: var(--text); font-weight: 700; }
 
   /* ── MAIN LAYOUT ─────────────────────────── */
-  #content { margin-left: 76px; display: flex; flex-direction: column; height: 100vh; }
+  #content { margin-left: 104px; display: flex; flex-direction: column; height: 100vh; }
   #workspace { display: flex; flex: 1; overflow: hidden; }
 
   /* ── ORDER PANEL ─────────────────────────── */
@@ -529,35 +561,35 @@
 
   <nav class="sidebar-nav">
     <button class="nav-btn" onclick="showToast('Dashboard managed by central server.','info')" title="Dashboard">
-      <span class="icon">dashboard</span>
+      <span class="icon">dashboard</span><span class="nav-label">Dashboard</span>
     </button>
     <a class="nav-btn active" href="main_checkout.html" title="Checkout">
-      <span class="icon">shopping_cart</span>
+      <span class="icon">shopping_cart</span><span class="nav-label">Sale</span>
     </a>
     <button class="nav-btn" onclick="showToast('Catalog managed by central server.','info')" title="Inventory">
-      <span class="icon">inventory_2</span>
+      <span class="icon">inventory_2</span><span class="nav-label">Catalog</span>
     </button>
     <button class="nav-btn" onclick="showToast('Orders view managed by central server.','info')" title="Orders">
-      <span class="icon">receipt_long</span>
+      <span class="icon">receipt_long</span><span class="nav-label">Orders</span>
     </button>
     <a class="nav-btn" href="shift_close.html" title="Z-Report">
-      <span class="icon">assessment</span>
+      <span class="icon">assessment</span><span class="nav-label">Reports</span>
     </a>
     <a class="nav-btn" href="cash_control.html" title="Cash Control">
-      <span class="icon">payments</span>
+      <span class="icon">payments</span><span class="nav-label">Cash</span>
     </a>
     <a class="nav-btn" href="shift_open.html" title="Shift Open">
-      <span class="icon">group</span>
+      <span class="icon">group</span><span class="nav-label">Shift</span>
     </a>
     <button class="nav-btn" onclick="showToast('Settings managed by administrator.','info')" title="Settings">
-      <span class="icon">settings</span>
+      <span class="icon">settings</span><span class="nav-label">Settings</span>
     </button>
   </nav>
 
   <div class="sidebar-footer">
     <div class="op-avatar-circle" id="op-avatar">AS</div>
     <a class="logout-btn" onclick="doLogout();return false;" title="Sign Out">
-      <span class="icon">logout</span>
+      <span class="icon">logout</span><span class="nav-label">Logout</span>
     </a>
   </div>
 </aside>

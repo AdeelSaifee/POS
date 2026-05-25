@@ -175,16 +175,16 @@ public sealed class WebViewHost
     }
 
     /// <summary>
-    /// Navigates to the initial application screen (terminal login).
+    /// Navigates to the initial application screen.
     /// Uses the standardized AppOrigin and virtual host mapping.
     /// </summary>
     private void NavigateToInitialScreen()
     {
         EnsureInitialized();
 
-        var loginUrl = $"{AppOrigin}terminal_login.html";
-        _logger.LogInformation("Navigating to initial screen: {InitialUrl}", loginUrl);
+        var initialUrl = $"{AppOrigin}provision_terminal.html";
+        _logger.LogInformation("Navigating to initial screen: {InitialUrl}", initialUrl);
 
-        _webView.CoreWebView2.Navigate(loginUrl);
+        _webView.CoreWebView2.Navigate(initialUrl);
     }
 }

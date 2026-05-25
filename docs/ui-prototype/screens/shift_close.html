@@ -590,7 +590,7 @@
     <div class="confirm-ico"><span class="icon">lock_clock</span></div>
     <div class="confirm-title" id="confirm-title">Close Shift &amp; Lock Terminal?</div>
     <div class="confirm-body"  id="confirm-body">
-      This will finalize all transactions, submit the Z-Report to FBR, and lock the terminal until next shift login.
+      This will finalize all transactions, queue the Z-Report for FBR fiscal submission, and lock the terminal until next shift login.
     </div>
     <div class="confirm-btns">
       <button class="cb cancel"  onclick="closeConfirm()">Cancel</button>
@@ -852,8 +852,8 @@ function openZReport() {
       <div style="border-top:1px solid #000;width:80px;padding-top:3px;text-align:center;font-size:9px">MANAGER</div>
     </div>
     <div class="r-footer">
-      <div class="r-bold">FBR FISCAL Z-REPORT</div>
-      <div>Ref: FBR-ZREP-KHI-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-POS01</div>
+      <div class="r-bold">FBR FISCAL INTEGRATION</div>
+      <div>Status: Pending — fiscal sync not yet enabled</div>
       <div style="margin-top:3px">IMAGYN POS · Imagyn Technologies Pvt. Ltd.</div>
     </div>
   `;
@@ -873,7 +873,7 @@ function openConfirmClose() {
     b.textContent = `A cash variance of ${fmt(Math.abs(v))} ${v>0?'overage':'shortage'} will be recorded and submitted to store management. Proceed?`;
   } else {
     t.textContent = 'Close Shift & Lock Terminal?';
-    b.textContent = 'This will finalize all transactions, submit the Z-Report to FBR, and lock the terminal until next shift login.';
+    b.textContent = 'This will finalize all transactions, queue the Z-Report for FBR fiscal submission, and lock the terminal until next shift login.';
   }
   document.getElementById('confirm-overlay').classList.add('open');
 }

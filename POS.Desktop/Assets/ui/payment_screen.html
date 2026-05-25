@@ -552,7 +552,7 @@
                 </div>
               </div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Customer Phone</label>
-              <input type="text" id="wallet-phone" value="+92 300 1234567" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;margin-bottom:12px;" />
+              <input type="text" id="wallet-phone" value="" placeholder="+92 3XX XXXXXXX" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;margin-bottom:12px;" />
               <button onclick="simulateWalletPay()" class="pay-method-btn wallet-btn">
                 <span class="material-symbols-outlined" style="font-size:18px;">send_to_mobile</span>
                 Push Payment Request
@@ -947,7 +947,7 @@ TOTAL DUE:                      ${fmtN(grand).padStart(8)}
 Cash Tendered:                  ${fmtN(tendered).padStart(8)}
 Change Due:                      ${fmtN(change).padStart(8)}
 ${line}
-Payment: ${activeTender.toUpperCase().padEnd(20)}  FBR #${Math.random().toString(36).slice(2,10).toUpperCase()}
+Payment: ${activeTender.toUpperCase().padEnd(20)}  FBR: pending sync
 ${line}
    Thank you for shopping with us!
    Please retain this receipt.

@@ -821,7 +821,7 @@ function submitAction() {
   if (val <= 0) { showToast('Enter a valid amount.','error'); return; }
 
   const pin = document.getElementById('mgr-pin').value;
-  if (pin !== '1234') { showToast('Invalid Manager PIN — use 1234.','error'); return; }
+  if (pin !== '1234') { showToast('Invalid Manager PIN. Please try again.','error'); return; }
 
   const openingFloat = parseFloat(sessionStorage.getItem('pos_shift_float')) || 5000;
   const txns  = JSON.parse(sessionStorage.getItem('pos_completed_transactions') || '[]');

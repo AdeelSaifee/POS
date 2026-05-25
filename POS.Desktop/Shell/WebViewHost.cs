@@ -13,6 +13,9 @@ namespace POS.Desktop.Shell;
 /// </summary>
 public sealed class WebViewHost
 {
+    private const string AppHost = "pos.app";
+    private const string AppOrigin = $"https://{AppHost}/";
+
     private readonly WebView2 _webView;
     private readonly IConfiguration _configuration;
     private readonly ILogger<WebViewHost> _logger;
@@ -54,10 +57,9 @@ public sealed class WebViewHost
 
             ConfigureVirtualHostMapping();
 
-            RenderPlaceholderPage();
+            NavigateToInitialScreen();
 
             // TODO: RegisterMessageBridge (Phase 3)
-            // TODO: NavigateToInitialScreen (Phase 2 - Task 2.2.4)
         }
         catch (Exception ex)
         {
@@ -153,16 +155,15 @@ public sealed class WebViewHost
         EnsureInitialized();
 
         var assetsPath = GetAssetsUiPath();
-        const string hostName = "pos.app";
 
-        _logger.LogInformation("Configuring virtual host mapping for {HostName} to {AssetsPath}", hostName, assetsPath);
+        _logger.LogInformation("Configuring virtual host mapping for {HostName} to {AssetsPath}", AppHost, assetsPath);
 
         _webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-            hostName,
+            AppHost,
             assetsPath,
             CoreWebView2HostResourceAccessKind.Allow);
 
-        _logger.LogInformation("Virtual host mapping active for https://{HostName}/", hostName);
+        _logger.LogInformation("Virtual host mapping active for {AppOrigin}", AppOrigin);
     }
 
     /// <summary>
@@ -174,10 +175,16 @@ public sealed class WebViewHost
     }
 
     /// <summary>
-    /// TODO Phase 2: Navigates to the initial application screen.
+    /// Navigates to the initial application screen (terminal login).
+    /// Uses the standardized AppOrigin and virtual host mapping.
     /// </summary>
     private void NavigateToInitialScreen()
     {
         EnsureInitialized();
+
+        var loginUrl = $"{AppOrigin}terminal_login.html";
+        _logger.LogInformation("Navigating to initial screen: {InitialUrl}", loginUrl);
+
+        _webView.CoreWebView2.Navigate(loginUrl);
     }
 }

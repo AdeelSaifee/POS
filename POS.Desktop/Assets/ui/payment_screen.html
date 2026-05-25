@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IMAGYN POS — Payment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:             #FFFFFF;
+    --white:          #FFFFFF;
+    --navy:           #202020;         /* Charcoal sidebar */
+    --navy-2:         #121212;
+    --green:          #A8E63D;         /* Action Green */
+    --green-dim:      #F4FBE9;
+    --green-dark:     #96D32A;
+    --green-glow:     0 0 20px rgba(168, 230, 61, 0.25);
+    --amber:          #F59E0B;
+    --amber-dim:      #FEF3C7;
+    --red:            #EF4444;
+    --red-dim:        #FEF2F2;
+    --blue:           #3B82F6;
+    --blue-dim:       #EFF6FF;
+    --purple:         #7C3AED;
+    --purple-dim:     #F5F3FF;
+    --border:         #E5E5E5;
+    --border-2:       #D4D4D4;
+    --text:           #202020;
+    --text-muted:     #6B6B6B;
+    --text-dim:       #A3A3A3;
+    --sans:           'Inter Tight', 'Inter', ui-sans-serif, sans-serif;
+    --heading:        'Space Grotesk', sans-serif;
+    --mono:           'IBM Plex Mono', ui-monospace, monospace;
+    --surface:        #F7F7F7;
+    --surface-solid:  #F7F7F7;
+    --muted:          #6B6B6B;
+    /* compatibility aliases */
+    --green-l:        #F4FBE9;
+    --red-l:          #FEF2F2;
+    --amber-l:        #FEF3C7;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height:100%; margin:0; padding:0; overflow:hidden; }
+  body { font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px; -webkit-font-smoothing:antialiased; }
+  
+  .icon {
+    font-family: 'Material Symbols Outlined';
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    display: inline-flex; align-items: center; justify-content: center; line-height: 1; user-select: none;
+  }
+  .icon.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+  /* ── Sidebar (Slim premium style) ── */
+  .sidebar {
+    width: 76px; min-width: 76px; height: 100vh;
+    background: var(--navy); display: flex; flex-direction: column;
+    align-items: center; padding: 20px 0; position: fixed; left: 0; top: 0; z-index: 100;
+  }
+  .sidebar-brand {
+    margin-bottom: 24px; flex-shrink: 0;
+  }
+  .brand-circle {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--green); display: flex; align-items: center; justify-content: center;
+  }
+  .brand-circle .icon {
+    color: #202020; font-size: 22px; font-variation-settings: 'FILL' 1;
+  }
+  .sidebar-nav {
+    flex: 1; display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center;
+  }
+  .nav-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none; transition: all 0.1s;
+    background: transparent; color: rgba(255,255,255,0.55);
+    cursor: pointer; border: none; outline: none;
+  }
+  .nav-btn:hover {
+    background: rgba(255,255,255,0.05);
+    color: #FFFFFF;
+  }
+  .nav-btn.active {
+    background: var(--green);
+    color: #202020;
+  }
+  .nav-btn.active .icon {
+    font-variation-settings: 'FILL' 1;
+  }
+  .nav-btn.locked {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .sidebar-footer {
+    width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;
+  }
+  .op-avatar-circle {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: #4F46E5;
+    color: #FFFFFF; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .logout-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none; color: rgba(255,255,255,0.55);
+    transition: all 0.1s;
+  }
+  .logout-btn:hover {
+    background: rgba(239,68,68,0.1);
+    color: var(--red);
+  }
+
+  /* TOPBAR */
+  #topbar { height:56px; background:white; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; flex-shrink:0; }
+  .tb-meta { display:flex; flex-direction:column; }
+  .tb-meta span:first-child { font-size:10px; color:var(--muted); font-weight: 500; }
+  .tb-meta span:last-child  { font-size:13px; font-weight:700; }
+
+  /* LAYOUT */
+  #content  { margin-left:76px; display:flex; flex-direction:column; height:100vh; }
+  #workspace { flex:1; display:flex; overflow:hidden; }
+
+  /* ORDER SUMMARY (LEFT) */
+  #summary-panel {
+    width:38%; border-right:1px solid var(--border);
+    background:white; display:flex; flex-direction:column; overflow:hidden;
+  }
+  .panel-hdr {
+    padding:14px 16px; border-bottom:1px solid var(--border);
+    font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:space-between;
+  }
+  .order-lines-list { flex:1; overflow-y:auto; padding:6px 0; }
+  .order-lines-list::-webkit-scrollbar { width:3px; }
+  .order-lines-list::-webkit-scrollbar-thumb { background:var(--border); }
+  .order-line {
+    display:flex; align-items:center; gap:8px; padding:9px 16px;
+    border-bottom:1px solid #F8FAFC; font-size:13px;
+  }
+  .order-line-name { flex:1; font-weight:600; color:var(--text); }
+  .order-line-qty { font-size:11px; color:var(--muted); font-weight:600; min-width:28px; text-align:center; }
+  .order-line-total { font-weight:700; font-family:var(--heading); color:var(--text); min-width:72px; text-align:right; }
+
+  .totals-block { padding:12px 16px; border-top:1px solid var(--border); background:var(--surface); }
+  .tot-row { display:flex; justify-content:space-between; font-size:12px; padding:3px 0; }
+  .tot-row .l { color:var(--muted); }
+  .tot-row .v { font-weight:600; font-family:var(--heading); }
+  .grand-block {
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--navy); padding:11px 14px; border-radius:12px; margin-top:8px;
+  }
+  .grand-label { font-size:11px; font-weight:700; color:rgba(255,255,255,.5); letter-spacing:.1em; text-transform:uppercase; }
+  .grand-amount { font-size:22px; font-weight:800; color:white; font-family:var(--heading); letter-spacing:-.02em; }
+
+  /* PAYMENT PANEL (RIGHT) */
+  #payment-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+
+  /* AMOUNT DUE HERO */
+  #due-hero {
+    background:var(--navy); padding:20px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-shrink:0;
+  }
+  .due-label { font-size:11px; font-weight:700; color:rgba(255,255,255,.5); letter-spacing:.12em; text-transform:uppercase; margin-bottom:4px; }
+  .due-amount { font-size:40px; font-weight:700; color:white; font-family:var(--heading); letter-spacing:-.03em; line-height:1; }
+  #status-badge {
+    padding:6px 14px; border-radius:20px; font-size:11px; font-weight:700;
+    background:var(--green-dim); color:#4E8A00; border:1px solid rgba(168, 230, 61, 0.3);
+    letter-spacing:.06em; text-transform:uppercase; white-space:nowrap;
+  }
+
+  /* TENDER TABS */
+  #tender-tabs {
+    display:flex; gap:6px; padding:14px 20px 10px; background:white;
+    border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .tender-tab {
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    padding:10px 16px; border-radius:12px; border:1px solid var(--border-2);
+    cursor:pointer; transition:all .15s; background:white; flex:1;
+  }
+  .tender-tab .material-symbols-outlined { font-size:22px; color:var(--text-muted); }
+  .tender-tab span.label { font-size:11px; font-weight:700; color:var(--text-muted); }
+  .tender-tab.active { border-color:var(--green); background:var(--green-dim); }
+  .tender-tab.active .material-symbols-outlined { color:#4E8A00; }
+  .tender-tab.active span.label { color:#4E8A00; }
+  .tender-tab:hover:not(.active) { border-color:var(--text); background:var(--surface); }
+
+  /* PAYMENT BODY */
+  #payment-body { flex:1; display:flex; overflow:hidden; }
+
+  /* CASH KEYPAD SIDE */
+  #cash-side { flex:1; padding:16px 20px; display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
+  #cash-side::-webkit-scrollbar { width:0; }
+
+  .amount-display {
+    background:white; border:1px solid var(--border-2); border-radius:12px;
+    padding:12px 16px; display:flex; align-items:center; gap:10px;
+  }
+  .amount-currency { font-size:16px; font-weight:700; color:var(--text-muted); font-family:var(--heading); }
+  .amount-value {
+    flex:1; font-size:28px; font-weight:700; color:var(--text); font-family:var(--heading);
+    border:none; outline:none; background:transparent; text-align:right;
+    letter-spacing:-.02em;
+  }
+  .amount-clear {
+    width:34px; height:34px; border-radius:8px; background:var(--surface); border:1px solid var(--border-2);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .12s;
+  }
+  .amount-clear:hover { background:var(--border); }
+
+  .quick-amounts { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .qa-btn {
+    height:40px; border-radius:9px; border:1px solid var(--border-2);
+    background:white; font-size:12px; font-weight:700; cursor:pointer;
+    font-family:var(--heading); transition:all .12s; color:var(--text);
+  }
+  .qa-btn:hover { border-color:var(--navy); background:var(--navy); color:white; }
+  .qa-btn:active { transform:scale(.96); }
+
+  /* Numpad */
+  #numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+  .np-btn {
+    height:52px; border-radius:12px; border:1px solid var(--border-2);
+    background:white; font-size:20px; font-weight:600; cursor:pointer;
+    font-family:var(--heading); transition:all .1s; color:var(--text);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .np-btn:hover { background:var(--surface); border-color:var(--text); }
+  .np-btn:active { transform:scale(.94); }
+  .np-btn.clear-btn { font-size:12px; font-family:var(--sans); font-weight:700; color:var(--red); background:var(--red-dim); border-color:rgba(239,68,68,0.2); }
+  .np-btn.clear-btn:hover { background: #FEE2E2; border-color: var(--red); color: var(--red); }
+  .np-btn.exact-btn { font-size:12px; font-family:var(--sans); font-weight:700; color:#4E8A00; background:var(--green-dim); border-color:rgba(168, 230, 61, 0.3); }
+  .np-btn.exact-btn:hover { background: #E6F9C5; border-color: var(--green-dark); color: #4E8A00; }
+
+  /* Method cards & action buttons */
+  .method-card {
+    background: white; border: 1px solid var(--border-2); border-radius: 12px; padding: 20px;
+  }
+  .icon-wrapper-blue {
+    width: 48px; height: 48px; border-radius: 12px; background: var(--blue-dim); display: flex; align-items: center; justify-content: center;
+  }
+  .icon-wrapper-purple {
+    width: 48px; height: 48px; border-radius: 12px; background: var(--purple-dim); display: flex; align-items: center; justify-content: center;
+  }
+  .pay-method-btn {
+    width: 100%; height: 48px; color: white; border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; gap: 8px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pay-method-btn.card-btn {
+    background: var(--navy);
+  }
+  .pay-method-btn.card-btn:hover {
+    background: var(--navy-2);
+  }
+  .pay-method-btn.wallet-btn {
+    background: var(--purple);
+  }
+  .pay-method-btn.wallet-btn:hover {
+    background: #6D28D9;
+  }
+  .pay-method-btn:active {
+    transform: scale(0.98);
+  }
+
+  /* CHANGE DISPLAY + COMPLETE BUTTON SIDE */
+  #change-side { width:260px; padding:16px 16px 16px 0; display:flex; flex-direction:column; gap:10px; flex-shrink:0; }
+
+  .change-card {
+    background:white; border:1px solid var(--border-2); border-radius:12px; padding:16px;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .change-row { display:flex; justify-content:space-between; align-items:center; font-size:12px; }
+  .change-row .l { color:var(--text-muted); }
+  .change-row .v { font-weight:700; font-family:var(--heading); }
+  .change-row.highlight .v { font-size:22px; font-weight:700; color:#4E8A00; }
+  .change-row.over .v    { color:var(--red); }
+
+  .card-tender-info {
+    background:white; border:1px solid var(--border-2); border-radius:12px; padding:16px;
+  }
+
+  #complete-btn {
+    height:56px; border-radius:12px; border:none; cursor:pointer;
+    font-size:15px; font-weight:700; letter-spacing:.03em;
+    transition:all .2s; display:flex; align-items:center; justify-content:center; gap:8px;
+    flex-shrink:0;
+  }
+  #complete-btn.ready {
+    background:var(--green); color:#202020;
+    box-shadow:0 6px 20px rgba(168, 230, 61, 0.25);
+  }
+  #complete-btn.ready:hover { background:var(--green-dark); box-shadow:0 8px 28px rgba(168, 230, 61, 0.35); }
+  #complete-btn:disabled { background:#F1F5F9; color:#94A3B8; cursor:not-allowed; border:1px solid var(--border-2); box-shadow:none; }
+  #complete-btn:active:not(:disabled) { transform:scale(.98); }
+
+  #back-btn {
+    height:40px; border-radius:12px; border:1px solid var(--border-2);
+    background:white; color:var(--text-muted); cursor:pointer; font-size:13px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; gap:6px; transition:all .15s;
+    flex-shrink:0;
+  }
+  #back-btn:hover { border-color:var(--text); background:var(--surface); }
+
+  /* RECEIPT MODAL */
+  .modal-bg {
+    position:fixed; inset:0; background:rgba(32,32,32,0.6); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    z-index:300; display:none; align-items:center; justify-content:center;
+  }
+  .receipt-modal { background:white; border-radius:24px; width:460px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.15); border:1px solid var(--border); }
+  .receipt-hdr { background:var(--green); padding:16px 20px; display:flex; align-items:center; justify-content:space-between; }
+  .receipt-hdr h3 { color:#202020; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; margin:0; font-family:var(--heading); }
+  .receipt-body { padding:20px; }
+  .receipt-paper {
+    font-family:'Courier New', monospace; font-size:12px; line-height:1.7;
+    background:white; border:1px dashed var(--border-2); border-radius:12px; padding:16px;
+    margin-bottom:16px; white-space:pre;
+  }
+  .receipt-actions { display:flex; gap:8px; }
+  .r-btn {
+    flex:1; height:44px; border-radius:12px; border:1px solid var(--border-2);
+    background:var(--surface); font-size:13px; font-weight:600; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:6px; transition:all .15s;
+    color:var(--text);
+  }
+  .r-btn:hover { border-color:var(--text); background:white; }
+  .r-btn.primary { background:var(--navy); color:white; border-color:var(--navy); }
+  .r-btn.primary:hover { background:var(--navy-2); }
+
+  /* TOAST */
+  #toast-w { position:fixed; bottom:20px; right:20px; z-index:500; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+  .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:10px; color:white; font-size:13px; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,.15); transform:translateY(8px); opacity:0; transition:all .25s cubic-bezier(.16,1,.3,1); pointer-events:auto; max-width:300px; }
+  .toast.show { transform:translateY(0); opacity:1; }
+  .toast.success { background:#10B981; }
+  .toast.error   { background:#EF4444; }
+  .toast.info    { background:var(--navy); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-circle">
+      <span class="icon">point_of_sale</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <button class="nav-btn" onclick="showToast('Dashboard managed by central server.','info')" title="Dashboard">
+      <span class="icon">dashboard</span>
+    </button>
+    <a class="nav-btn active" href="main_checkout.html" title="Checkout">
+      <span class="icon">shopping_cart</span>
+    </a>
+    <button class="nav-btn" onclick="showToast('Catalog managed by central server.','info')" title="Inventory">
+      <span class="icon">inventory_2</span>
+    </button>
+    <button class="nav-btn" onclick="showToast('Orders view managed by central server.','info')" title="Orders">
+      <span class="icon">receipt_long</span>
+    </button>
+    <a class="nav-btn" href="shift_close.html" title="Z-Report">
+      <span class="icon">assessment</span>
+    </a>
+    <a class="nav-btn" href="cash_control.html" title="Cash Control">
+      <span class="icon">payments</span>
+    </a>
+    <a class="nav-btn" href="shift_open.html" title="Shift Open">
+      <span class="icon">group</span>
+    </a>
+    <button class="nav-btn" onclick="showToast('Settings managed by administrator.','info')" title="Settings">
+      <span class="icon">settings</span>
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="op-avatar-circle" id="op-avatar" onclick="showToast('Manager PIN: 1234','info')">AS</div>
+    <a class="logout-btn" href="terminal_login.html" title="Sign Out">
+      <span class="icon">logout</span>
+    </a>
+  </div>
+</aside>
+
+<!-- CONTENT -->
+<div id="content">
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div style="display:flex;align-items:center;gap:20px;">
+      <div class="tb-meta"><span>Store</span><span>Imagyn Technologies</span></div>
+      <div style="width:1px;height:28px;background:var(--border);"></div>
+      <div class="tb-meta"><span>Terminal</span><span id="tb-terminal">POS-01</span></div>
+      <div style="width:1px;height:28px;background:var(--border);"></div>
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#FFF7ED;border:1px solid #FDE68A;border-radius:20px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:block;"></span>
+        <span style="font-size:11px;font-weight:700;color:#92400E;">Awaiting Payment</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-size:12px;font-weight:600;color:var(--muted);font-family:var(--mono);" id="tb-clock">--:--</div>
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:20px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:block;"></span>
+        <span style="font-size:11px;font-weight:700;color:#065F46;">Shift Active</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORKSPACE -->
+  <div id="workspace">
+
+    <!-- ORDER SUMMARY -->
+    <div id="summary-panel">
+      <div class="panel-hdr">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="material-symbols-outlined fill" style="font-size:16px;color:var(--green);">receipt_long</span>
+          Order Summary
+        </div>
+        <span style="font-size:11px;font-weight:600;background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:6px;font-family:var(--mono);" id="order-num">#—</span>
+      </div>
+
+      <div class="order-lines-list" id="order-lines-list">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="totals-block">
+        <div class="tot-row"><span class="l">Subtotal</span><span class="v" id="pay-subtotal">PKR 0</span></div>
+        <div class="tot-row"><span class="l">Discount</span><span class="v" id="pay-discount" style="color:var(--red);">— PKR 0</span></div>
+        <div class="tot-row"><span class="l">Tax (5% GST)</span><span class="v" id="pay-tax">PKR 0</span></div>
+        <div class="grand-block">
+          <span class="grand-label">Due</span>
+          <span class="grand-amount" id="pay-grand">PKR 0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT PANEL -->
+    <div id="payment-panel">
+
+      <!-- AMOUNT DUE HERO -->
+      <div id="due-hero">
+        <div>
+          <div class="due-label">Amount Due</div>
+          <div class="due-amount" id="hero-due">PKR 0</div>
+        </div>
+        <div style="text-align:right;">
+          <div id="status-badge">Awaiting Tender</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:6px;" id="hero-cashier">Cashier: —</div>
+        </div>
+      </div>
+
+      <!-- TENDER TABS -->
+      <div id="tender-tabs">
+        <button class="tender-tab active" id="tab-cash" onclick="selectTender('cash')">
+          <span class="material-symbols-outlined fill">payments</span>
+          <span class="label">Cash</span>
+        </button>
+        <button class="tender-tab" id="tab-card" onclick="selectTender('card')">
+          <span class="material-symbols-outlined">credit_card</span>
+          <span class="label">Debit/Credit</span>
+        </button>
+        <button class="tender-tab" id="tab-wallet" onclick="selectTender('wallet')">
+          <span class="material-symbols-outlined">account_balance_wallet</span>
+          <span class="label">Wallet</span>
+        </button>
+        <button class="tender-tab" id="tab-split" onclick="selectTender('split')">
+          <span class="material-symbols-outlined">call_split</span>
+          <span class="label">Split Pay</span>
+        </button>
+      </div>
+
+      <!-- PAYMENT BODY (keypad + change) -->
+      <div id="payment-body">
+
+        <!-- LEFT: Input area -->
+        <div id="cash-side">
+
+          <!-- Cash view -->
+          <div id="view-cash">
+            <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:8px;">Cash Received (PKR)</label>
+            <div class="amount-display" style="margin-bottom:10px;">
+              <span class="amount-currency">PKR</span>
+              <input type="text" class="amount-value" id="cash-input" readonly placeholder="0" />
+              <button class="amount-clear" onclick="numPress('back')">
+                <span class="material-symbols-outlined" style="font-size:18px;">backspace</span>
+              </button>
+            </div>
+
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;">Quick Amounts</div>
+            <div class="quick-amounts" style="margin-bottom:12px;" id="quick-amounts-grid"></div>
+
+            <div id="numpad">
+              <button class="np-btn" onclick="numPress('7')">7</button>
+              <button class="np-btn" onclick="numPress('8')">8</button>
+              <button class="np-btn" onclick="numPress('9')">9</button>
+              <button class="np-btn" onclick="numPress('4')">4</button>
+              <button class="np-btn" onclick="numPress('5')">5</button>
+              <button class="np-btn" onclick="numPress('6')">6</button>
+              <button class="np-btn" onclick="numPress('1')">1</button>
+              <button class="np-btn" onclick="numPress('2')">2</button>
+              <button class="np-btn" onclick="numPress('3')">3</button>
+              <button class="np-btn clear-btn" onclick="numPress('clear')">CLEAR</button>
+              <button class="np-btn" onclick="numPress('0')">0</button>
+              <button class="np-btn exact-btn" onclick="setExact()">EXACT</button>
+            </div>
+          </div>
+
+          <!-- Card view -->
+          <div id="view-card" style="display:none;">
+            <div class="method-card">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <div class="icon-wrapper-blue">
+                  <span class="icon fill" style="font-size:24px;color:var(--blue);">contactless</span>
+                </div>
+                <div>
+                  <div style="font-size:14px;font-weight:700;">Card Terminal</div>
+                  <div style="font-size:12px;color:var(--muted);">Pax A920 Pinpad · POS-01</div>
+                </div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+                  <span style="color:var(--muted);">Charge Amount</span>
+                  <span style="font-weight:700;font-family:var(--mono);" id="card-charge-display">PKR 0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;">
+                  <span style="color:var(--muted);">Pinpad Status</span>
+                  <span style="color:var(--green);font-weight:600;">Connected</span>
+                </div>
+              </div>
+              <button onclick="simulateCardPay()" class="pay-method-btn card-btn">
+                <span class="material-symbols-outlined" style="font-size:18px;">wifi_tethering</span>
+                Trigger Pinpad Payment
+              </button>
+            </div>
+          </div>
+
+          <!-- Wallet view -->
+          <div id="view-wallet" style="display:none;">
+            <div class="method-card">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <div class="icon-wrapper-purple">
+                  <span class="icon fill" style="font-size:24px;color:var(--purple);">qr_code_scanner</span>
+                </div>
+                <div>
+                  <div style="font-size:14px;font-weight:700;">Mobile Wallet</div>
+                  <div style="font-size:12px;color:var(--muted);">Easypaisa · JazzCash · Nayapay</div>
+                </div>
+              </div>
+              <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Customer Phone</label>
+              <input type="text" id="wallet-phone" value="+92 300 1234567" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;margin-bottom:12px;" />
+              <button onclick="simulateWalletPay()" class="pay-method-btn wallet-btn">
+                <span class="material-symbols-outlined" style="font-size:18px;">send_to_mobile</span>
+                Push Payment Request
+              </button>
+            </div>
+          </div>
+
+          <!-- Split view -->
+          <div id="view-split" style="display:none;">
+            <div style="background:white;border:1.5px solid var(--border);border-radius:12px;padding:16px;">
+              <div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                <span class="material-symbols-outlined" style="font-size:16px;color:var(--muted);">call_split</span>
+                Split Tender
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;">Cash (PKR)</label>
+                  <input type="number" id="split-cash" oninput="calcSplit()" value="0" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;font-family:var(--mono);outline:none;text-align:right;" />
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;">Card (PKR)</label>
+                  <input type="number" id="split-card" oninput="calcSplit()" value="0" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;font-family:var(--mono);outline:none;text-align:right;" />
+                </div>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--muted);">Total Due</span><span style="font-weight:700;font-family:var(--mono);" id="split-due">PKR 0</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--muted);">Total Paid</span><span style="font-weight:700;font-family:var(--mono);" id="split-paid">PKR 0</span></div>
+                <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;"><span style="color:var(--muted);font-weight:600;">Remaining</span><span style="font-weight:700;font-family:var(--mono);color:var(--red);" id="split-rem">PKR 0</span></div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /cash-side -->
+
+        <!-- RIGHT: Change + complete button -->
+        <div id="change-side">
+
+          <div class="change-card">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;">Transaction</div>
+            <div class="change-row"><span class="l">Amount Due</span><span class="v" id="ch-due">PKR 0</span></div>
+            <div class="change-row"><span class="l">Tendered</span><span class="v" id="ch-tendered" style="color:var(--navy);">PKR 0</span></div>
+            <div style="height:1px;background:var(--border);"></div>
+            <div class="change-row highlight" id="change-row-display">
+              <span class="l" style="font-size:13px;font-weight:700;">Change Due</span>
+              <span class="v" id="ch-change">PKR 0</span>
+            </div>
+          </div>
+
+          <!-- Refund type info -->
+          <div style="background:#FFF7ED;border:1px solid #FDE68A;border-radius:10px;padding:12px;font-size:12px;color:#92400E;display:flex;align-items:flex-start;gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:16px;flex-shrink:0;margin-top:1px;">info</span>
+            <span>Always verify cash amount before completing the transaction.</span>
+          </div>
+
+          <button id="complete-btn" disabled onclick="completeTransaction()">
+            <span class="material-symbols-outlined fill" style="font-size:20px;">check_circle</span>
+            Complete Sale
+          </button>
+
+          <button id="back-btn" onclick="window.location.href='main_checkout.html'">
+            <span class="material-symbols-outlined" style="font-size:18px;">arrow_back</span>
+            Modify Order
+          </button>
+
+        </div>
+
+      </div><!-- /payment-body -->
+    </div><!-- /payment-panel -->
+
+  </div><!-- /workspace -->
+</div><!-- /content -->
+
+<!-- RECEIPT MODAL -->
+<div class="modal-bg" id="receipt-modal">
+  <div class="receipt-modal">
+    <div class="receipt-hdr">
+      <h3>
+        <span class="material-symbols-outlined fill" style="font-size:20px;">receipt_long</span>
+        Payment Complete
+      </h3>
+      <button onclick="closeReceiptAndNew()" style="width:30px;height:30px;border-radius:7px;border:none;background:rgba(255,255,255,.2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:white;">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
+    </div>
+    <div class="receipt-body">
+      <div class="receipt-paper" id="receipt-text"></div>
+      <div class="receipt-actions">
+        <button class="r-btn" onclick="printReceipt()">
+          <span class="material-symbols-outlined" style="font-size:16px;">print</span>Print Receipt
+        </button>
+        <button class="r-btn" onclick="sendReceipt()">
+          <span class="material-symbols-outlined" style="font-size:16px;">sms</span>SMS Receipt
+        </button>
+        <button class="r-btn primary" onclick="closeReceiptAndNew()">
+          <span class="material-symbols-outlined" style="font-size:16px;">add_shopping_cart</span>New Sale
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-w"></div>
+
+<script>
+// ─── STATE ─────────────────────────────────────
+let dueAmount  = 0;
+let cashInputVal = 0;
+let activeTender = 'cash';
+let cart = [];
+
+// ─── UTILS ──────────────────────────────────────
+function fmt(n)    { return 'PKR ' + new Intl.NumberFormat('en-PK').format(Math.round(n)); }
+function fmtN(n)   { return new Intl.NumberFormat('en-PK').format(Math.round(n)); }
+function parsePKR(s) { return parseFloat((s || '0').replace(/[^0-9.]/g, '')) || 0; }
+
+function toast(msg, type='success') {
+  const w = document.getElementById('toast-w');
+  const t = document.createElement('div');
+  const icons = { success:'check_circle', error:'cancel', info:'info' };
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span class="material-symbols-outlined fill" style="font-size:18px;">${icons[type]||'info'}</span><span>${msg}</span>`;
+  w.appendChild(t);
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
+}
+const showToast = toast;
+
+function syncParent(idx) {
+  try {
+    if (!window.parent || window.parent === window) return;
+    const d = window.parent.document;
+    d.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+    const el = d.getElementById('step-' + idx);
+    if (el) el.classList.add('flow-step-active');
+  } catch(e) {}
+}
+
+// ─── INIT ───────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  syncParent(4);
+
+  // Clock
+  const clk = () => document.getElementById('tb-clock').textContent =
+    new Date().toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+  clk(); setInterval(clk, 1000);
+
+  // Operator
+  try {
+    const op = JSON.parse(localStorage.getItem('terminal_operator') || '{}');
+    if (op.name) {
+      const opNameEl = document.getElementById('op-name');
+      if (opNameEl) opNameEl.textContent = op.name;
+      
+      const opAvatarEl = document.getElementById('op-avatar');
+      if (opAvatarEl) {
+        opAvatarEl.textContent = op.initials || op.name.slice(0,2).toUpperCase();
+        if (op.color) opAvatarEl.style.background = op.color;
+      }
+      
+      const heroCashierEl = document.getElementById('hero-cashier');
+      if (heroCashierEl) heroCashierEl.textContent = 'Cashier: ' + op.name.split(' ')[0];
+    }
+  } catch(e) {}
+
+  // Config
+  try {
+    const cfg = JSON.parse(localStorage.getItem('terminal_config') || '{}');
+    if (cfg.terminalId) document.getElementById('tb-terminal').textContent = cfg.terminalId;
+  } catch(e) {}
+
+  // Order number
+  const seq = Math.floor(Math.random() * 9000) + 1000;
+  document.getElementById('order-num').textContent = '#' + seq;
+
+  // Load cart
+  const saved = sessionStorage.getItem('pos_cart');
+  cart = saved ? JSON.parse(saved) : [
+    { id:'I1001', name:'Milk 1L Tetra',    qty:2, price:280,  unit:'L',  cat:'dairy' },
+    { id:'I1002', name:'Rice 5kg Premium', qty:1, price:1850, unit:'kg', cat:'grocery' },
+    { id:'I1008', name:'Coca Cola 1.5L',   qty:2, price:220,  unit:'L',  cat:'beverage' },
+  ];
+
+  renderOrderSummary();
+  renderQuickAmounts();
+  updateChangeDisplay(0, dueAmount);
+});
+
+// ─── ORDER SUMMARY ──────────────────────────────
+function renderOrderSummary() {
+  const list = document.getElementById('order-lines-list');
+  list.innerHTML = '';
+
+  let sub = 0;
+  cart.forEach(l => {
+    sub += l.qty * l.price;
+    const row = document.createElement('div');
+    row.className = 'order-line';
+    row.innerHTML = `
+      <div class="order-line-name">${l.name}</div>
+      <span class="order-line-qty">×${l.qty}</span>
+      <span class="order-line-total">${fmtN(l.qty * l.price)}</span>
+    `;
+    list.appendChild(row);
+  });
+
+  const disc  = 0;
+  const tax   = Math.round((sub - disc) * 0.05);
+  const grand = sub - disc + tax;
+  dueAmount   = grand;
+
+  document.getElementById('pay-subtotal').textContent = fmt(sub);
+  document.getElementById('pay-discount').textContent = `— ${fmt(disc)}`;
+  document.getElementById('pay-tax').textContent      = fmt(tax);
+  document.getElementById('pay-grand').textContent    = fmt(grand);
+  document.getElementById('hero-due').textContent     = fmt(grand);
+  document.getElementById('ch-due').textContent       = fmt(grand);
+
+  // Split view update
+  document.getElementById('split-due').textContent = fmt(grand);
+  // Card charge update
+  const cd = document.getElementById('card-charge-display');
+  if (cd) cd.textContent = fmt(grand);
+}
+
+// ─── TENDER TABS ────────────────────────────────
+function selectTender(t) {
+  activeTender = t;
+  ['cash','card','wallet','split'].forEach(id => {
+    const tab  = document.getElementById('tab-' + id);
+    const view = document.getElementById('view-' + id);
+    if (tab)  tab.classList.toggle('active', id === t);
+    if (view) view.style.display = (id === t) ? 'block' : 'none';
+  });
+  checkReady();
+}
+
+// ─── NUMPAD ─────────────────────────────────────
+let rawInput = '';
+function numPress(k) {
+  if (k === 'clear') { rawInput = ''; }
+  else if (k === 'back') { rawInput = rawInput.slice(0, -1); }
+  else { if (rawInput.length >= 9) return; rawInput += k; }
+  cashInputVal = parseFloat(rawInput) || 0;
+  document.getElementById('cash-input').value = rawInput ? fmtN(cashInputVal) : '';
+  updateChangeDisplay(cashInputVal, dueAmount);
+  checkReady();
+}
+
+function setExact() {
+  cashInputVal = dueAmount;
+  rawInput = String(Math.round(dueAmount));
+  document.getElementById('cash-input').value = fmtN(dueAmount);
+  updateChangeDisplay(dueAmount, dueAmount);
+  checkReady();
+}
+
+function renderQuickAmounts() {
+  const grid = document.getElementById('quick-amounts-grid');
+  const notes = [500, 1000, 2000, 5000, 10000];
+  // Find smallest note >= due
+  const base = notes.find(n => n >= dueAmount) || dueAmount;
+  const suggestions = [];
+  // Round up to next 500/1000
+  [500, 1000, 2000, 5000, 10000].forEach(n => {
+    if (n >= dueAmount) suggestions.push(n);
+  });
+  // Add exact
+  suggestions.unshift(Math.ceil(dueAmount / 100) * 100);
+  const unique = [...new Set(suggestions)].slice(0, 6);
+
+  unique.forEach(amt => {
+    const btn = document.createElement('button');
+    btn.className = 'qa-btn';
+    btn.textContent = fmtN(amt);
+    btn.onclick = () => {
+      cashInputVal = amt;
+      rawInput = String(amt);
+      document.getElementById('cash-input').value = fmtN(amt);
+      updateChangeDisplay(amt, dueAmount);
+      checkReady();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+// ─── CHANGE DISPLAY ─────────────────────────────
+function updateChangeDisplay(tendered, due) {
+  const change = tendered - due;
+  document.getElementById('ch-tendered').textContent = tendered > 0 ? fmt(tendered) : 'PKR 0';
+  const chEl = document.getElementById('ch-change');
+  const row   = document.getElementById('change-row-display');
+  if (change >= 0) {
+    chEl.textContent = fmt(change);
+    chEl.style.color = '#059669';
+    row.style.background = 'none';
+  } else if (tendered > 0) {
+    chEl.textContent = '— ' + fmt(Math.abs(change));
+    chEl.style.color = 'var(--red)';
+  } else {
+    chEl.textContent = 'PKR 0';
+    chEl.style.color = '#059669';
+  }
+}
+
+function calcSplit() {
+  const cash = parseFloat(document.getElementById('split-cash').value) || 0;
+  const card = parseFloat(document.getElementById('split-card').value) || 0;
+  const paid = cash + card;
+  const rem  = dueAmount - paid;
+  document.getElementById('split-paid').textContent = fmt(paid);
+  document.getElementById('split-rem').textContent  = rem > 0 ? fmt(rem) : 'PKR 0';
+  checkReady();
+}
+
+// ─── READY CHECK ────────────────────────────────
+function checkReady() {
+  const btn = document.getElementById('complete-btn');
+  let ready = false;
+  if (activeTender === 'cash')   ready = cashInputVal >= dueAmount;
+  if (activeTender === 'card')   ready = false; // done via pinpad button
+  if (activeTender === 'wallet') ready = false; // done via push button
+  if (activeTender === 'split') {
+    const cash = parseFloat(document.getElementById('split-cash').value) || 0;
+    const card = parseFloat(document.getElementById('split-card').value) || 0;
+    ready = (cash + card) >= dueAmount;
+  }
+  btn.disabled = !ready;
+  btn.className = ready ? 'ready' : '';
+  btn.style.cursor = ready ? 'pointer' : 'not-allowed';
+}
+
+// ─── PAYMENT SIMULATION ─────────────────────────
+function simulateCardPay() {
+  const btn = event.target.closest('button');
+  btn.textContent = ''; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;animation:spin .7s linear infinite;">sync</span> Processing…';
+  setTimeout(() => {
+    btn.innerHTML = '<span class="material-symbols-outlined fill" style="font-size:18px;color:white;">check_circle</span> Approved ✓';
+    btn.style.background = 'var(--green)';
+    const cb = document.getElementById('complete-btn');
+    cb.disabled = false; cb.className = 'ready'; cb.style.cursor = 'pointer';
+    updateChangeDisplay(dueAmount, dueAmount);
+    toast('Card payment approved.', 'success');
+  }, 1800);
+}
+
+function simulateWalletPay() {
+  toast('Payment request sent. Awaiting confirmation…', 'info');
+  setTimeout(() => {
+    const cb = document.getElementById('complete-btn');
+    cb.disabled = false; cb.className = 'ready'; cb.style.cursor = 'pointer';
+    updateChangeDisplay(dueAmount, dueAmount);
+    toast('Wallet payment confirmed.', 'success');
+  }, 2200);
+}
+
+// ─── COMPLETE ────────────────────────────────────
+function completeTransaction() {
+  const rcpt = buildReceipt();
+  document.getElementById('receipt-text').textContent = rcpt;
+  document.getElementById('receipt-modal').style.display = 'flex';
+  sessionStorage.setItem('pos_cart', JSON.stringify([]));
+  sessionStorage.setItem('pos_last_receipt', rcpt);
+  const badge = document.getElementById('status-badge');
+  badge.textContent = 'PAID ✓';
+  badge.style.background = 'rgba(16,185,129,.2)';
+  badge.style.color = 'var(--green)';
+  badge.style.borderColor = 'rgba(16,185,129,.4)';
+}
+
+function buildReceipt() {
+  const now   = new Date();
+  const dstr  = now.toLocaleDateString('en-PK');
+  const tstr  = now.toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit' });
+  const seq   = document.getElementById('order-num').textContent;
+  const line  = '─'.repeat(38);
+  let items = '';
+  let sub = 0;
+  cart.forEach(l => {
+    sub += l.qty * l.price;
+    const total = fmtN(l.qty * l.price);
+    const name  = l.name.length > 20 ? l.name.slice(0,18) + '…' : l.name;
+    items += `${(name).padEnd(24)}${String(l.qty + ' × ' + fmtN(l.price)).padStart(8)}  ${total.padStart(6)}\n`;
+  });
+  const tax   = Math.round(sub * 0.05);
+  const grand = sub + tax;
+  const change = Math.max(0, cashInputVal - grand);
+  const tendered = activeTender === 'cash' ? cashInputVal : grand;
+  return `        IMAGYN POS
+        Imagyn Technologies
+        Tariq Road, Karachi
+${line}
+Date: ${dstr}        Time: ${tstr}
+Order: ${seq}       Terminal: POS-01
+Cashier: ${(localStorage.getItem('terminal_operator') ? JSON.parse(localStorage.getItem('terminal_operator')).name : 'Operator').split(' ')[0]}
+${line}
+ITEM                    QTY × PRICE   TOTAL
+${line}
+${items}${line}
+Subtotal:                          ${fmtN(sub).padStart(8)}
+Tax (5% GST):                      ${fmtN(tax).padStart(8)}
+${line}
+TOTAL DUE:                      ${fmtN(grand).padStart(8)}
+Cash Tendered:                  ${fmtN(tendered).padStart(8)}
+Change Due:                      ${fmtN(change).padStart(8)}
+${line}
+Payment: ${activeTender.toUpperCase().padEnd(20)}  FBR #${Math.random().toString(36).slice(2,10).toUpperCase()}
+${line}
+   Thank you for shopping with us!
+   Please retain this receipt.
+`;
+}
+
+function printReceipt() { toast('Sending to receipt printer…', 'info'); }
+function sendReceipt()  { toast('SMS receipt sent to customer.', 'success'); }
+function closeReceiptAndNew() {
+  document.getElementById('receipt-modal').style.display = 'none';
+  window.location.href = 'main_checkout.html';
+}
+
+const spinStyle = document.createElement('style');
+spinStyle.textContent = '@keyframes spin { to { transform:rotate(360deg); } }';
+document.head.appendChild(spinStyle);
+</script>
+</body>
+</html>

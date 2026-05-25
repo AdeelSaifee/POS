@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cash Control — IMAGYN POS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:             #FFFFFF;
+      --white:          #FFFFFF;
+      --navy:           #202020;         /* Charcoal sidebar */
+      --navy-2:         #121212;
+      --green:          #A8E63D;         /* Action Green */
+      --green-dim:      #F4FBE9;
+      --green-dark:     #96D32A;
+      --green-glow:     0 0 20px rgba(168, 230, 61, 0.2);
+      --amber:          #F59E0B;
+      --amber-dim:      #FEF3C7;
+      --red:            #EF4444;
+      --red-dim:        #FEF2F2;
+      --border:         #E5E5E5;
+      --border-2:       #D4D4D4;
+      --text:           #202020;
+      --text-muted:     #6B6B6B;
+      --text-dim:       #A3A3A3;
+      --sans:           'Inter Tight', 'Inter', ui-sans-serif, sans-serif;
+      --heading:        'Space Grotesk', sans-serif;
+      --mono:           'IBM Plex Mono', ui-monospace, monospace;
+      --surface:        #F7F7F7;
+      --surface-solid:  #F7F7F7;
+      --muted:          #6B6B6B;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); display: flex; -webkit-font-smoothing: antialiased; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+
+    .icon {
+      font-family: 'Material Symbols Outlined';
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block; vertical-align: middle; line-height: 1; user-select: none;
+    }
+
+    /* ── Sidebar (Slim premium style) ── */
+    .sidebar {
+      width: 76px; min-width: 76px; height: 100vh;
+      background: var(--navy); display: flex; flex-direction: column;
+      align-items: center; padding: 20px 0; position: fixed; left: 0; top: 0; z-index: 100;
+    }
+    .sidebar-brand {
+      margin-bottom: 24px; flex-shrink: 0;
+    }
+    .brand-circle {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--green); display: flex; align-items: center; justify-content: center;
+    }
+    .brand-circle .icon {
+      color: #202020; font-size: 22px; font-variation-settings: 'FILL' 1;
+    }
+    .sidebar-nav {
+      flex: 1; display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center;
+    }
+    .nav-btn {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; transition: all 0.1s;
+      background: transparent; color: rgba(255,255,255,0.55);
+      cursor: pointer; border: none; outline: none;
+    }
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.05);
+      color: #FFFFFF;
+    }
+    .nav-btn.active {
+      background: var(--green);
+      color: #202020;
+    }
+    .nav-btn.active .icon {
+      font-variation-settings: 'FILL' 1;
+    }
+    .nav-btn.locked {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .sidebar-footer {
+      width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;
+      padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;
+    }
+    .op-avatar-circle {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: #4F46E5;
+      color: #FFFFFF; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .logout-btn {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; color: rgba(255,255,255,0.55);
+      transition: all 0.1s;
+    }
+    .logout-btn:hover {
+      background: rgba(239,68,68,0.1);
+      color: var(--red);
+    }
+
+    /* ── Main ── */
+    .main { margin-left: 76px; display: flex; flex-direction: column; height: 100vh; min-height: 0; }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: 56px; background: white; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 22px; flex-shrink: 0;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 18px; }
+    .topbar-stat { display: flex; flex-direction: column; }
+    .tb-lbl { font-size: 10px; color: var(--muted); font-weight: 500; }
+    .tb-val { font-size: 13px; font-weight: 700; color: var(--text); }
+    .tb-div { width: 1px; height: 26px; background: var(--border); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .tb-badge {
+      display: flex; align-items: center; gap: 5px; background: #F8FAFC;
+      padding: 4px 10px; border-radius: 7px; border: 1px solid var(--border);
+      font-size: 12px; font-weight: 600; font-family: var(--mono);
+    }
+    .tb-badge .icon { color: var(--green-dark); font-size: 15px; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green-dark); }
+    .status-txt { font-size: 11px; font-weight: 600; color: var(--muted); }
+
+    /* ── Workspace ── */
+    .workspace { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+    /* ── Left: Cash Summary ── */
+    .summary-panel {
+      width: 38%; min-width: 38%; border-right: 1px solid var(--border);
+      background: var(--surface); display: flex; flex-direction: column;
+      padding: 20px; gap: 16px; overflow-y: auto;
+    }
+    .panel-title { font-size: 18px; font-weight: 700; color: var(--text); font-family: var(--heading); }
+    .panel-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* Status banner */
+    .status-banner {
+      border-radius: 12px; padding: 14px; border: 1px solid transparent;
+      display: flex; align-items: flex-start; gap: 12px; transition: all 0.25s;
+    }
+    .status-banner .icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .sb-title { font-size: 13px; font-weight: 700; }
+    .sb-desc  { font-size: 12px; margin-top: 4px; line-height: 1.4; }
+    .status-banner.ok    { background: var(--green-dim); border-color: rgba(168,230,61,0.25); }
+    .status-banner.ok    .icon    { color: var(--green-dark); }
+    .status-banner.ok    .sb-title { color: #3F5E05; }
+    .status-banner.ok    .sb-desc  { color: #4D7207; }
+    .status-banner.warn  { background: var(--red-dim); border-color: rgba(239,68,68,0.25); }
+    .status-banner.warn  .icon    { color: var(--red); }
+    .status-banner.warn  .sb-title { color: #991B1B; }
+    .status-banner.warn  .sb-desc  { color: #B91C1C; }
+
+    /* Summary cards grid */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .sum-card {
+      background: white; border: 1px solid var(--border); border-radius: 16px;
+      padding: 14px 16px; transition: all 0.15s;
+    }
+    .sum-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.02); border-color: var(--border-2); }
+    .sum-card.dark { background: var(--navy); border-color: var(--navy-2); }
+    .sum-lbl { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
+    .sum-card.dark .sum-lbl { color: rgba(255,255,255,0.4); }
+    .sum-val { font-family: var(--heading); font-size: 18px; font-weight: 700; color: var(--text); margin-top: 6px; }
+    .sum-card.dark .sum-val { color: white; font-size: 20px; }
+    .sum-val.green { color: var(--green-dark); }
+
+    /* Transaction count badge */
+    .txn-badge {
+      background: white; border: 1px solid var(--border); border-radius: 16px;
+      padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .txn-count { font-family: var(--heading); font-size: 24px; font-weight: 700; color: var(--text); }
+    .txn-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+    /* ── Right: Form Panel ── */
+    .form-panel {
+      flex: 1; display: flex; flex-direction: column; background: white; overflow: hidden;
+    }
+
+    /* Tabs */
+    .tab-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; padding: 4px 8px 0; }
+    .tab-btn {
+      flex: 1; padding: 12px; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      border: none; background: transparent; cursor: pointer;
+      border-radius: 8px 8px 0 0;
+      color: var(--text-muted);
+      transition: all 0.1s; font-family: var(--sans);
+    }
+    .tab-btn:hover { color: var(--text); background: rgba(0,0,0,0.02); }
+    .tab-btn.active { color: var(--text); background: var(--white); font-weight: 700; border: 1px solid var(--border); border-bottom-color: transparent; margin-bottom: -1px; }
+    .tab-btn .icon { font-size: 17px; }
+
+    /* Form area */
+    .form-scroll { flex: 1; overflow-y: auto; padding: 20px; }
+
+    /* Amount display */
+    .amount-display {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+      padding: 16px; display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px; transition: all 0.15s;
+    }
+    .amount-display.focused { border-color: var(--green); background: white; box-shadow: var(--green-glow); }
+    .amount-prefix { font-family: var(--heading); font-size: 15px; font-weight: 600; color: var(--muted); }
+    .amount-value  { font-family: var(--heading); font-size: 28px; font-weight: 700; color: var(--text); flex: 1; text-align: right; margin: 0 10px; }
+    .amount-clear  {
+      width: 36px; height: 36px; border-radius: 10px; background: #F1F5F9;
+      border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.1s; flex-shrink: 0;
+    }
+    .amount-clear:hover { background: #E2E8F0; }
+    .amount-clear:active { transform: scale(0.92); }
+    .amount-clear .icon { font-size: 18px; color: var(--muted); }
+
+    /* Quick amounts */
+    .quick-amounts { display: flex; gap: 8px; margin-bottom: 16px; }
+    .qa-btn {
+      flex: 1; height: 38px; background: white; border: 1px solid var(--border);
+      border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--text);
+      cursor: pointer; transition: all 0.1s; font-family: var(--heading);
+    }
+    .qa-btn:hover { background: var(--surface); border-color: var(--border-2); }
+    .qa-btn:active { transform: scale(0.96); }
+
+    /* Two-col form fields */
+    .fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .field-group { display: flex; flex-direction: column; gap: 5px; }
+    .field-label {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.5px; text-transform: uppercase;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .field-required { font-size: 9px; color: var(--red); font-weight: 800; letter-spacing: 0.5px; }
+    .field-select, .field-input {
+      height: 42px; border: 1px solid var(--border); border-radius: 10px;
+      padding: 0 12px; font-size: 13px; font-weight: 600; color: var(--text);
+      font-family: var(--sans); outline: none; background: white; transition: border-color 0.13s;
+    }
+    .field-select:focus, .field-input:focus { border-color: var(--green); }
+    .field-input.pin { text-align: center; letter-spacing: 6px; font-size: 16px; font-family: var(--mono); }
+
+    .remarks-area {
+      width: 100%; height: 60px; border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 12px; font-size: 13px; font-family: var(--sans); resize: none;
+      outline: none; color: var(--text); transition: border-color 0.13s; background: white;
+    }
+    .remarks-area:focus { border-color: var(--green); }
+
+    /* Numpad */
+    .form-grid { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start; }
+    .numpad {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+      background: var(--surface); padding: 10px; border-radius: 16px; border: 1px solid var(--border);
+      width: 180px;
+    }
+    .np-key {
+      height: 46px; border: 1px solid var(--border); border-radius: 10px;
+      background: white; font-size: 18px; font-weight: 700; color: var(--text);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.1s; font-family: var(--heading); user-select: none;
+    }
+    .np-key:hover { background: var(--surface); border-color: var(--border-2); }
+    .np-key:active { transform: scale(0.93); }
+    .np-key.clear { background: var(--red-dim); border-color: rgba(239,68,68,0.2); color: var(--red); font-size: 11px; font-weight: 800; font-family: var(--sans); }
+    .np-key.dbl   { font-size: 13px; }
+
+    /* Ledger section */
+    .ledger-section { padding: 0 20px 20px; }
+    .ledger-title {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.5px; text-transform: uppercase;
+      display: flex; align-items: center; gap: 6px; margin-bottom: 10px;
+    }
+    .ledger-title .icon { font-size: 16px; color: var(--text); }
+    .ledger-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .ledger-table thead { background: var(--surface); }
+    .ledger-table th {
+      padding: 10px 12px; font-size: 9px; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.5px; text-transform: uppercase; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .ledger-table td { padding: 12px; font-size: 13px; color: var(--text); border-bottom: 1px solid var(--border); }
+    .ledger-table tr:last-child td { border-bottom: none; }
+    .ledger-table tbody tr:hover { background: #FAFAFA; }
+    .ledger-ref  { font-family: var(--mono); font-size: 11px; font-weight: 700; }
+    .ledger-type { font-weight: 700; font-size: 12px; }
+    .ledger-amt  { font-family: var(--heading); font-size: 13px; font-weight: 700; text-align: right; }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 20px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.3px;
+    }
+    .badge.ok   { background: var(--green-dim); color: #4D7207; border: 1px solid rgba(168,230,61,0.25); }
+    .badge.auth { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+
+    /* Footer actions */
+    .form-footer {
+      border-top: 1px solid var(--border); padding: 12px 20px;
+      display: flex; gap: 10px; flex-shrink: 0; background: var(--surface);
+    }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: all 0.13s; border: none; outline: none; height: 46px; padding: 0 20px;
+      font-family: var(--sans);
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn .icon { font-size: 18px; }
+    .btn-ghost  { background: white; border: 1px solid var(--border-2); color: var(--text-muted); }
+    .btn-ghost:hover { background: var(--surface); border-color: var(--text); color: var(--text); }
+    .btn-green  { background: var(--green); color: #202020; flex: 1; box-shadow: var(--green-glow); }
+    .btn-green:hover { background: var(--green-dark); }
+
+    /* ── Receipt Modal ── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(32,32,32,0.6);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+
+    .receipt-wrap {
+      background: white; width: 360px; max-height: 90vh; overflow-y: auto;
+      border-radius: 16px; box-shadow: 0 24px 64px rgba(0,0,0,0.15);
+      transform: scale(0.94) translateY(8px); opacity: 0; transition: transform 0.22s, opacity 0.22s;
+      position: relative; padding-bottom: 20px; border: 1px solid var(--border);
+    }
+    .receipt-body { padding: 24px 24px 8px; font-family: 'Courier New', monospace; font-size: 12px; color: #111; line-height: 1.5; }
+    .r-ctr   { text-align: center; }
+    .r-title { font-weight: 700; font-size: 14px; letter-spacing: 0.5px; font-family: var(--mono); }
+    .r-sub   { font-size: 11px; color: #555; margin-top: 1px; font-family: var(--mono); }
+    .r-div   { border: none; border-top: 1px dashed #bbb; margin: 10px 0; }
+    .r-row   { display: flex; justify-content: space-between; margin: 4px 0; }
+    .r-bold  { font-weight: 700; }
+    .receipt-actions { display: flex; gap: 8px; padding: 0 24px; }
+    .ra-btn {
+      flex: 1; height: 42px; border-radius: 12px; border: 1px solid var(--border-2);
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.13s; font-family: var(--sans);
+    }
+    .ra-btn:active { transform: scale(0.97); }
+    .ra-btn.primary   { background: var(--navy); color: white; border-color: var(--navy); }
+    .ra-btn.primary:hover { background: var(--navy-2); }
+    .ra-btn.secondary { background: var(--surface); color: var(--text); }
+    .ra-btn.secondary:hover { background: white; border-color: var(--text); }
+
+    /* ── Toasts ── */
+    #toasts {
+      position: fixed; bottom: 22px; right: 22px; z-index: 400;
+      display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+    }
+    .toast {
+      display: flex; align-items: center; gap: 9px; padding: 12px 16px;
+      border-radius: 12px; color: white; font-size: 13px; font-weight: 600;
+      pointer-events: all; box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      transform: translateY(6px); opacity: 0; transition: all 0.22s; max-width: 300px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: #10B981; }
+    .toast.error   { background: var(--red); }
+    .toast.info    { background: var(--navy); }
+    .toast .icon   { font-size: 18px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-circle">
+      <span class="icon">point_of_sale</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <button class="nav-btn" onclick="showToast('Dashboard managed by central server.','info')" title="Dashboard">
+      <span class="icon">dashboard</span>
+    </button>
+    <a class="nav-btn" href="main_checkout.html" title="Checkout">
+      <span class="icon">shopping_cart</span>
+    </a>
+    <button class="nav-btn" onclick="showToast('Catalog managed by central server.','info')" title="Inventory">
+      <span class="icon">inventory_2</span>
+    </button>
+    <button class="nav-btn" onclick="showToast('Orders view managed by central server.','info')" title="Orders">
+      <span class="icon">receipt_long</span>
+    </button>
+    <a class="nav-btn" href="shift_close.html" title="Z-Report">
+      <span class="icon">assessment</span>
+    </a>
+    <a class="nav-btn active" href="cash_control.html" title="Cash Control">
+      <span class="icon">payments</span>
+    </a>
+    <a class="nav-btn" href="shift_open.html" title="Shift Open">
+      <span class="icon">group</span>
+    </a>
+    <button class="nav-btn" onclick="showToast('Settings managed by administrator.','info')" title="Settings">
+      <span class="icon">settings</span>
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="op-avatar-circle" id="op-avatar" onclick="showToast('Manager PIN: 1234','info')">AS</div>
+    <a class="logout-btn" href="terminal_login.html" title="Sign Out">
+      <span class="icon">logout</span>
+    </a>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-stat">
+        <span class="tb-lbl">Store</span>
+        <span class="tb-val">Imagyn Technologies</span>
+      </div>
+      <div class="topbar-stat">
+        <span class="tb-lbl">Location</span>
+        <span class="tb-val">Tariq Road, Karachi</span>
+      </div>
+      <div class="tb-div"></div>
+      <div class="topbar-stat">
+        <span class="tb-lbl">Terminal</span>
+        <span class="tb-val">POS-01</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="tb-badge">
+        <span class="icon">schedule</span>
+        <span id="clock">--:--</span>
+      </div>
+      <div class="status-dot"></div>
+      <span class="status-txt">Shift Active</span>
+    </div>
+  </header>
+
+  <!-- Workspace -->
+  <div class="workspace">
+
+    <!-- ── Left: Summary Panel ── -->
+    <div class="summary-panel">
+      <div>
+        <div class="panel-title">Cash Summary</div>
+        <div class="panel-sub">Real-time drawer balance &amp; cash metrics.</div>
+      </div>
+
+      <!-- Status Banner -->
+      <div class="status-banner ok" id="status-banner">
+        <span class="icon" id="banner-icon">check_circle</span>
+        <div>
+          <div class="sb-title" id="banner-title">Drawer Balance Secured</div>
+          <div class="sb-desc"  id="banner-desc">Cash level is within the PKR 20,000 safe limit.</div>
+        </div>
+      </div>
+
+      <!-- Cards -->
+      <div class="summary-grid">
+        <div class="sum-card">
+          <div class="sum-lbl">Opening Float</div>
+          <div class="sum-val" id="card-float">PKR 5,000</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-lbl">Net Cash Sales</div>
+          <div class="sum-val green" id="card-sales">PKR 0</div>
+        </div>
+        <div class="sum-card">
+          <div class="sum-lbl">Safe Drops</div>
+          <div class="sum-val" id="card-drops" style="color:var(--muted)">PKR 0</div>
+        </div>
+        <div class="sum-card dark">
+          <div class="sum-lbl">Drawer Balance</div>
+          <div class="sum-val" id="card-balance">PKR 5,000</div>
+        </div>
+      </div>
+
+      <!-- Transaction count -->
+      <div class="txn-badge">
+        <div>
+          <div class="txn-count" id="card-txns">0</div>
+          <div class="txn-label">Cash Transactions</div>
+        </div>
+        <span class="icon" style="font-size:28px;color:#E2E8F0">point_of_sale</span>
+      </div>
+    </div>
+
+    <!-- ── Right: Form Panel ── -->
+    <div class="form-panel">
+
+      <!-- Tabs -->
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-drop" onclick="switchTab('drop')">
+          <span class="icon">arrow_circle_down</span>Safe Drop / Withdraw
+        </button>
+        <button class="tab-btn" id="tab-inject" onclick="switchTab('inject')">
+          <span class="icon">arrow_circle_up</span>Float Add / Cash In
+        </button>
+      </div>
+
+      <!-- Scrollable form -->
+      <div class="form-scroll">
+
+        <!-- Form title -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:14px;font-weight:800;color:var(--navy)" id="form-title">Cash Drawer Withdrawal</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px" id="form-desc">Drop excess counter cash into the secure main vault.</div>
+        </div>
+
+        <!-- Amount display + numpad side by side -->
+        <div class="form-grid">
+          <div>
+            <!-- Amount -->
+            <div class="amount-display focused" id="amount-display" onclick="setFocus('amount')">
+              <span class="amount-prefix">PKR</span>
+              <span class="amount-value" id="amount-val">0</span>
+              <button class="amount-clear" onclick="event.stopPropagation();clearAmount()">
+                <span class="icon">backspace</span>
+              </button>
+            </div>
+            <!-- Quick amounts -->
+            <div class="quick-amounts" id="quick-amounts">
+              <button class="qa-btn" onclick="setAmount(5000)">5,000</button>
+              <button class="qa-btn" onclick="setAmount(10000)">10,000</button>
+              <button class="qa-btn" onclick="setAmount(15000)">15,000</button>
+            </div>
+            <!-- Fields -->
+            <div class="fields-row">
+              <div class="field-group">
+                <label class="field-label">Reason Code</label>
+                <select class="field-select" id="reason-select">
+                  <option value="Vault Drop">Safe Drop to Main Vault</option>
+                  <option value="Shift Change">Shift Change Withdrawal</option>
+                  <option value="Mid-Day Clear">Mid-Day Clearing</option>
+                  <option value="Emergency Drop">Emergency Safe Drop</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label class="field-label">
+                  Manager PIN
+                  <span class="field-required">Required</span>
+                </label>
+                <input class="field-input pin" id="mgr-pin" type="password" maxlength="4"
+                       placeholder="••••" onclick="setFocus('pin')"/>
+                <div style="font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 1px;">Demo: 1234</div>
+              </div>
+            </div>
+            <!-- Remarks -->
+            <div class="field-group" style="margin-bottom:0">
+              <label class="field-label">Remarks</label>
+              <textarea class="remarks-area" id="remarks" placeholder="Add notes for this transaction..."></textarea>
+            </div>
+          </div>
+
+          <!-- Numpad -->
+          <div class="numpad">
+            <button class="np-key" onclick="numKey('7')">7</button>
+            <button class="np-key" onclick="numKey('8')">8</button>
+            <button class="np-key" onclick="numKey('9')">9</button>
+            <button class="np-key" onclick="numKey('4')">4</button>
+            <button class="np-key" onclick="numKey('5')">5</button>
+            <button class="np-key" onclick="numKey('6')">6</button>
+            <button class="np-key" onclick="numKey('1')">1</button>
+            <button class="np-key" onclick="numKey('2')">2</button>
+            <button class="np-key" onclick="numKey('3')">3</button>
+            <button class="np-key clear" onclick="numKey('C')">CLR</button>
+            <button class="np-key" onclick="numKey('0')">0</button>
+            <button class="np-key dbl" onclick="numKey('00')">00</button>
+          </div>
+        </div>
+
+        <!-- Ledger -->
+        <div style="margin-top:18px">
+          <div class="ledger-title">
+            <span class="icon">history</span>Cash Movement Ledger
+          </div>
+          <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+            <table class="ledger-table">
+              <thead>
+                <tr>
+                  <th>Ref ID</th>
+                  <th>Time</th>
+                  <th>Type</th>
+                  <th>Reason</th>
+                  <th style="text-align:right">Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="ledger-body">
+                <tr>
+                  <td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:12px">
+                    No cash movements logged this shift.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- end form-scroll -->
+
+      <!-- Footer -->
+      <div class="form-footer">
+        <button class="btn btn-ghost" onclick="window.location.href='main_checkout.html'">
+          <span class="icon">arrow_back</span>Back to POS
+        </button>
+        <button class="btn btn-green" id="submit-btn" onclick="submitAction()">
+          <span class="icon">print</span>
+          <span id="submit-text">Submit Safe Drop &amp; Print Receipt</span>
+        </button>
+      </div>
+    </div><!-- end form-panel -->
+
+  </div><!-- end workspace -->
+</main>
+
+<!-- ═══ RECEIPT MODAL ═══ -->
+<div class="overlay" id="receipt-overlay">
+  <div class="receipt-wrap">
+    <div class="receipt-body" id="receipt-body"><!-- filled by JS --></div>
+    <div class="receipt-actions">
+      <button class="ra-btn secondary" onclick="closeReceipt()">Close</button>
+      <button class="ra-btn primary"   onclick="closeReceipt()">
+        <span style="font-family:var(--sans)">Done &amp; Return</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TOASTS ═══ -->
+<div id="toasts"></div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let activeTab  = 'drop';
+let amountStr  = '0';
+let focusedEl  = 'amount'; // 'amount' | 'pin'
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const fmt = v => 'PKR ' + new Intl.NumberFormat('en-PK').format(v);
+
+function showToast(msg, type='success') {
+  const s = document.getElementById('toasts');
+  const t = document.createElement('div');
+  const icons = { success:'check_circle', error:'cancel', info:'info' };
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span class="icon">${icons[type]||'info'}</span><span>${msg}</span>`;
+  s.appendChild(t);
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 280); }, 3500);
+}
+
+function syncParent() {
+  try {
+    const doc = window.parent.document;
+    doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+    const el = doc.getElementById('step-5');
+    if (el) el.classList.add('flow-step-active');
+    const url = doc.getElementById('simulator-url-display');
+    if (url) url.innerText = 'screens/cash_control.html';
+    const newTab = doc.getElementById('open-new-tab-btn');
+    if (newTab) newTab.href = 'screens/cash_control.html';
+  } catch(e) {}
+}
+
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+}
+
+// ── Metrics ───────────────────────────────────────────────────────────────────
+function updateMetrics() {
+  const openingFloat = parseFloat(sessionStorage.getItem('pos_shift_float')) || 5000;
+  const txns = JSON.parse(sessionStorage.getItem('pos_completed_transactions') || '[]');
+  const cashSales = txns.filter(t=>(t.tender||'').toLowerCase()==='cash').reduce((s,t)=>s+t.total,0);
+  const cashTxns  = txns.filter(t=>(t.tender||'').toLowerCase()==='cash').length;
+  const drops = JSON.parse(sessionStorage.getItem('pos_safe_drops') || '[]');
+  const dropsTotal = drops.filter(d=>d.type==='withdraw').reduce((s,d)=>s+d.amount,0);
+  const injectTotal= drops.filter(d=>d.type==='deposit').reduce((s,d)=>s+d.amount,0);
+  const balance = openingFloat + cashSales - dropsTotal + injectTotal;
+
+  document.getElementById('card-float').textContent   = fmt(openingFloat);
+  document.getElementById('card-sales').textContent   = fmt(cashSales);
+  document.getElementById('card-drops').textContent   = fmt(dropsTotal);
+  document.getElementById('card-balance').textContent = fmt(balance);
+  document.getElementById('card-txns').textContent    = cashTxns;
+
+  const banner = document.getElementById('status-banner');
+  const bIcon  = document.getElementById('banner-icon');
+  const bTitle = document.getElementById('banner-title');
+  const bDesc  = document.getElementById('banner-desc');
+
+  if (balance > 20000) {
+    banner.className='status-banner warn';
+    bIcon.textContent='warning';
+    bTitle.textContent='Safe Drop Required!';
+    bDesc.textContent=`Drawer balance ${fmt(balance)} exceeds PKR 20,000 threshold. Perform a safe drop immediately.`;
+  } else {
+    banner.className='status-banner ok';
+    bIcon.textContent='check_circle';
+    bTitle.textContent='Drawer Balance Secured';
+    bDesc.textContent=`Current balance ${fmt(balance)} — within the PKR 20,000 safe operating limit.`;
+  }
+
+  renderLedger(openingFloat, txns, drops);
+}
+
+function renderLedger(floatVal, txns, drops) {
+  const tbody = document.getElementById('ledger-body');
+  const rows = [];
+
+  rows.push({ ref:'INIT', time:'Shift Open', type:'Opening Float', desc:'Declared opening cash', amt:floatVal, sign:'+', color:'color:var(--navy)', status:'ok' });
+
+  txns.forEach(t => {
+    if ((t.tender||'').toLowerCase()==='cash') {
+      rows.push({ ref:t.id||'TXN', time:t.timestamp||'—', type:'Cash Sale', desc:`${(t.items||[]).length} items`, amt:t.total||0, sign:'+', color:'color:var(--green)', status:'ok' });
+    }
+  });
+
+  drops.forEach(d => {
+    const isW = d.type==='withdraw';
+    rows.push({ ref:d.id, time:d.time||'—', type:isW?'Safe Drop':'Float Add', desc:d.reason||d.remarks||'—', amt:d.amount, sign:isW?'−':'+', color:isW?'color:var(--red)':'color:var(--blue)', status:'auth' });
+  });
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No cash movements logged this shift.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td><span class="ledger-ref">${r.ref}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${r.time}</td>
+      <td><span class="ledger-type">${r.type}</span></td>
+      <td style="font-size:11px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.desc}</td>
+      <td><span class="ledger-amt" style="${r.color}">${r.sign}${fmt(r.amt)}</span></td>
+      <td><span class="badge ${r.status}">${r.status==='ok'?'Verified':'Authorized'}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-drop').className   = 'tab-btn' + (tab==='drop'?' active':'');
+  document.getElementById('tab-inject').className = 'tab-btn' + (tab==='inject'?' active':'');
+
+  const title  = document.getElementById('form-title');
+  const desc   = document.getElementById('form-desc');
+  const sub    = document.getElementById('submit-text');
+  const qas    = document.getElementById('quick-amounts');
+  const reason = document.getElementById('reason-select');
+
+  if (tab === 'drop') {
+    title.textContent = 'Cash Drawer Withdrawal';
+    desc.textContent  = 'Drop excess counter cash into the secure main vault.';
+    sub.textContent   = 'Submit Safe Drop & Print Receipt';
+    qas.innerHTML = `
+      <button class="qa-btn" onclick="setAmount(5000)">5,000</button>
+      <button class="qa-btn" onclick="setAmount(10000)">10,000</button>
+      <button class="qa-btn" onclick="setAmount(15000)">15,000</button>`;
+    reason.innerHTML = `
+      <option value="Vault Drop">Safe Drop to Main Vault</option>
+      <option value="Shift Change">Shift Change Withdrawal</option>
+      <option value="Mid-Day Clear">Mid-Day Clearing</option>
+      <option value="Emergency Drop">Emergency Safe Drop</option>`;
+  } else {
+    title.textContent = 'Float Addition / Cash Injection';
+    desc.textContent  = 'Inject change float or supplementary cash into the counter drawer.';
+    sub.textContent   = 'Submit Cash Injection & Print Receipt';
+    qas.innerHTML = `
+      <button class="qa-btn" onclick="setAmount(2000)">2,000</button>
+      <button class="qa-btn" onclick="setAmount(5000)">5,000</button>
+      <button class="qa-btn" onclick="setAmount(10000)">10,000</button>`;
+    reason.innerHTML = `
+      <option value="Float Top-up">Float Change Injection</option>
+      <option value="Petty Cash In">Petty Cash Inbound</option>
+      <option value="Coin Refill">Coin Replenishment</option>`;
+  }
+  clearAmount();
+  document.getElementById('mgr-pin').value = '';
+  document.getElementById('remarks').value = '';
+}
+
+// ── Amount + numpad ───────────────────────────────────────────────────────────
+function setFocus(el) {
+  focusedEl = el;
+  document.getElementById('amount-display').classList.toggle('focused', el==='amount');
+}
+
+function numKey(k) {
+  if (focusedEl === 'pin') {
+    const pin = document.getElementById('mgr-pin');
+    if (k === 'C') { pin.value = ''; return; }
+    if (pin.value.length < 4) pin.value += k;
+    return;
+  }
+  if (k === 'C') { clearAmount(); return; }
+  if (amountStr === '0') amountStr = '';
+  if (amountStr.length < 8) amountStr += k;
+  const v = parseInt(amountStr) || 0;
+  document.getElementById('amount-val').textContent = new Intl.NumberFormat('en-PK').format(v);
+}
+
+function clearAmount() {
+  amountStr = '0';
+  document.getElementById('amount-val').textContent = '0';
+}
+
+function setAmount(val) {
+  amountStr = String(val);
+  document.getElementById('amount-val').textContent = new Intl.NumberFormat('en-PK').format(val);
+  setFocus('amount');
+}
+
+// ── Submit ─────────────────────────────────────────────────────────────────────
+function submitAction() {
+  const val = parseInt(amountStr) || 0;
+  if (val <= 0) { showToast('Enter a valid amount.','error'); return; }
+
+  const pin = document.getElementById('mgr-pin').value;
+  if (pin !== '1234') { showToast('Invalid Manager PIN — use 1234.','error'); return; }
+
+  const openingFloat = parseFloat(sessionStorage.getItem('pos_shift_float')) || 5000;
+  const txns  = JSON.parse(sessionStorage.getItem('pos_completed_transactions') || '[]');
+  const cashSales = txns.filter(t=>(t.tender||'').toLowerCase()==='cash').reduce((s,t)=>s+t.total,0);
+  const drops = JSON.parse(sessionStorage.getItem('pos_safe_drops') || '[]');
+  const dropsTotal  = drops.filter(d=>d.type==='withdraw').reduce((s,d)=>s+d.amount,0);
+  const injectTotal = drops.filter(d=>d.type==='deposit').reduce((s,d)=>s+d.amount,0);
+  const balance = openingFloat + cashSales - dropsTotal + injectTotal;
+
+  if (activeTab==='drop' && val > balance) {
+    showToast(`Amount exceeds drawer balance (${fmt(balance)}).`,'error'); return;
+  }
+
+  const isW    = activeTab === 'drop';
+  const ref    = (isW ? 'DRP-' : 'INJ-') + Math.floor(100000 + Math.random()*900000);
+  const reason = document.getElementById('reason-select').value;
+  const remark = document.getElementById('remarks').value || (isW ? 'Safe drop to vault' : 'Float injection');
+  const now    = new Date();
+  const timeStr= String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+
+  drops.push({ id:ref, type:isW?'withdraw':'deposit', amount:val, reason, time:timeStr, remarks:remark });
+  sessionStorage.setItem('pos_safe_drops', JSON.stringify(drops));
+
+  const newBalance = balance + (isW ? -val : val);
+
+  document.getElementById('mgr-pin').value = '';
+  document.getElementById('remarks').value = '';
+  clearAmount();
+  updateMetrics();
+  showToast(isW ? 'Safe drop recorded successfully.' : 'Float injection completed.','success');
+  showReceipt({ id:ref, type:activeTab, amount:val, reason, newBalance });
+}
+
+// ── Receipt ───────────────────────────────────────────────────────────────────
+function showReceipt(data) {
+  const isW  = data.type === 'drop';
+  let opName = 'Adeel Saifee';
+  try {
+    const parsedOp = JSON.parse(localStorage.getItem('terminal_operator') || '{}');
+    if (parsedOp.name) opName = parsedOp.name;
+    else if (typeof parsedOp === 'string' && parsedOp.trim() !== '') opName = parsedOp;
+  } catch(e) {}
+  const now  = new Date().toISOString().replace('T',' ').slice(0,16);
+
+  document.getElementById('receipt-body').innerHTML = `
+    <div class="r-ctr">
+      <div class="r-title">IMAGYN TECHNOLOGIES</div>
+      <div class="r-sub">Tariq Road Branch, Karachi</div>
+      <div class="r-sub" style="margin-top:4px;font-weight:700">${isW ? 'CASH DRAWER WITHDRAWAL' : 'CASH FLOAT INJECTION'}</div>
+    </div>
+    <hr class="r-div"/>
+    <div class="r-row"><span>REF ID:</span><span class="r-bold">${data.id}</span></div>
+    <div class="r-row"><span>DATE/TIME:</span><span>${now}</span></div>
+    <div class="r-row"><span>TERMINAL:</span><span>POS-01</span></div>
+    <div class="r-row"><span>OPERATOR:</span><span>${opName.toUpperCase()}</span></div>
+    <div class="r-row"><span>MGR AUTH:</span><span>VERIFIED (PIN ****)</span></div>
+    <hr class="r-div"/>
+    <div class="r-row"><span>TYPE:</span><span class="r-bold">${isW ? 'SAFE DROP / WITHDRAW' : 'FLOAT ADD / DEPOSIT'}</span></div>
+    <div class="r-row"><span>REASON:</span><span>${data.reason}</span></div>
+    <div class="r-row r-bold" style="font-size:13px"><span>AMOUNT:</span><span>${fmt(data.amount)}</span></div>
+    <div class="r-row"><span>NEW DRAWER BALANCE:</span><span class="r-bold">${fmt(data.newBalance)}</span></div>
+    <hr class="r-div"/>
+    <div class="r-ctr" style="font-size:9px;color:#888;margin-top:6px">
+      <div>IMAGYN POS · Imagyn Technologies</div>
+      <div>${isW ? 'SECURE VAULT DROP VERIFIED' : 'FLOAT DEPOSIT RECONCILED'}</div>
+    </div>
+  `;
+  document.getElementById('receipt-overlay').classList.add('open');
+}
+
+function closeReceipt() { document.getElementById('receipt-overlay').classList.remove('open'); }
+
+function doLogout() {
+  sessionStorage.clear(); localStorage.removeItem('terminal_operator');
+  window.location.href = 'terminal_login.html';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  syncParent();
+  updateClock();
+  setInterval(updateClock, 20000);
+
+  let opName = 'Adeel Saifee';
+  let opInitials = 'AS';
+  let opColor = '#4F46E5';
+  try {
+    const parsedOp = JSON.parse(localStorage.getItem('terminal_operator') || '{}');
+    if (parsedOp.name) {
+      opName = parsedOp.name;
+      opInitials = parsedOp.initials || parsedOp.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+      opColor = parsedOp.color || '#4F46E5';
+    } else if (typeof parsedOp === 'string' && parsedOp.trim() !== '') {
+      opName = parsedOp;
+      opInitials = parsedOp.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    }
+  } catch (e) {}
+
+  const opNameEl = document.getElementById('op-name');
+  if (opNameEl) opNameEl.textContent = opName;
+  const opAvatarEl = document.getElementById('op-avatar');
+  if (opAvatarEl) {
+    opAvatarEl.textContent = opInitials;
+    opAvatarEl.style.backgroundColor = opColor;
+  }
+
+  // Focus routing via click on pin input
+  document.getElementById('mgr-pin').addEventListener('focus', () => setFocus('pin'));
+  document.getElementById('mgr-pin').addEventListener('click', () => setFocus('pin'));
+  document.getElementById('amount-display').addEventListener('click', () => setFocus('amount'));
+
+  updateMetrics();
+});
+</script>
+</body>
+</html>

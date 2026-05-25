@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shift Open — IMAGYN POS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:             #FFFFFF;
+      --white:          #FFFFFF;
+      --navy:           #202020;         /* Charcoal sidebar */
+      --navy-2:         #121212;
+      --green:          #A8E63D;         /* Action Green */
+      --green-dim:      #F4FBE9;
+      --green-dark:     #96D32A;
+      --green-glow:     0 0 20px rgba(168, 230, 61, 0.25);
+      --amber:          #F59E0B;
+      --amber-dim:      #FEF3C7;
+      --red:            #EF4444;
+      --red-dim:        #FEF2F2;
+      --border:         #E5E5E5;
+      --border-2:       #D4D4D4;
+      --text:           #202020;
+      --text-muted:     #6B6B6B;
+      --text-dim:       #A3A3A3;
+      --sans:           'Inter Tight', 'Inter', ui-sans-serif, sans-serif;
+      --heading:        'Space Grotesk', sans-serif;
+      --mono:           'IBM Plex Mono', ui-monospace, monospace;
+      --surface:        #F7F7F7;
+      --surface-solid:  #F7F7F7;
+      --muted:          #6B6B6B;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); display: flex; user-select: none; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 4px; }
+
+    .icon {
+      font-family: 'Material Symbols Outlined';
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-flex; align-items: center; justify-content: center; line-height: 1; user-select: none;
+    }
+    .icon.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+    /* ── Sidebar (Slim premium style) ── */
+    .sidebar {
+      width: 76px; min-width: 76px; height: 100vh;
+      background: var(--navy); display: flex; flex-direction: column;
+      align-items: center; padding: 20px 0; position: fixed; left: 0; top: 0; z-index: 100;
+    }
+    .sidebar-brand {
+      margin-bottom: 24px; flex-shrink: 0;
+    }
+    .brand-circle {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--green); display: flex; align-items: center; justify-content: center;
+    }
+    .brand-circle .icon {
+      color: #202020; font-size: 22px; font-variation-settings: 'FILL' 1;
+    }
+    .sidebar-nav {
+      flex: 1; display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center;
+    }
+    .nav-btn {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; transition: all 0.1s;
+      background: transparent; color: rgba(255,255,255,0.55);
+      cursor: pointer; border: none; outline: none;
+    }
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.05);
+      color: #FFFFFF;
+    }
+    .nav-btn.active {
+      background: var(--green);
+      color: #202020;
+    }
+    .nav-btn.active .icon {
+      font-variation-settings: 'FILL' 1;
+    }
+    .nav-btn.locked {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .sidebar-footer {
+      width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;
+      padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;
+    }
+    .op-avatar-circle {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: #4F46E5;
+      color: #FFFFFF; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .logout-btn {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; color: rgba(255,255,255,0.55);
+      transition: all 0.1s;
+    }
+    .logout-btn:hover {
+      background: rgba(239,68,68,0.1);
+      color: var(--red);
+    }
+
+    /* ── Main ── */
+    .main { margin-left: 76px; display: flex; flex-direction: column; height: 100vh; min-height: 0; }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: 56px; background: var(--white); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; flex-shrink: 0;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 18px; }
+    .topbar-stat { display: flex; flex-direction: column; }
+    .tb-lbl { font-size: 10px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .tb-val { font-size: 13px; font-weight: 700; color: var(--text); }
+    .tb-div { width: 1px; height: 26px; background: var(--border); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .tb-badge {
+      display: flex; align-items: center; gap: 6px; background: var(--amber-dim);
+      padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(245,158,11,0.25);
+      font-size: 11px; font-weight: 700; color: var(--text);
+    }
+    .tb-badge .icon { color: var(--amber); font-size: 15px; }
+
+    /* ── Workspace ── */
+    .workspace { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+    /* ── Left: Policy Panel ── */
+    .policy-panel {
+      width: 40%; min-width: 40%; border-right: 1px solid var(--border);
+      background: var(--white); display: flex; flex-direction: column;
+      padding: 28px 24px; overflow-y: auto; gap: 20px;
+    }
+
+    .panel-eyebrow {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--green-dim); color: var(--green-dark);
+      border: 1px solid rgba(168,230,61,0.2); border-radius: 20px;
+      padding: 4px 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+    }
+    .panel-eyebrow .icon { font-size: 14px; }
+    .panel-title { font-size: 22px; font-weight: 700; color: var(--text); margin-top: 6px; fontFamily: var(--heading); }
+    .panel-sub   { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.6; }
+
+    .policy-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px;
+    }
+    .policy-icon {
+      width: 36px; height: 36px; border-radius: 10px; background: var(--white);
+      border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px; color: var(--text);
+    }
+    .policy-icon .icon { font-size: 18px; }
+    .policy-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; font-family: var(--heading); }
+    .policy-desc  { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    .policy-desc strong { color: var(--text); font-weight: 700; }
+
+    .checklist-title {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+      letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .check-item {
+      display: flex; align-items: center; gap: 9px; padding: 8px 0;
+      border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text);
+    }
+    .check-item:last-child { border-bottom: none; }
+    .check-item .icon { font-size: 16px; color: var(--green-dark); }
+
+    /* ── Right: Form Panel ── */
+    .form-panel {
+      flex: 1; background: var(--surface); overflow-y: auto;
+      display: flex; flex-direction: column;
+    }
+
+    .form-inner { padding: 28px 32px; max-width: 540px; width: 100%; margin: 0 auto; }
+
+    .form-header { margin-bottom: 24px; }
+    .form-title  { font-size: 20px; font-weight: 700; color: var(--text); font-family: var(--heading); }
+    .form-sub    { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Float input */
+    .float-input-wrap {
+      background: var(--white); border: 2px solid var(--border); border-radius: 16px;
+      display: flex; align-items: center; padding: 0 20px; gap: 12px;
+      transition: border-color 0.15s; margin-bottom: 12px;
+    }
+    .float-input-wrap:focus-within { border-color: var(--green-dark); }
+    .float-prefix { font-family: var(--heading); font-size: 16px; font-weight: 700; color: var(--text-muted); flex-shrink: 0; }
+    .float-input {
+      flex: 1; border: none; outline: none; font-family: var(--heading);
+      font-size: 32px; font-weight: 700; color: var(--text);
+      padding: 14px 0; background: transparent; text-align: right;
+    }
+
+    /* Quick amounts */
+    .quick-row { display: flex; gap: 10px; margin-bottom: 24px; }
+    .qa-btn {
+      flex: 1; height: 42px; background: var(--white); border: 1px solid var(--border-2);
+      border-radius: 10px; font-size: 13px; font-weight: 700; color: var(--text);
+      cursor: pointer; transition: all 0.13s; font-family: var(--sans);
+    }
+    .qa-btn:hover  { border-color: var(--text-muted); background: var(--surface); }
+    .qa-btn.active { border-color: var(--green-dark); background: var(--green-dim); color: var(--text); }
+    .qa-btn:active { transform: scale(0.96); }
+
+    /* Field */
+    .field-group  { margin-bottom: 18px; }
+    .field-label  { font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.7px; text-transform: uppercase; margin-bottom: 6px; display: block; }
+    .field-hint   { font-size: 10px; color: var(--text-dim); margin-top: 4px; }
+    .field-input, .field-textarea {
+      width: 100%; border: 1.5px solid var(--border); border-radius: 11px;
+      padding: 11px 14px; font-size: 13px; font-weight: 600; color: var(--text);
+      font-family: var(--sans); outline: none; background: var(--white); transition: border-color 0.13s;
+    }
+    .field-input:focus, .field-textarea:focus { border-color: var(--green-dark); }
+    .field-input.pin { letter-spacing: 8px; font-family: var(--mono); font-size: 16px; }
+    .field-textarea { height: 72px; resize: none; }
+
+    /* Actions */
+    .form-actions { display: flex; gap: 10px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: all 0.13s; border: none; outline: none; height: 50px; padding: 0 20px;
+      font-family: var(--sans);
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn .icon { font-size: 18px; }
+    .btn-ghost { background: var(--white); border: 1px solid var(--border-2); color: var(--text); }
+    .btn-ghost:hover { background: var(--surface); }
+    .btn-green { background: var(--green); color: var(--navy); flex: 2; box-shadow: var(--green-glow); font-size: 14px; font-family: var(--heading); }
+    .btn-green:hover { background: var(--green-dark); }
+
+    /* ── Success Overlay ── */
+    .success-overlay {
+      position: fixed; inset: 0; background: rgba(32,32,32,0.6);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .success-overlay.open { opacity: 1; pointer-events: all; }
+    .success-card {
+      background: var(--white); border-radius: 24px; padding: 36px; text-align: center;
+      max-width: 380px; width: 90%; box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+      transform: scale(0.92); transition: transform 0.25s;
+      border: 1px solid var(--border);
+    }
+    .success-overlay.open .success-card { transform: scale(1); }
+    .success-ico {
+      width: 72px; height: 72px; border-radius: 50%; background: var(--green-dim);
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 18px;
+    }
+    .success-ico .icon { font-size: 36px; color: var(--green-dark); }
+    .success-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; font-family: var(--heading); }
+    .success-sub   { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px; }
+    .progress-wrap { background: var(--surface); border-radius: 4px; height: 4px; overflow: hidden; margin-bottom: 10px; }
+    .progress-bar  { height: 100%; background: var(--green); border-radius: 4px; width: 0; transition: width 1.4s linear; }
+    .progress-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-circle">
+      <span class="icon">point_of_sale</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <button class="nav-btn" onclick="showToast('Dashboard locked — open shift first.','info')" title="Dashboard">
+      <span class="icon">dashboard</span>
+    </button>
+    <button class="nav-btn locked" onclick="showToast('Checkout locked — open shift first.','info')" title="Checkout">
+      <span class="icon">shopping_cart</span>
+    </button>
+    <button class="nav-btn locked" onclick="showToast('Inventory locked — open shift first.','info')" title="Inventory">
+      <span class="icon">inventory_2</span>
+    </button>
+    <button class="nav-btn locked" onclick="showToast('Orders locked — open shift first.','info')" title="Orders">
+      <span class="icon">receipt_long</span>
+    </button>
+    <button class="nav-btn locked" onclick="showToast('Reports locked — open shift first.','info')" title="Reports">
+      <span class="icon">assessment</span>
+    </button>
+    <button class="nav-btn locked" onclick="showToast('Cash Control locked — open shift first.','info')" title="Cash Control">
+      <span class="icon">payments</span>
+    </button>
+    <a class="nav-btn active" href="shift_open.html" title="Shift Open">
+      <span class="icon">group</span>
+    </a>
+    <button class="nav-btn" onclick="showToast('Settings locked — open shift first.','info')" title="Settings">
+      <span class="icon">settings</span>
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="op-avatar-circle" id="op-avatar" onclick="showToast('Manager PIN: 1234','info')">AS</div>
+    <a class="logout-btn" onclick="doLogout()" title="Sign Out">
+      <span class="icon">logout</span>
+    </a>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-stat">
+        <span class="tb-lbl">Store</span>
+        <span class="tb-val">Imagyn Technologies</span>
+      </div>
+      <div class="topbar-stat">
+        <span class="tb-lbl">Location</span>
+        <span class="tb-val">Tariq Road, Karachi</span>
+      </div>
+      <div class="tb-div"></div>
+      <div class="topbar-stat">
+        <span class="tb-lbl">Terminal</span>
+        <span class="tb-val">POS-01</span>
+      </div>
+      <div class="topbar-stat">
+        <span class="tb-lbl">Date</span>
+        <span class="tb-val" id="date-display">2026-05-22</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="tb-badge">
+        <span class="icon">timer_off</span>
+        Shift Closed
+      </div>
+    </div>
+  </header>
+
+  <!-- Workspace -->
+  <div class="workspace">
+
+    <!-- ── Left: Shift Policies ── -->
+    <div class="policy-panel">
+      <div>
+        <div class="panel-eyebrow"><span class="icon">policy</span>Shift Policies</div>
+        <div class="panel-title">Before You Begin</div>
+        <div class="panel-sub">Review compliance rules before opening your shift. All declarations are logged for audit.</div>
+      </div>
+
+      <div class="policy-card">
+        <div class="policy-icon"><span class="icon">account_balance_wallet</span></div>
+        <div>
+          <div class="policy-title">Cash Drawer Limit</div>
+          <div class="policy-desc">Operating limit is <strong>PKR 25,000</strong>. Excess cash must be deposited before transactions resume.</div>
+        </div>
+      </div>
+
+      <div class="policy-card">
+        <div class="policy-icon"><span class="icon">security</span></div>
+        <div>
+          <div class="policy-title">Auto Safe-Drop Threshold</div>
+          <div class="policy-desc">System triggers a mandatory safe-drop alert at <strong>PKR 20,000</strong> to minimize counter risk.</div>
+        </div>
+      </div>
+
+      <div class="policy-card">
+        <div class="policy-icon"><span class="icon">assignment_ind</span></div>
+        <div>
+          <div class="policy-title">Identity & Accountability</div>
+          <div class="policy-desc">Credentials must match the physically present cashier. Sharing POS logins is a <strong>high-severity violation</strong>.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:4px">
+        <div class="checklist-title">Pre-Shift Checklist</div>
+        <div class="check-item"><span class="icon">check_circle</span>Physical cash counted &amp; verified</div>
+        <div class="check-item"><span class="icon">check_circle</span>Barcode scanner powered on</div>
+        <div class="check-item"><span class="icon">check_circle</span>Receipt printer has paper loaded</div>
+        <div class="check-item"><span class="icon">check_circle</span>Card terminal connected &amp; tested</div>
+        <div class="check-item"><span class="icon">check_circle</span>Product catalog synced (SQLite)</div>
+      </div>
+    </div>
+
+    <!-- ── Right: Open Shift Form ── -->
+    <div class="form-panel">
+      <div class="form-inner">
+        <div class="form-header">
+          <div class="form-title">Open New Shift</div>
+          <div class="form-sub">Declare your opening float cash to unlock all checkout operations.</div>
+        </div>
+
+        <!-- Read-only info -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">Business Date</label>
+            <div style="height:42px;border:1px solid var(--border);border-radius:9px;background:#F8FAFC;padding:0 14px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted)">
+              <span class="icon" style="font-size:16px">event</span>
+              <span id="date-field">2026-05-22</span>
+            </div>
+          </div>
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">Cashier</label>
+            <div style="height:42px;border:1px solid var(--border);border-radius:9px;background:#F8FAFC;padding:0 14px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted)">
+              <span class="icon" style="font-size:16px">person</span>
+              <span id="cashier-field">Adeel Saifee</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Opening Float -->
+        <div class="field-group">
+          <label class="field-label">Opening Cash Float</label>
+          <div class="float-input-wrap">
+            <span class="float-prefix">PKR</span>
+            <input class="float-input" type="text" id="float-input" value="5,000" autocomplete="off"/>
+          </div>
+          <div class="quick-row" id="quick-row">
+            <button class="qa-btn" onclick="setFloat(2000)">PKR 2,000</button>
+            <button class="qa-btn active" onclick="setFloat(5000)">PKR 5,000</button>
+            <button class="qa-btn" onclick="setFloat(10000)">PKR 10,000</button>
+          </div>
+        </div>
+
+        <!-- Manager Code -->
+        <div class="field-group">
+          <label class="field-label">Manager Approval Code <span style="font-size:9px;color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input class="field-input pin" type="password" id="mgr-code" maxlength="6" placeholder="••••" autocomplete="off"/>
+          <div class="field-hint">Required only if store policy mandates manager approval at shift start.</div>
+        </div>
+
+        <!-- Notes -->
+        <div class="field-group">
+          <label class="field-label">Shift Notes</label>
+          <textarea class="field-textarea" id="shift-notes" placeholder="Initial cash count notes, hardware status, or other relevant remarks..."></textarea>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <button class="btn btn-ghost" onclick="doLogout()">
+            <span class="icon">logout</span>Cancel
+          </button>
+          <button class="btn btn-green" id="open-shift-btn" onclick="openShift()">
+            <span class="icon">power_settings_new</span>
+            Open Shift &amp; Unlock POS
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- end workspace -->
+</main>
+
+<!-- ═══ SUCCESS OVERLAY ═══ -->
+<div class="success-overlay" id="success-overlay">
+  <div class="success-card">
+    <div class="success-ico"><span class="icon">check_circle</span></div>
+    <div class="success-title">Shift Opened!</div>
+    <div class="success-sub">POS-01 is now active. You are ready to process transactions.</div>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div class="progress-label">Redirecting to Checkout…</div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div id="toasts" style="position:fixed;bottom:22px;right:22px;z-index:400;display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
+
+<script>
+function showToast(msg, type='success') {
+  const s = document.getElementById('toasts');
+  const t = document.createElement('div');
+  const icons = { success:'check_circle', error:'cancel', info:'info' };
+  const bg = { success:'#10B981', error:'#EF4444', info:'#334155' };
+  t.style.cssText = `display:flex;align-items:center;gap:9px;padding:11px 14px;border-radius:10px;color:white;font-size:12px;font-weight:600;background:${bg[type]||'#334155'};box-shadow:0 6px 20px rgba(0,0,0,.14);transform:translateY(6px);opacity:0;transition:all .22s;max-width:300px;pointer-events:all;font-family:Inter,sans-serif`;
+  t.innerHTML = `<span style="font-family:'Material Symbols Outlined';font-size:17px">${icons[type]||'info'}</span><span>${msg}</span>`;
+  s.appendChild(t);
+  requestAnimationFrame(() => requestAnimationFrame(() => { t.style.transform='translateY(0)'; t.style.opacity='1'; }));
+  setTimeout(() => { t.style.transform='translateY(6px)'; t.style.opacity='0'; setTimeout(()=>t.remove(),280); }, 3500);
+}
+
+function syncParent() {
+  try {
+    const doc = window.parent.document;
+    doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
+    const el = doc.getElementById('step-2');
+    if (el) el.classList.add('flow-step-active');
+    const url = doc.getElementById('simulator-url-display');
+    if (url) url.innerText = 'screens/shift_open.html';
+    const newTab = doc.getElementById('open-new-tab-btn');
+    if (newTab) newTab.href = 'screens/shift_open.html';
+  } catch(e) {}
+}
+
+// Float input
+const floatInput = document.getElementById('float-input');
+floatInput.addEventListener('input', function() {
+  let raw = this.value.replace(/[^0-9]/g,'');
+  if (raw) this.value = new Intl.NumberFormat('en-PK').format(raw);
+  else this.value = '';
+  // Deactivate all quick buttons when manually typed
+  document.querySelectorAll('.qa-btn').forEach(b => b.classList.remove('active'));
+});
+
+function setFloat(val) {
+  floatInput.value = new Intl.NumberFormat('en-PK').format(val);
+  document.querySelectorAll('.qa-btn').forEach(b => b.classList.remove('active'));
+  // Highlight the clicked button
+  event.target.classList.add('active');
+}
+
+function openShift() {
+  const raw = (floatInput.value || '').replace(/[^0-9]/g,'');
+  const floatVal = parseInt(raw) || 0;
+  if (floatVal <= 0) { showToast('Enter a valid opening float amount.','error'); return; }
+
+  sessionStorage.setItem('pos_shift_open','true');
+  sessionStorage.setItem('pos_shift_float', String(floatVal));
+  if (!sessionStorage.getItem('pos_cart')) sessionStorage.setItem('pos_cart','[]');
+
+  const overlay = document.getElementById('success-overlay');
+  overlay.classList.add('open');
+  setTimeout(() => {
+    document.getElementById('progress-bar').style.width = '100%';
+  }, 50);
+  setTimeout(() => { window.location.href = 'main_checkout.html'; }, 1600);
+}
+
+function doLogout() {
+  sessionStorage.clear();
+  localStorage.removeItem('terminal_operator');
+  window.location.href = 'terminal_login.html';
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  syncParent();
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('date-display').textContent = today;
+  document.getElementById('date-field').textContent   = today;
+
+  let opName = 'Adeel Saifee';
+  let opColor = '#10B981';
+  let opInitials = 'AS';
+
+  const opStr = localStorage.getItem('terminal_operator');
+  if (opStr) {
+    try {
+      const op = JSON.parse(opStr);
+      if (op.name) opName = op.name;
+      if (op.initials) {
+        opInitials = op.initials;
+      } else if (op.name) {
+        opInitials = op.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+      }
+      if (op.color) opColor = op.color;
+    } catch(e) {}
+  }
+
+  const opNameEl = document.getElementById('op-name');
+  if (opNameEl) opNameEl.textContent = opName;
+
+  const opAvatarEl = document.getElementById('op-avatar');
+  if (opAvatarEl) {
+    opAvatarEl.textContent = opInitials;
+    opAvatarEl.style.background = opColor;
+  }
+
+  const cashierFieldEl = document.getElementById('cashier-field');
+  if (cashierFieldEl) cashierFieldEl.textContent = opName;
+});
+</script>
+</body>
+</html>

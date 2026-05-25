@@ -1,0 +1,193 @@
+/* ============================================================================
+   IMAGYN POS — Operator Terminal Design System  (app.css)
+   Phase 2 production UI/UX modernization. Shared dark theme + components.
+   Served via the WebView2 virtual host as https://pos.app/app.css and linked
+   by every screen. Defines the canonical palette/typography/components so all
+   7 screens read as ONE polished dark POS terminal.
+
+   NOTE: tokens are declared with !important so this shared theme overrides the
+   per-screen :root blocks inherited from the original light prototype. The
+   screens are heavily CSS-variable-driven, so overriding the variables flips
+   most surfaces, text, borders and accents to the dark terminal palette.
+   ========================================================================== */
+
+:root {
+  /* ── Surfaces (dark) ── */
+  --bg:            #16181B !important;  /* app canvas            */
+  --surface:       #1F2226 !important;  /* cards / panels        */
+  --surface-2:     #262A2F !important;  /* nested / hover        */
+  --surface-solid: #1F2226 !important;
+  --white:         #1F2226 !important;  /* remap: "white" cards -> dark cards */
+
+  /* deep panels & text-on-green (kept near-black for contrast on lime) */
+  --navy:          #0E1012 !important;
+  --navy-2:        #0A0B0D !important;
+
+  /* ── Brand / accent ── */
+  --green:         #A8E63D !important;  /* primary action / active */
+  --green-dark:    #BCF15B !important;  /* hover                   */
+  --green-dim:     rgba(168,230,61,0.14) !important;
+  --green-glow:    0 0 24px rgba(168,230,61,0.30) !important;
+
+  /* ── Semantic ── */
+  --amber:         #F5B53D !important;
+  --amber-dim:     rgba(245,181,61,0.16) !important;
+  --red:           #FF5B5B !important;
+  --red-dim:       rgba(255,91,91,0.15) !important;
+  --blue:          #5AA0FF !important;
+  --purple:        #B98CFF !important;
+
+  /* ── Lines ── */
+  --border:        #2A2E34 !important;
+  --border-2:      #3A3F47 !important;
+  --border-active: #A8E63D !important;
+
+  /* ── Text ── */
+  --text:          #ECEEF1 !important;
+  --text-muted:    #A4ABB4 !important;
+  --text-dim:      #6F757E !important;
+  --muted:         #A4ABB4 !important;
+
+  /* ── Type ── */
+  --sans:    'Inter Tight', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --heading: 'Space Grotesk', 'Inter Tight', sans-serif;
+  --mono:    'IBM Plex Mono', ui-monospace, monospace;
+
+  /* ── Radius / shadow ── */
+  --r-sm: 8px;  --r-md: 12px;  --r-lg: 16px;  --r-xl: 22px;
+  --shadow-1: 0 1px 3px rgba(0,0,0,0.40);
+  --shadow-2: 0 8px 24px rgba(0,0,0,0.45);
+  --shadow-3: 0 24px 60px rgba(0,0,0,0.55);
+}
+
+/* ── Base / reset ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg) !important;
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+p, h1, h2, h3, h4, h5, h6 { margin: 0; }
+img { user-select: none; }
+::selection { background: rgba(168,230,61,0.35); color: #fff; }
+
+/* Material Symbols helper (screens use <span class="icon">name</span>) */
+.icon, .material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal; font-style: normal; line-height: 1;
+  letter-spacing: normal; text-transform: none; white-space: nowrap;
+  direction: ltr; -webkit-font-feature-settings: 'liga';
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+.material-symbols-outlined.fill, .icon.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+/* Native dropdown menus on dark */
+select option { background: #1F2226; color: #ECEEF1; }
+input::placeholder, textarea::placeholder { color: var(--text-dim); }
+
+/* Keyboard focus ring */
+:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+/* ── Scrollbars (dark) ───────────────────────────────────────────────────── */
+* { scrollbar-width: thin; scrollbar-color: var(--border-2) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 8px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: #4a5059; }
+
+/* ── Touch ergonomics for primary CTAs ──────────────────────────────────────
+   Bump the main confirm buttons used across screens so they are large and
+   obvious for a counter touchscreen. Screen-specific layout still applies. */
+.btn-green, .login-btn, .provision-btn, #complete-btn, #open-shift-btn,
+.btn.btn-green, .cb.proceed {
+  min-height: 56px;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em;
+}
+.btn, .nav-btn, .pin-key, .np-btn, .np-key, .mk-btn, .qa-btn,
+.tender-tab, .action-btn, .sc-btn, .r-btn, .ra-btn, .tab-btn {
+  cursor: pointer;
+}
+
+/* ── Shared status pills (use for any new/updated markup) ───────────────────
+   Replaces the original light-background inline pills so they read on dark. */
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  border: 1px solid var(--border-2); background: var(--surface-2); color: var(--text-muted);
+  white-space: nowrap;
+}
+.pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; display: block; }
+.pill-green { background: var(--green-dim); border-color: rgba(168,230,61,0.45); color: var(--green); }
+.pill-amber { background: var(--amber-dim); border-color: rgba(245,181,61,0.45); color: var(--amber); }
+.pill-red   { background: var(--red-dim);   border-color: rgba(255,91,91,0.45);  color: var(--red); }
+.pill-blue  { background: rgba(90,160,255,0.14); border-color: rgba(90,160,255,0.45); color: var(--blue); }
+
+/* ── Generic helper components (for upgraded markup) ────────────────────────── */
+.ds-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-1);
+}
+.ds-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 8px; padding: 40px 24px; color: var(--text-dim);
+  border: 1.5px dashed var(--border-2); border-radius: var(--r-md);
+}
+.ds-empty .icon { font-size: 34px; opacity: 0.5; }
+
+/* Soft fade for panels appearing on load */
+@keyframes dsFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.ds-fade { animation: dsFadeUp 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* ============================================================================
+   Legacy light-accent normalization.
+   The original prototype hard-codes pastel light colors in inline style="..."
+   attributes (status pills, badges, alerts). These attribute selectors remap
+   those exact tokens to dark-theme equivalents everywhere at once, so inline
+   accents read correctly on the dark terminal without editing every element.
+   (Pure white / #fff is intentionally NOT remapped so receipt/Z-report paper
+   stays light like a real printout.)
+   ========================================================================== */
+/* green family -> dim green surface / lime text & borders */
+[style*="#F0FDF4"], [style*="#ECFDF5"], [style*="#D1FAE5"], [style*="#DCFCE7"] { background-color: var(--green-dim) !important; }
+[style*="#BBF7D0"], [style*="#6EE7B7"], [style*="#A7F3D0"] { border-color: rgba(168,230,61,0.45) !important; }
+[style*="color:#065F46"], [style*="color: #065F46"],
+[style*="color:#059669"], [style*="color: #059669"],
+[style*="color:#047857"], [style*="color: #047857"] { color: var(--green) !important; }
+/* amber family */
+[style*="#FFF7ED"], [style*="#FFFBEB"], [style*="#FEF3C7"], [style*="#FFFAEB"] { background-color: var(--amber-dim) !important; }
+[style*="#FDE68A"], [style*="#FCD34D"] { border-color: rgba(245,181,61,0.45) !important; }
+[style*="color:#92400E"], [style*="color: #92400E"],
+[style*="color:#B45309"], [style*="color: #B45309"] { color: var(--amber) !important; }
+/* red family */
+[style*="#FEF2F2"], [style*="#FEE2E2"] { background-color: var(--red-dim) !important; }
+[style*="#FCA5A5"], [style*="#FECACA"] { border-color: rgba(255,91,91,0.4) !important; }
+[style*="color:#991B1B"], [style*="color: #991B1B"],
+[style*="color:#B91C1C"], [style*="color: #B91C1C"] { color: var(--red) !important; }
+/* blue family */
+[style*="#EFF6FF"], [style*="#DBEAFE"] { background-color: rgba(90,160,255,0.14) !important; }
+[style*="#93C5FD"], [style*="#BFDBFE"] { border-color: rgba(90,160,255,0.45) !important; }
+[style*="color:#1D4ED8"], [style*="color: #1D4ED8"],
+[style*="color:#1E40AF"], [style*="color: #1E40AF"] { color: var(--blue) !important; }
+/* light neutrals -> dark surface / muted text */
+[style*="background:#F8FAFC"], [style*="background: #F8FAFC"],
+[style*="background:#F1F5F9"], [style*="background: #F1F5F9"],
+[style*="background:#F0F0F0"], [style*="background: #F0F0F0"],
+[style*="background:#E2E8F0"], [style*="background: #E2E8F0"],
+[style*="background:#F4F6F8"], [style*="background:#F0F5FF"],
+[style*="background:#F7F7F7"], [style*="background:#F9FAFB"] { background-color: var(--surface-2) !important; }
+[style*="color:#94A3B8"], [style*="color: #94A3B8"],
+[style*="color:#64748B"], [style*="color: #64748B"] { color: var(--text-dim) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}

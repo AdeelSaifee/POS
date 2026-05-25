@@ -9,7 +9,7 @@
         Title="IMAGYN POS" 
         WindowStyle="None" 
         WindowState="Normal" 
-        ResizeMode="NoResize" 
+        ResizeMode="CanMinimize" 
         WindowStartupLocation="CenterScreen">
     <Grid>
         <wv2:WebView2 x:Name="MainWebView" />

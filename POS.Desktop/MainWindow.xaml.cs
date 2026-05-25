@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -62,7 +63,46 @@ namespace POS.Desktop
                 return;
             }
 
-            Icon = new BitmapImage(new Uri(iconPath, UriKind.Absolute));
+            BitmapImage source = new();
+            source.BeginInit();
+            source.CacheOption = BitmapCacheOption.OnLoad;
+            source.UriSource = new Uri(iconPath, UriKind.Absolute);
+            source.EndInit();
+            source.Freeze();
+
+            Icon = CreateTaskbarIcon(source, 64);
+        }
+
+        private static ImageSource CreateTaskbarIcon(BitmapSource source, int iconSize)
+        {
+            DrawingVisual visual = new();
+
+            using (DrawingContext context = visual.RenderOpen())
+            {
+                context.DrawRectangle(Brushes.White, null, new Rect(0, 0, iconSize, iconSize));
+
+                Rect logoBounds = GetContainBounds(source.PixelWidth, source.PixelHeight, iconSize);
+                context.DrawImage(source, logoBounds);
+            }
+
+            RenderTargetBitmap bitmap = new(iconSize, iconSize, 96, 96, PixelFormats.Pbgra32);
+            bitmap.Render(visual);
+            bitmap.Freeze();
+
+            return bitmap;
+        }
+
+        private static Rect GetContainBounds(double sourceWidth, double sourceHeight, double iconSize)
+        {
+            const double paddingRatio = 0.14;
+            double maxSize = iconSize * (1 - (paddingRatio * 2));
+            double scale = Math.Min(maxSize / sourceWidth, maxSize / sourceHeight);
+            double width = sourceWidth * scale;
+            double height = sourceHeight * scale;
+            double left = (iconSize - width) / 2;
+            double top = (iconSize - height) / 2;
+
+            return new Rect(left, top, width, height);
         }
     }
 }

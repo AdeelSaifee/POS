@@ -13,7 +13,7 @@
 
 The goal is to turn the prototype screens into the real terminal — **modernizing them into a production-ready UI** (a controlled Phase 2 step) — and to progressively replace the fake browser logic with real C# services backed by local SQLite and the `POS.Shared` domain model — then later wire sync to `POS.Api` and hardware via `POS.Desktop.Hardware`.
 
-> **Prime directive (updated 2026-05-25):** Strict prototype parity is **superseded** by a **production-ready UI/UX** standard. The screens are now a polished dark "IMAGYN Operator Terminal" design system (shared `Assets/ui/app.css`), approved on UX quality — touch-friendly, high-contrast, cashier-fast — rather than pixel-matching the original light prototype. IMAGYN branding and the cashier workflow are preserved; theme/layout may evolve where it improves real store operation. `docs/ui-prototype/screens/*` and `POS.Desktop/Assets/ui/*` are kept byte-identical.
+> **Prime directive (updated 2026-05-25):** Strict original prototype parity is **superseded** by a controlled **production-ready UI/UX cleanup** standard. The approved visual direction is the refined white/light IMAGYN POS terminal theme: bright cashier-facing work surfaces, IMAGYN green primary actions, clear hierarchy, large touch targets, and production-safe copy. The short-lived dark "Operator Terminal" direction was not retained. IMAGYN branding and the cashier workflow are preserved; theme/layout may evolve where it improves real store operation. `docs/ui-prototype/screens/*` and `POS.Desktop/Assets/ui/*` are kept synchronized.
 >
 > `docs/ui-prototype/index.html` is **only a simulator/launcher** (an iframe wrapper). It is **not** the app design. The individual screen files are the source of truth.
 
@@ -113,11 +113,11 @@ Layout, theme, fonts, colors, spacing, animations/transitions, tab switching, mo
 5. **Bridge:** register a host object (`window.chrome.webview.hostObjects.pos`) and/or use `postMessage` → `WebMessageReceived`. A `PosWebMessageRouter` dispatches typed requests to services and returns JSON responses.
 
 ### UI/UX direction (production-ready, not strict parity)
-- **HTML/CSS may be modernized** to a production standard. All 7 screens share one dark design system — `Assets/ui/app.css` (canonical tokens, components, touch sizing) — linked by every screen. Visual evolution is allowed where it improves real cashier operation; IMAGYN branding and the workflow are preserved.
+- **HTML/CSS may be modernized** to a production standard. The approved direction is the refined white/light IMAGYN POS terminal theme, not the dark operator-terminal experiment. Visual evolution is allowed where it improves real cashier operation; IMAGYN branding and the workflow are preserved.
 - **Still off-limits until later phases:** no business logic in JavaScript, no bridge/SQLite/services, no replacing `localStorage`/`sessionStorage` (Phases 3–5). UI-only JS (modals, tabs, demo rendering) may change.
 - **Offline assets:** Google Fonts + Material Symbols bundling remains scheduled for **Phase 8.4**.
 
-> **Phase 2 history.** (1) *Production UI freeze, 2026-05-25:* removed demo "Quick Shortcuts" bars, on-screen credential hints, and dead `index.html` simulator coupling; fixed broken markup; removed the login Tailwind CDN. (2) *Dark UI/UX modernization, 2026-05-25:* introduced the shared `app.css` dark "Operator Terminal" theme and re-skinned all 7 screens (dark surfaces, high-contrast text, larger primary CTAs, consistent pills/cards/keypads) while preserving every JS hook. Strict prototype parity is **retired** in favor of production-ready UI/UX approval. `docs/ui-prototype/screens/*` and `Assets/ui/*` are kept byte-identical.
+> **Phase 2 history.** (1) *Production UI freeze, 2026-05-25:* removed demo "Quick Shortcuts" bars, on-screen credential hints, and dead `index.html` simulator coupling; fixed broken markup; removed the login Tailwind CDN. (2) *Dark UI/UX experiment, 2026-05-25:* a shared `app.css` dark theme was tried and then removed. The retained direction is the refined white/light IMAGYN POS theme with the freeze/cleanup improvements preserved. Strict prototype parity remains **retired** in favor of production-ready UI/UX approval. `docs/ui-prototype/screens/*` and `Assets/ui/*` are kept synchronized.
 
 ---
 
@@ -307,10 +307,10 @@ Response DTO (JSON) travels back up the same path → screen renders authoritati
 - **Risks:** WebView2 runtime missing on dev/target machine; ensure consistent TFM (`net8.0-windows`).
 
 ### Phase 2 — Host screens, route them, and modernize the UI/UX
-- **Objective:** All 7 screens render and navigate correctly in-app **and** meet a production-ready UI/UX bar (cohesive dark terminal theme, touch-friendly, high-contrast). Strict pixel parity with the old prototype is **not** required.
-- **Files/folders:** `POS.Desktop/Assets/ui/*` (screens + `app.css` + `logo.png`), `Shell/WebViewHost.cs`.
-- **Tasks:** copy screens as build Content; `SetVirtualHostNameToFolderMapping("pos.app", …)`; navigate to `terminal_login.html`; **WPF shell replaces `index.html`**; introduce the shared `app.css` dark design system and re-skin all screens; keep `docs/` and `Assets/ui/` byte-identical.
-- **Expected output:** One polished dark POS terminal; full flow navigable in-app; UI/UX sign-off (replaces the old pixel-parity gate).
+- **Objective:** All 7 screens render and navigate correctly in-app **and** meet a production-ready UI/UX bar (refined white/light IMAGYN POS terminal theme, touch-friendly controls, readable cashier workflow). Strict pixel parity with the old prototype is **not** required.
+- **Files/folders:** `POS.Desktop/Assets/ui/*` (screens + `logo.png`), `Shell/WebViewHost.cs`.
+- **Tasks:** copy screens as build Content; `SetVirtualHostNameToFolderMapping("pos.app", …)`; navigate to `terminal_login.html`; **WPF shell replaces `index.html`**; apply controlled UI/UX cleanup while preserving the refined white/light theme; keep `docs/` and `Assets/ui/` synchronized.
+- **Expected output:** One polished white/light IMAGYN POS terminal; full flow navigable in-app; UI/UX sign-off (replaces the old pixel-parity gate).
 - **Risks:** theme regressions on a screen; asset paths/case sensitivity; font/icon loading (offline bundling deferred to 8.4).
 
 ### Phase 3 — Replace fake browser state

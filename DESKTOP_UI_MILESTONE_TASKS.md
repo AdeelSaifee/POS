@@ -19,7 +19,7 @@ Each task has:
 - **Risk/notes** — what to watch.
 
 **Standing guardrails (apply to every task):**
-- Phase 2 includes a controlled production UI/UX modernization. HTML/CSS edits and a shared `app.css` design system are allowed there; later UI edits should be narrow and intentional.
+- Phase 2 includes a controlled production UI/UX modernization. HTML/CSS edits are allowed there; later UI edits should be narrow and intentional.
 - `docs/ui-prototype/screens/*` and `POS.Desktop/Assets/ui/*` must stay synchronized for the shipped UI assets until one source is formally promoted.
 - `docs/ui-prototype/index.html` is a **simulator only** — never the final desktop design.
 - No business logic in the UI; C# owns all decisions. Offline-first; never block on the network.
@@ -405,9 +405,9 @@ Each task has:
 - **Risk/notes:** Keep it synchronized with `docs/ui-prototype/screens/` until cleanup promotes one source.
 
 **Task 2.1.2 — Copy the 7 screens + shared assets**
-- **Description:** Copy the screen files, `app.css`, and `logo.png` from `docs/ui-prototype/screens/`.
+- **Description:** Copy the screen files and `logo.png` from `docs/ui-prototype/screens/`.
 - **Files/folders:** `POS.Desktop/Assets/ui/*` ← `docs/ui-prototype/screens/*`.
-- **Expected output:** 7 HTML files + `app.css` + `logo.png` present.
+- **Expected output:** 7 HTML files + `logo.png` present.
 - **Verification:** File list matches source.
 - **Risk/notes:** Source and production copies must remain synchronized.
 
@@ -443,7 +443,7 @@ Each task has:
 - **Description:** Verify `docs/ui-prototype/screens/` and `POS.Desktop/Assets/ui/` contain the same shipped UI files.
 - **Files/folders:** `docs/ui-prototype/`.
 - **Expected output:** No source/production drift.
-- **Verification:** Hashes match for all 7 screens, `app.css`, and `logo.png`.
+- **Verification:** Hashes match for all 7 screens and `logo.png`.
 - **Risk/notes:** `docs/` may change during Phase 2 UI modernization, but the asset copy must match it.
 
 **Task 2.1.8 — Decide and record copy-vs-link policy**
@@ -627,11 +627,11 @@ Each task has:
 - **Verification:** 7 in-app captures.
 - **Risk/notes:** Same resolution as review shots.
 
-**Task 2.4.3 — Review dark terminal theme**
-- **Description:** Verify dark charcoal surfaces, IMAGYN green CTAs/highlights, and semantic amber/red states are consistent.
+**Task 2.4.3 — Review refined white/light terminal theme**
+- **Description:** Verify bright work surfaces, IMAGYN green CTAs/highlights, and semantic amber/red states are consistent.
 - **Files/folders:** all 7 screens.
-- **Expected output:** Cohesive dark operator-terminal theme.
-- **Verification:** No screen looks like an old light prototype or generic SaaS page.
+- **Expected output:** Cohesive refined white/light IMAGYN POS terminal theme.
+- **Verification:** No screen looks like the discarded dark operator-terminal experiment or a generic SaaS page.
 - **Risk/notes:** WebView2 color management edge cases.
 
 **Task 2.4.4 — Verify fonts and hierarchy**
@@ -649,10 +649,10 @@ Each task has:
 - **Risk/notes:** Avoid hover/active states that cause layout shift.
 
 **Task 2.4.6 — Verify modals/overlays**
-- **Description:** Verify receipt/confirm/customer/approval modals are readable on the dark theme.
+- **Description:** Verify receipt/confirm/customer/approval modals are readable on the refined white/light theme.
 - **Files/folders:** relevant screens.
-- **Expected output:** Dark modals are readable; receipt/Z-report paper remains intentionally light and readable.
-- **Verification:** No light text on light paper and no dark text on dark surfaces.
+- **Expected output:** Modals, receipt paper, and Z-report paper remain readable.
+- **Verification:** No low-contrast text on light surfaces.
 - **Risk/notes:** Z-index/backdrop.
 
 **Task 2.4.7 — Verify spacing, density, and layout**
@@ -755,41 +755,41 @@ Each task has:
 - **Verification:** No local font bundling changes before Phase 8.4.
 - **Risk/notes:** Bundling is strictly Phase 8.4.
 
-### Milestone 2.6 — Dark UI/UX modernization (shared `app.css` design system)
+### Milestone 2.6 — Refined white/light UI cleanup
 
-**Task 2.6.1 — Define dark terminal tokens**
-- **Description:** Create the shared `app.css` token layer for charcoal surfaces, IMAGYN green, semantic states, borders, type, radii, and shadows.
-- **Files/folders:** `docs/ui-prototype/screens/app.css`, `POS.Desktop/Assets/ui/app.css`.
-- **Expected output:** One reusable dark design system.
-- **Verification:** Tokens exist and override legacy per-screen light variables.
-- **Risk/notes:** Keep receipt/Z-report paper readable; do not globally darken pure white paper blindly.
+**Task 2.6.1 — Confirm approved visual direction**
+- **Description:** Confirm the approved direction is the refined white/light IMAGYN POS terminal theme; the dark operator-terminal theme is not retained.
+- **Files/folders:** all 7 screens; planning docs.
+- **Expected output:** White/light direction documented and active.
+- **Verification:** No dark `app.css` theme exists or is linked.
+- **Risk/notes:** Do not undo earlier production freeze/cleanup improvements.
 
-**Task 2.6.2 — Link app.css from every screen**
-- **Description:** Add the shared stylesheet link to all 7 screens.
+**Task 2.6.2 — Keep app.css inactive/absent**
+- **Description:** Remove `app.css` if it only exists for the discarded dark theme, and remove its links from every screen.
 - **Files/folders:** all 7 `.html` screens in both folders.
-- **Expected output:** Every screen consumes the shared design system.
-- **Verification:** Grep confirms `app.css` in all 14 screen files.
+- **Expected output:** Screens use their existing inline white/light CSS.
+- **Verification:** Grep confirms no `app.css` references in all 14 screen files.
 - **Risk/notes:** Preserve existing Google Font/Icon links until 8.4.
 
-**Task 2.6.3 — Normalize legacy light surfaces**
-- **Description:** Override old hardcoded light cards, panels, tables, tabs, inputs, and badges.
-- **Files/folders:** `app.css` plus screen-specific style blocks.
-- **Expected output:** No accidental bright panels except intentional paper surfaces.
-- **Verification:** Static scan and visual pass show no unreadable light/dark combinations.
-- **Risk/notes:** Old inline styles may need `!important` token remaps.
+**Task 2.6.3 — Remove dark-only override blocks**
+- **Description:** Remove per-screen dark-theme override blocks and comments while keeping refined light CSS.
+- **Files/folders:** all 7 screens.
+- **Expected output:** No `Phase 2 dark-theme overrides` blocks remain.
+- **Verification:** Grep confirms no dark-theme override comments.
+- **Risk/notes:** Do not remove unrelated UX-copy or security cleanup edits.
 
 **Task 2.6.4 — Upgrade touch ergonomics**
-- **Description:** Ensure primary CTAs, numpads, tender tabs, and cash controls feel large and stable for cashier touch use.
-- **Files/folders:** `app.css`, affected screen CSS.
+- **Description:** Ensure primary CTAs, numpads, tender tabs, and cash controls remain large and stable for cashier touch use.
+- **Files/folders:** affected screen CSS.
 - **Expected output:** Comfortable operator controls.
 - **Verification:** Main controls are at least 44px high/wide where practical.
 - **Risk/notes:** Avoid hover transforms that shift layout.
 
-**Task 2.6.5 — Verify readable states**
-- **Description:** Check normal, hover, active, disabled, selected, warning, error, and success states.
+**Task 2.6.5 — Verify readable light-theme states**
+- **Description:** Check normal, hover, active, disabled, selected, warning, error, and success states on the white/light theme.
 - **Files/folders:** all 7 screens.
-- **Expected output:** High-contrast states across the terminal.
-- **Verification:** No dark text on dark surfaces and no light text on light surfaces.
+- **Expected output:** Readable states across the terminal.
+- **Verification:** No low-contrast text on light surfaces.
 - **Risk/notes:** Pay special attention to pills, badges, modals, and disabled buttons.
 
 **Task 2.6.6 — Keep JS hooks stable**
@@ -807,10 +807,10 @@ Each task has:
 - **Risk/notes:** Demo data may still exist in JS until Phase 3/5, but it should not be visible as a security hint.
 
 **Task 2.6.8 — Sync source and production copies**
-- **Description:** Copy the modernized source screens and `app.css` into `POS.Desktop/Assets/ui/`.
+- **Description:** Copy the modernized source screens into `POS.Desktop/Assets/ui/`.
 - **Files/folders:** both UI folders.
 - **Expected output:** Source and production assets match.
-- **Verification:** Hash-compare all 7 screens and `app.css`.
+- **Verification:** Hash-compare all 7 screens.
 - **Risk/notes:** Do this after every UI edit until one source is promoted.
 
 **Task 2.6.9 — Update planning docs**

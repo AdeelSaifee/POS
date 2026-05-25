@@ -4,7 +4,6 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>IMAGYN POS — Payment</title>
-<link rel="stylesheet" href="app.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -340,25 +339,6 @@
   .toast.show { transform:translateY(0); opacity:1; }
   .toast.success { background:#10B981; }
   .toast.error   { background:#EF4444; }
-
-  /* ── Phase 2 dark-theme overrides (production UI). Receipt paper stays light by design. ── */
-  #topbar, #summary-panel, #tender-tabs { background: var(--surface) !important; }
-  .order-line { border-bottom-color: var(--border) !important; }
-  .amount-display, .method-card, .change-card, .card-tender-info,
-  .qa-btn, .np-btn, #back-btn, .tender-tab { background: var(--surface-2) !important; }
-  .tender-tab:hover:not(.active) { background: var(--surface) !important; }
-  #status-badge,
-  .tender-tab.active .material-symbols-outlined,
-  .tender-tab.active span.label,
-  .np-btn.exact-btn,
-  .change-row.highlight .v { color: var(--green) !important; }
-  #complete-btn:disabled { background: var(--surface-2) !important; color: var(--text-dim) !important; }
-  .icon-wrapper-blue { background: rgba(90,160,255,0.16) !important; }
-  .icon-wrapper-purple { background: rgba(185,140,255,0.16) !important; }
-  .np-btn.clear-btn:hover { background: var(--red-dim) !important; }
-  .np-btn.exact-btn:hover { background: var(--green-dim) !important; color: var(--green) !important; }
-  .receipt-paper { color: #111827 !important; border-color: #CBD5E1 !important; }
-  .r-btn:hover { background: var(--surface-2) !important; border-color: var(--border-2) !important; color: var(--text) !important; }
   .toast.info    { background:var(--navy); }
 </style>
 </head>

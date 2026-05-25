@@ -4,7 +4,6 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>IMAGYN POS — Checkout</title>
-<link rel="stylesheet" href="app.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -516,32 +515,6 @@
 
   @keyframes slideUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
   .fade-in { animation: slideUp 0.25s ease forwards; }
-
-  /* ── Phase 2 dark-theme overrides (production UI). Receipt paper stays light by design. ── */
-  .order-panel-header { background: var(--surface-2) !important; }
-  .order-number { color: var(--text) !important; }
-  .customer-attached { background: var(--green-dim) !important; border-color: rgba(168,230,61,0.45) !important; }
-  .cart-item { border-bottom-color: var(--border) !important; }
-  .cart-item:hover { background: var(--surface-2) !important; }
-  .cart-item.selected { background: var(--green-dim) !important; }
-  .btn-void:hover { background: var(--red-dim) !important; }
-  .stock-ok { background: var(--green-dim) !important; color: var(--green) !important; border-color: rgba(168,230,61,0.4) !important; }
-  .stock-low { background: var(--red-dim) !important; border-color: rgba(255,91,91,0.4) !important; }
-  .pin-cell { color: var(--text) !important; }
-  .mk-btn.danger { background: var(--red-dim) !important; border-color: rgba(255,91,91,0.4) !important; }
-  .qty-btn:hover { background: var(--surface-2) !important; }
-  .cart-item-delete:hover { background: var(--red-dim) !important; }
-  .qty-btn, .product-price { color: var(--text) !important; }
-  .modal-backdrop { background: rgba(10,11,13,0.72) !important; }
-  .modal-card { background: var(--surface) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-3) !important; }
-  .modal-body { background: var(--surface) !important; }
-  .modal-header h3 { color: white !important; }
-  .modal-header[style*="var(--green)"] h3,
-  .modal-header[style*="var(--amber)"] h3 { color: var(--navy) !important; }
-  .modal-header[style*="var(--green)"] .close-btn,
-  .modal-header[style*="var(--amber)"] .close-btn { background: rgba(0,0,0,0.14) !important; color: var(--navy) !important; }
-  .receipt-paper { color: #111827 !important; border-color: #CBD5E1 !important; }
-  .receipt-paper * { color: inherit; }
 </style>
 </head>
 <body>

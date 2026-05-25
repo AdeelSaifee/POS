@@ -23,7 +23,7 @@ Each milestone is described with:
 **Sizing rule:** a milestone is "right-sized" when its 10 future tasks would each be a small, single-sitting change (a file, a method, a wiring step, a test). If a milestone looks like it needs 25 tasks, it's split; if it needs 3, it's merged.
 
 **Guardrails carried from the integration plan (apply to every milestone):**
-- Phase 2 now includes a controlled production UI/UX modernization. HTML/CSS edits and a shared `app.css` design system are allowed there; later phases should keep UI changes narrow and intentional.
+- Phase 2 now includes a controlled production UI/UX modernization. HTML/CSS edits are allowed there; later phases should keep UI changes narrow and intentional.
 - Do **not** remove `docs/ui-prototype/*` until the in-app UI/UX sign-off is complete (Phase 2+).
 - No business logic in the UI — the HTML captures input and renders responses; C# owns all decisions.
 - Offline-first: the terminal never blocks on the network.
@@ -80,14 +80,14 @@ Each milestone is described with:
 
 ## Phase 2 — Host screens, route them, and modernize the UI/UX
 
-**Phase objective:** Get all 7 screens rendering and navigable in the shell (WPF shell replaces the `index.html` simulator) **and** modernized to a production-ready dark "Operator Terminal" UI/UX via a shared `app.css` design system. Strict pixel parity with the original light prototype is **retired** in favor of a UI/UX sign-off.
+**Phase objective:** Get all 7 screens rendering and navigable in the shell (WPF shell replaces the `index.html` simulator) **and** modernized to a production-ready refined white/light IMAGYN POS UI/UX. Strict pixel parity with the original prototype is **retired** in favor of a UI/UX sign-off, but the dark "Operator Terminal" direction is not retained.
 
 ### Milestone 2.1 — Asset ingestion pipeline
 - **Purpose:** Bring the screen assets into the app as build content and keep source/production copies synchronized.
-- **Expected output:** `docs/ui-prototype/screens/*`, `app.css`, and `logo.png` copied to `POS.Desktop/Assets/ui/`, marked as Content with copy-to-output; build emits them next to the binary.
+- **Expected output:** `docs/ui-prototype/screens/*` and `logo.png` copied to `POS.Desktop/Assets/ui/`, marked as Content with copy-to-output; build emits them next to the binary.
 - **Files/folders:** `POS.Desktop/Assets/ui/*`, `POS.Desktop/POS.Desktop.csproj` (Content globs).
 - **Dependencies:** Phase 1 complete.
-- **Acceptance criteria:** All 7 HTML files + `app.css` + `logo.png` present in the build output; `docs/ui-prototype/screens/` and `POS.Desktop/Assets/ui/` hashes match for the shipped UI assets.
+- **Acceptance criteria:** All 7 HTML files + `logo.png` present in the build output; `docs/ui-prototype/screens/` and `POS.Desktop/Assets/ui/` hashes match for the shipped UI assets.
 - **Risk notes:** Manual copies can drift. Keep `docs/` and `Assets/ui/` synchronized until cleanup promotes one production source.
 
 ### Milestone 2.2 — Virtual host mapping & initial navigation
@@ -111,7 +111,7 @@ Each milestone is described with:
 - **Expected output:** A documented review pass (per screen) against the production-ready bar.
 - **Files/folders:** `POS.Desktop/Assets/ui/*` (review); a short UI/UX sign-off note.
 - **Dependencies:** Milestone 2.3; Milestone 2.6 (modernization applied).
-- **Acceptance criteria:** Consistent dark theme & components across screens; strong visual hierarchy; large touch targets; high contrast/readability; no demo/security-sensitive visible wording; full flow works at terminal resolution.
+- **Acceptance criteria:** Consistent refined white/light IMAGYN POS theme across screens; strong visual hierarchy; large touch targets; high readability; no demo/security-sensitive visible wording; full flow works at terminal resolution.
 - **Risk notes:** Subtle DPI/zoom differences in WebView2; verify at the target terminal resolution, not a dev monitor.
 
 ### Milestone 2.5 — Font, icon & asset loading reliability
@@ -122,13 +122,13 @@ Each milestone is described with:
 - **Acceptance criteria:** Fonts/icons render when online; a clear record of what degrades when offline (drives the Phase 8 bundling milestone); no console 404s for local assets.
 - **Risk notes:** Do **not** rewrite `<link>`s to local fonts yet — that's Phase 8. This milestone only characterizes the dependency.
 
-### Milestone 2.6 — Dark UI/UX modernization (shared `app.css` design system)
-- **Purpose:** Replace the inconsistent per-screen light prototype styling with one cohesive, production-ready dark "Operator Terminal" design system.
-- **Expected output:** New `Assets/ui/app.css` (tokens, components, touch sizing, dark theme) linked by all 7 screens; each screen re-skinned to dark with per-screen overrides for legacy light rules; every JS hook preserved.
-- **Files/folders:** `POS.Desktop/Assets/ui/app.css` (+ `docs/` copy), all 7 screen `.html` files.
+### Milestone 2.6 — Refined white/light UI cleanup
+- **Purpose:** Keep the approved white/light IMAGYN POS theme while applying production UI/UX cleanup that removes demo/security/simulator artifacts.
+- **Expected output:** All 7 screens retain the refined white/light theme, production-safe copy, readable modals/forms/keypads/tables, and every JS hook preserved. The discarded dark `app.css` theme is not active.
+- **Files/folders:** all 7 screen `.html` files in `docs/ui-prototype/screens/` and `POS.Desktop/Assets/ui/`.
 - **Dependencies:** Milestones 2.1–2.3.
-- **Acceptance criteria:** All screens share one dark theme; no always-visible light surfaces or invisible (dark-on-dark) text; receipts/Z-report stay light paper by design; build succeeds; `docs/` and `Assets/ui/` byte-identical.
-- **Risk notes:** Legacy hardcoded/inline light colors must be overridden (token remap + `!important` overrides + inline-accent normalization); confirm no JS element hooks were renamed.
+- **Acceptance criteria:** No `app.css` dark theme is active; all screens remain synchronized between `docs/` and `Assets/ui/`; no Tailwind CDN, demo shortcut bars, visible PIN hints, or simulator coupling are reintroduced; build succeeds.
+- **Risk notes:** Do not accidentally revert earlier production freeze/copy/security wording improvements while removing only the dark theme layer.
 
 ---
 

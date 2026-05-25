@@ -182,7 +182,7 @@ public sealed class WebViewHost
     {
         EnsureInitialized();
 
-        var initialUrl = $"{AppOrigin}provision_terminal.html";
+        var initialUrl = $"{AppOrigin}terminal_login.html";
         _logger.LogInformation("Navigating to initial screen: {InitialUrl}", initialUrl);
 
         _webView.CoreWebView2.Navigate(initialUrl);

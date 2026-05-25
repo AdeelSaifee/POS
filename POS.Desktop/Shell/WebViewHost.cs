@@ -26,34 +26,34 @@ public sealed class WebViewHost
     }
 
     /// <summary>
-    /// Task 1.3.5: Asynchronously initializes the CoreWebView2 environment.
+    /// Asynchronously initializes the CoreWebView2 environment.
     /// </summary>
     public async Task InitializeAsync()
     {
-        _logger.LogInformation("Starting WebView2 initialization...");
+        _logger.LogInformation("Initializing WebView2 environment...");
 
         try
         {
             var userDataFolder = ConfigureUserDataFolder();
-            _logger.LogDebug($"Resolved WebView2 user data folder: {userDataFolder}");
+            _logger.LogDebug("WebView2 user data folder: {UserDataFolder}", userDataFolder);
 
             if (!Directory.Exists(userDataFolder))
             {
-                _logger.LogInformation("Creating WebView2 user data folder...");
+                _logger.LogInformation("Creating missing WebView2 user data folder...");
                 Directory.CreateDirectory(userDataFolder);
             }
 
             _logger.LogInformation("Creating CoreWebView2 environment...");
             var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
 
-            _logger.LogInformation("Ensuring CoreWebView2 is ready...");
+            _logger.LogInformation("Ensuring CoreWebView2 control is ready...");
             await _webView.EnsureCoreWebView2Async(environment);
 
             _isInitialized = true;
-            _logger.LogInformation("WebView2 initialized successfully.");
+            _logger.LogInformation("WebView2 shell initialized successfully.");
 
             var assetsPath = GetAssetsUiPath();
-            _logger.LogDebug($"UI assets folder verified at: {assetsPath}");
+            _logger.LogDebug("UI assets folder verified: {AssetsPath}", assetsPath);
 
             RenderPlaceholderPage();
 
@@ -63,14 +63,14 @@ public sealed class WebViewHost
         }
         catch (Exception ex)
         {
-            _logger.LogCritical(ex, "Failed to initialize WebView2 shell.");
+            _logger.LogCritical(ex, "Failed to initialize WebView2 shell component.");
             throw;
         }
     }
 
     /// <summary>
-    /// Task 2.2.1: Resolves the absolute runtime path to the UI assets folder.
-    /// Uses AppContext.BaseDirectory to ensure path is relative to the application output.
+    /// Resolves the absolute runtime path to the UI assets folder.
+    /// Uses AppContext.BaseDirectory to ensure the path is relative to the application output directory.
     /// </summary>
     private string GetAssetsUiPath()
     {
@@ -78,7 +78,7 @@ public sealed class WebViewHost
 
         if (!Directory.Exists(path))
         {
-            var error = $"CRITICAL: UI assets folder missing at: {path}. Check project Content globs.";
+            var error = $"UI assets folder missing at: {path}. Ensure project Content items are correctly configured.";
             _logger.LogError(error);
             throw new DirectoryNotFoundException(error);
         }
@@ -87,13 +87,13 @@ public sealed class WebViewHost
     }
 
     /// <summary>
-    /// Task 1.3.7: Renders a minimal placeholder page to verify WebView2 rendering.
+    /// Renders a minimal placeholder page to verify WebView2 rendering capabilities.
     /// </summary>
     private void RenderPlaceholderPage()
     {
         EnsureInitialized();
 
-        _logger.LogInformation("Rendering minimal placeholder page...");
+        _logger.LogInformation("Rendering shell placeholder page...");
 
         const string html = @"
             <!DOCTYPE html>
@@ -136,7 +136,7 @@ public sealed class WebViewHost
     }
 
     /// <summary>
-    /// Task 1.3.4: Defines the location for the WebView2 user data folder.
+    /// Defines the location for the WebView2 user data folder.
     /// Resolves to %LocalAppData% + WebView2:UserDataFolder configuration.
     /// </summary>
     private string ConfigureUserDataFolder()

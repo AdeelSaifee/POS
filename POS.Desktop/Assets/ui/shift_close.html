@@ -4,6 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Shift Close — IMAGYN POS</title>
+  <link rel="stylesheet" href="app.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -287,6 +288,26 @@
     .btn-ghost:hover { background: var(--surface); border-color: var(--border-2); }
     .btn-danger { background: var(--red); color: white; flex: 2; box-shadow: 0 4px 14px rgba(239,68,68,0.22); }
     .btn-danger:hover { filter: brightness(1.06); }
+
+    /* ── Phase 2 dark-theme overrides (production UI). Z-report paper stays light by design. ── */
+    .topbar, .denom-row, .stat-card, .inner-card, .cta-bar, .btn-ghost, .confirm-wrap { background: var(--surface) !important; }
+    .tb-badge { background: var(--surface-2) !important; }
+    .denom-input:focus { background: var(--surface) !important; }
+    .denom-row:hover { border-color: var(--border-2) !important; }
+    .denom-btn:hover { background: var(--border) !important; }
+    .confirm-ico { background: var(--red-dim) !important; }
+    .panel-title, .denom-label, .stat-val, .orders-num, .inner-card-title, .confirm-title { color: var(--text) !important; }
+    .denom-btn .icon { color: var(--text) !important; }
+    .stat-val.green { color: var(--green) !important; }
+    .var-card.over .var-card-title { color: var(--amber) !important; }
+    .var-card.over .var-card-desc { color: var(--amber) !important; }
+    .var-card.ok .var-card-title,
+    .var-card.ok .var-card-desc,
+    .cr-val.green { color: var(--green) !important; }
+    .var-card.short .var-card-title { color: var(--red) !important; }
+    .var-card.short .var-card-desc { color: var(--red) !important; }
+    .var-card textarea { background: var(--surface) !important; color: var(--text) !important; }
+    .tb-val, .tender-name, .tender-val, .cr-val, .cr-row.bold .cr-lbl { color: var(--text) !important; }
 
     /* ── Z-Report Receipt Modal ── */
     .overlay {

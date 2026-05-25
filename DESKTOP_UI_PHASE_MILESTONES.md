@@ -23,12 +23,12 @@ Each milestone is described with:
 **Sizing rule:** a milestone is "right-sized" when its 10 future tasks would each be a small, single-sitting change (a file, a method, a wiring step, a test). If a milestone looks like it needs 25 tasks, it's split; if it needs 3, it's merged.
 
 **Guardrails carried from the integration plan (apply to every milestone):**
-- Do **not** redesign the prototype UI. Only `<script>` blocks change; markup/CSS/`logo.png` stay byte-identical.
-- Do **not** remove `docs/ui-prototype/*` until in-app parity is confirmed (Phase 2+).
+- Phase 2 now includes a controlled production UI/UX modernization. HTML/CSS edits and a shared `app.css` design system are allowed there; later phases should keep UI changes narrow and intentional.
+- Do **not** remove `docs/ui-prototype/*` until the in-app UI/UX sign-off is complete (Phase 2+).
 - No business logic in the UI — the HTML captures input and renders responses; C# owns all decisions.
 - Offline-first: the terminal never blocks on the network.
 
-**Phase → milestone count:** P1 (5), P2 (5), P3 (5), P4 (5), P5 (6), P6 (5), P7 (6), P8 (6) = **43 milestones**.
+**Phase → milestone count:** P1 (5), P2 (6), P3 (5), P4 (5), P5 (6), P6 (5), P7 (6), P8 (6) = **44 milestones**.
 
 ---
 
@@ -78,17 +78,17 @@ Each milestone is described with:
 
 ---
 
-## Phase 2 — Preserve prototype screen UI and route screens properly
+## Phase 2 — Host screens, route them, and modernize the UI/UX
 
-**Phase objective:** Get all 7 prototype screens rendering **pixel-identically** inside the shell and navigable as a real flow, with the WPF shell replacing the `index.html` simulator.
+**Phase objective:** Get all 7 screens rendering and navigable in the shell (WPF shell replaces the `index.html` simulator) **and** modernized to a production-ready dark "Operator Terminal" UI/UX via a shared `app.css` design system. Strict pixel parity with the original light prototype is **retired** in favor of a UI/UX sign-off.
 
 ### Milestone 2.1 — Asset ingestion pipeline
-- **Purpose:** Bring the prototype screens into the app as build content without altering them.
-- **Expected output:** `docs/ui-prototype/screens/*` + `logo.png` copied to `POS.Desktop/Assets/ui/`, marked as Content with copy-to-output; build emits them next to the binary.
+- **Purpose:** Bring the screen assets into the app as build content and keep source/production copies synchronized.
+- **Expected output:** `docs/ui-prototype/screens/*`, `app.css`, and `logo.png` copied to `POS.Desktop/Assets/ui/`, marked as Content with copy-to-output; build emits them next to the binary.
 - **Files/folders:** `POS.Desktop/Assets/ui/*`, `POS.Desktop/POS.Desktop.csproj` (Content globs).
 - **Dependencies:** Phase 1 complete.
-- **Acceptance criteria:** All 7 HTML files + `logo.png` present in the build output; files are byte-identical to source; `docs/` originals untouched.
-- **Risk notes:** Decide copy-vs-link now; a manual copy will drift from `docs/`. Document that `Assets/ui/` becomes the single production source (per cleanup plan §11) once parity is confirmed.
+- **Acceptance criteria:** All 7 HTML files + `app.css` + `logo.png` present in the build output; `docs/ui-prototype/screens/` and `POS.Desktop/Assets/ui/` hashes match for the shipped UI assets.
+- **Risk notes:** Manual copies can drift. Keep `docs/` and `Assets/ui/` synchronized until cleanup promotes one production source.
 
 ### Milestone 2.2 — Virtual host mapping & initial navigation
 - **Purpose:** Serve the local screens under a stable origin so fetch/host-object semantics work.
@@ -101,18 +101,18 @@ Each milestone is described with:
 ### Milestone 2.3 — In-app screen routing (retire the simulator)
 - **Purpose:** Make the 7-screen flow navigable inside the shell without `index.html`.
 - **Expected output:** Existing `window.location.href` links resolve under the virtual host across the full flow; the simulator wrapper is not used by the app.
-- **Files/folders:** `POS.Desktop/Shell/WebViewHost.cs`; minimal `<script>`-only touch-ups if any link paths need adjusting (no markup/CSS changes).
+- **Files/folders:** `POS.Desktop/Shell/WebViewHost.cs`; screen HTML/CSS only if routing or Phase 2 UI modernization requires it.
 - **Dependencies:** Milestone 2.2.
 - **Acceptance criteria:** provision → login → shift_open → main_checkout → payment → cash_control → shift_close all reachable by their existing navigation; back-to-login works; `index.html` is never loaded by the shell.
 - **Risk notes:** The simulator used `postMessage` to sync a parent sidebar — that machinery is irrelevant now and must not leak into the app.
 
-### Milestone 2.4 — Visual parity verification across all 7 screens
-- **Purpose:** Prove the in-app rendering matches the prototype exactly.
-- **Expected output:** A documented side-by-side parity pass (browser vs in-app) for each screen.
-- **Files/folders:** `POS.Desktop/Assets/ui/*` (read-only verification); a short parity checklist note.
-- **Dependencies:** Milestone 2.3.
-- **Acceptance criteria:** Theme colors (`#A8E63D`, `#202020`, …), fonts (Space Grotesk / Inter Tight / IBM Plex Mono), spacing, numpads, modals, and `logo.png` render identically; no layout breakage at the terminal resolution.
-- **Risk notes:** Subtle DPI/zoom differences between WebView2 and a desktop browser; verify at the target terminal resolution, not a dev monitor.
+### Milestone 2.4 — Production UI/UX sign-off across all 7 screens
+- **Purpose:** Confirm the 7 screens read as one polished, cohesive production POS terminal (not pixel-matching the old prototype).
+- **Expected output:** A documented review pass (per screen) against the production-ready bar.
+- **Files/folders:** `POS.Desktop/Assets/ui/*` (review); a short UI/UX sign-off note.
+- **Dependencies:** Milestone 2.3; Milestone 2.6 (modernization applied).
+- **Acceptance criteria:** Consistent dark theme & components across screens; strong visual hierarchy; large touch targets; high contrast/readability; no demo/security-sensitive visible wording; full flow works at terminal resolution.
+- **Risk notes:** Subtle DPI/zoom differences in WebView2; verify at the target terminal resolution, not a dev monitor.
 
 ### Milestone 2.5 — Font, icon & asset loading reliability
 - **Purpose:** Ensure Google Fonts and Material Symbols load reliably (online now; bundling is Phase 8).
@@ -121,6 +121,14 @@ Each milestone is described with:
 - **Dependencies:** Milestone 2.4.
 - **Acceptance criteria:** Fonts/icons render when online; a clear record of what degrades when offline (drives the Phase 8 bundling milestone); no console 404s for local assets.
 - **Risk notes:** Do **not** rewrite `<link>`s to local fonts yet — that's Phase 8. This milestone only characterizes the dependency.
+
+### Milestone 2.6 — Dark UI/UX modernization (shared `app.css` design system)
+- **Purpose:** Replace the inconsistent per-screen light prototype styling with one cohesive, production-ready dark "Operator Terminal" design system.
+- **Expected output:** New `Assets/ui/app.css` (tokens, components, touch sizing, dark theme) linked by all 7 screens; each screen re-skinned to dark with per-screen overrides for legacy light rules; every JS hook preserved.
+- **Files/folders:** `POS.Desktop/Assets/ui/app.css` (+ `docs/` copy), all 7 screen `.html` files.
+- **Dependencies:** Milestones 2.1–2.3.
+- **Acceptance criteria:** All screens share one dark theme; no always-visible light surfaces or invisible (dark-on-dark) text; receipts/Z-report stay light paper by design; build succeeds; `docs/` and `Assets/ui/` byte-identical.
+- **Risk notes:** Legacy hardcoded/inline light colors must be overridden (token remap + `!important` overrides + inline-accent normalization); confirm no JS element hooks were renamed.
 
 ---
 

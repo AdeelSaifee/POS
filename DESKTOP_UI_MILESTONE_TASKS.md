@@ -19,11 +19,11 @@ Each task has:
 - **Risk/notes** — what to watch.
 
 **Standing guardrails (apply to every task):**
-- No UI redesign. Only `<script>` blocks in screens may change; markup/CSS/`logo.png` stay byte-identical.
-- `docs/ui-prototype/screens/*` remains the **visual source of truth**.
+- Phase 2 includes a controlled production UI/UX modernization. HTML/CSS edits and a shared `app.css` design system are allowed there; later UI edits should be narrow and intentional.
+- `docs/ui-prototype/screens/*` and `POS.Desktop/Assets/ui/*` must stay synchronized for the shipped UI assets until one source is formally promoted.
 - `docs/ui-prototype/index.html` is a **simulator only** — never the final desktop design.
 - No business logic in the UI; C# owns all decisions. Offline-first; never block on the network.
-- Do not delete `docs/ui-prototype/*` until in-app parity is confirmed (Phase 2+).
+- Do not delete `docs/ui-prototype/*` until in-app production UI/UX sign-off is confirmed (Phase 2+).
 
 **Numbering:** `Task P.M.T` = Phase P, Milestone M, Task T.
 
@@ -398,18 +398,18 @@ Each task has:
 ### Milestone 2.1 — Asset ingestion pipeline
 
 **Task 2.1.1 — Create the assets folder**
-- **Description:** Add `POS.Desktop/Assets/ui/` to hold the production copy of screens.
+- **Description:** Add `POS.Desktop/Assets/ui/` to hold the production copy of the screen assets.
 - **Files/folders:** `POS.Desktop/Assets/ui/` (new).
 - **Expected output:** Empty target folder.
 - **Verification:** Folder exists in the project.
-- **Risk/notes:** This becomes the single UI source post-parity.
+- **Risk/notes:** Keep it synchronized with `docs/ui-prototype/screens/` until cleanup promotes one source.
 
-**Task 2.1.2 — Copy the 7 screens + logo**
-- **Description:** Copy the screen files and `logo.png` verbatim from `docs/ui-prototype/screens/`.
+**Task 2.1.2 — Copy the 7 screens + shared assets**
+- **Description:** Copy the screen files, `app.css`, and `logo.png` from `docs/ui-prototype/screens/`.
 - **Files/folders:** `POS.Desktop/Assets/ui/*` ← `docs/ui-prototype/screens/*`.
-- **Expected output:** 7 HTML files + `logo.png` present.
+- **Expected output:** 7 HTML files + `app.css` + `logo.png` present.
 - **Verification:** File list matches source.
-- **Risk/notes:** Verbatim copy — no edits.
+- **Risk/notes:** Source and production copies must remain synchronized.
 
 **Task 2.1.3 — Add Content globs to the csproj**
 - **Description:** Include `Assets/ui/**` as Content.
@@ -425,12 +425,12 @@ Each task has:
 - **Verification:** Files appear next to the binary after build.
 - **Risk/notes:** PreserveNewest avoids needless copies.
 
-**Task 2.1.5 — Verify byte-identical copy**
-- **Description:** Hash-compare copied files vs `docs/` originals.
+**Task 2.1.5 — Verify synchronized UI assets**
+- **Description:** Hash-compare copied files vs `docs/` source assets.
 - **Files/folders:** `POS.Desktop/Assets/ui/*`, `docs/ui-prototype/screens/*`.
 - **Expected output:** Matching hashes.
 - **Verification:** Hashes equal for all files.
-- **Risk/notes:** Guarantees no accidental edits.
+- **Risk/notes:** Guarantees source/production drift is caught.
 
 **Task 2.1.6 — Build and confirm output**
 - **Description:** Build and inspect the output directory for assets.
@@ -439,12 +439,12 @@ Each task has:
 - **Verification:** All files copied.
 - **Risk/notes:** Path casing matters on some setups.
 
-**Task 2.1.7 — Confirm docs originals untouched**
-- **Description:** Verify `docs/ui-prototype/` is unchanged.
+**Task 2.1.7 — Confirm source and production stay in sync**
+- **Description:** Verify `docs/ui-prototype/screens/` and `POS.Desktop/Assets/ui/` contain the same shipped UI files.
 - **Files/folders:** `docs/ui-prototype/`.
-- **Expected output:** Originals intact.
-- **Verification:** Git diff shows no changes there.
-- **Risk/notes:** Source of truth stays put until parity.
+- **Expected output:** No source/production drift.
+- **Verification:** Hashes match for all 7 screens, `app.css`, and `logo.png`.
+- **Risk/notes:** `docs/` may change during Phase 2 UI modernization, but the asset copy must match it.
 
 **Task 2.1.8 — Decide and record copy-vs-link policy**
 - **Description:** Document that `Assets/ui/` is a copy and how it stays in sync until `docs/` retires.
@@ -453,19 +453,19 @@ Each task has:
 - **Verification:** Note exists.
 - **Risk/notes:** Drift risk if both edited — single-source after parity.
 
-**Task 2.1.9 — Note the post-parity promotion**
-- **Description:** Record that `Assets/ui/` becomes the production source after Phase 2 parity (per cleanup §11).
+**Task 2.1.9 — Note the post-sign-off promotion**
+- **Description:** Record that one UI source is promoted only after Phase 2 UI/UX sign-off (per cleanup §11).
 - **Files/folders:** repo notes.
 - **Expected output:** Cleanup linkage documented.
 - **Verification:** Referenced by Phase 8.6.
-- **Risk/notes:** Gate deletion on parity sign-off.
+- **Risk/notes:** Gate deletion on UI/UX sign-off.
 
-**Task 2.1.10 — Verify no markup/CSS changes**
-- **Description:** Confirm the copy introduced zero markup/CSS edits.
+**Task 2.1.10 — Verify source/asset sync**
+- **Description:** Confirm the production asset copy exactly matches the source screen folder.
 - **Files/folders:** `POS.Desktop/Assets/ui/*`.
-- **Expected output:** Identical content.
+- **Expected output:** Identical source/asset content.
 - **Verification:** Diff vs source is empty.
-- **Risk/notes:** Standing guardrail.
+- **Risk/notes:** This is a sync check, not a ban on sanctioned Phase 2 UI/CSS changes.
 
 ### Milestone 2.2 — Virtual host mapping & initial navigation
 
@@ -556,11 +556,11 @@ Each task has:
 - **Risk/notes:** Relative paths preferred.
 
 **Task 2.3.3 — Adjust link paths if needed (script-only)**
-- **Description:** Fix only broken link paths inside `<script>`/`href` (no markup/CSS).
-- **Files/folders:** `POS.Desktop/Assets/ui/*` (`<script>`/links only).
+- **Description:** Fix broken link paths inside `<script>`/`href` if needed.
+- **Files/folders:** `POS.Desktop/Assets/ui/*`.
 - **Expected output:** Working navigation.
 - **Verification:** No dead links.
-- **Risk/notes:** Do not alter design elements.
+- **Risk/notes:** Keep routing fixes separate from the sanctioned 2.6 UI modernization work.
 
 **Task 2.3.4 — Verify provision→login→shift_open**
 - **Description:** Walk the first leg of the flow.
@@ -602,7 +602,7 @@ Each task has:
 - **Files/folders:** all screens.
 - **Expected output:** Complete flow works.
 - **Verification:** End-to-end pass.
-- **Risk/notes:** Visual parity verified in 2.4.
+- **Risk/notes:** Production UI/UX sign-off is verified in 2.4 after modernization.
 
 **Task 2.3.10 — Confirm no index.html dependency remains**
 - **Description:** Verify nothing references the simulator.
@@ -611,13 +611,13 @@ Each task has:
 - **Verification:** Grep shows no live references.
 - **Risk/notes:** Keep `docs/index.html` as reference only.
 
-### Milestone 2.4 — Visual parity verification (all 7 screens)
+### Milestone 2.4 — Production UI/UX sign-off (all 7 screens)
 
-**Task 2.4.1 — Capture browser reference shots**
-- **Description:** Screenshot each prototype screen in a desktop browser.
+**Task 2.4.1 — Capture reviewed screen shots**
+- **Description:** Screenshot each modernized screen in a desktop browser or WebView2 at the target resolution.
 - **Files/folders:** `docs/ui-prototype/screens/*`.
-- **Expected output:** Reference images.
-- **Verification:** 7 references captured.
+- **Expected output:** 7 review images.
+- **Verification:** 7 screens captured.
 - **Risk/notes:** Use target resolution.
 
 **Task 2.4.2 — Capture in-app shots**
@@ -625,62 +625,62 @@ Each task has:
 - **Files/folders:** runtime.
 - **Expected output:** In-app images.
 - **Verification:** 7 in-app captures.
-- **Risk/notes:** Same resolution as references.
+- **Risk/notes:** Same resolution as review shots.
 
-**Task 2.4.3 — Compare theme colors**
-- **Description:** Verify `#A8E63D`, `#202020`, surface/amber/red match.
-- **Files/folders:** comparison set.
-- **Expected output:** Color parity.
-- **Verification:** No color drift.
+**Task 2.4.3 — Review dark terminal theme**
+- **Description:** Verify dark charcoal surfaces, IMAGYN green CTAs/highlights, and semantic amber/red states are consistent.
+- **Files/folders:** all 7 screens.
+- **Expected output:** Cohesive dark operator-terminal theme.
+- **Verification:** No screen looks like an old light prototype or generic SaaS page.
 - **Risk/notes:** WebView2 color management edge cases.
 
-**Task 2.4.4 — Compare fonts**
+**Task 2.4.4 — Verify fonts and hierarchy**
 - **Description:** Verify Space Grotesk / Inter Tight / IBM Plex Mono render.
-- **Files/folders:** comparison set.
-- **Expected output:** Font parity.
-- **Verification:** Headings/body/mono correct.
+- **Files/folders:** all 7 screens.
+- **Expected output:** Clear headings, readable body text, and mono totals/receipts.
+- **Verification:** Headings/body/mono roles are consistent.
 - **Risk/notes:** Online fonts now; bundling in 8.4.
 
-**Task 2.4.5 — Compare numpad/keypad layouts**
-- **Description:** Verify keypads on login/payment/cash control.
+**Task 2.4.5 — Verify touch targets and keypads**
+- **Description:** Verify keypads, primary CTAs, tabs, and action buttons are comfortable for touch.
 - **Files/folders:** relevant screens.
-- **Expected output:** Layout parity.
-- **Verification:** Grids match.
-- **Risk/notes:** Touch target sizes.
+- **Expected output:** Large, stable operator controls.
+- **Verification:** Key controls meet the 44px+ practical touch target guideline.
+- **Risk/notes:** Avoid hover/active states that cause layout shift.
 
-**Task 2.4.6 — Compare modals/overlays**
-- **Description:** Verify receipt/confirm/loyalty modals.
+**Task 2.4.6 — Verify modals/overlays**
+- **Description:** Verify receipt/confirm/customer/approval modals are readable on the dark theme.
 - **Files/folders:** relevant screens.
-- **Expected output:** Modal parity.
-- **Verification:** Overlays match.
+- **Expected output:** Dark modals are readable; receipt/Z-report paper remains intentionally light and readable.
+- **Verification:** No light text on light paper and no dark text on dark surfaces.
 - **Risk/notes:** Z-index/backdrop.
 
-**Task 2.4.7 — Compare spacing & radii**
-- **Description:** Verify padding/gaps/border-radius.
-- **Files/folders:** comparison set.
-- **Expected output:** Spacing parity.
-- **Verification:** No layout shift.
+**Task 2.4.7 — Verify spacing, density, and layout**
+- **Description:** Verify cashier workflows stay dense but not cramped.
+- **Files/folders:** all 7 screens.
+- **Expected output:** Practical store-counter layout.
+- **Verification:** No overlapping text, clipped controls, or accidental horizontal scroll.
 - **Risk/notes:** Subtle DPI differences.
 
-**Task 2.4.8 — Compare logo placement**
-- **Description:** Verify `logo.png` size/position.
+**Task 2.4.8 — Verify branding and active navigation**
+- **Description:** Verify `logo.png`, active nav, status pills, and IMAGYN green highlights read consistently.
 - **Files/folders:** screens using the logo.
-- **Expected output:** Logo parity.
-- **Verification:** Matches reference.
+- **Expected output:** Cohesive IMAGYN terminal identity.
+- **Verification:** Logo loads and active state is obvious.
 - **Risk/notes:** Fallback text must not appear.
 
-**Task 2.4.9 — Log any drift**
-- **Description:** Record discrepancies with screenshots.
-- **Files/folders:** parity notes.
-- **Expected output:** Drift list (ideally empty).
+**Task 2.4.9 — Log any UI defects**
+- **Description:** Record contrast, spacing, state, or readability defects with screenshots.
+- **Files/folders:** UI/UX notes.
+- **Expected output:** Defect list (ideally empty).
 - **Verification:** Items triaged.
-- **Risk/notes:** Drift fixes are script/asset only.
+- **Risk/notes:** Fix UI-only defects before Phase 3 starts.
 
-**Task 2.4.10 — Produce parity sign-off**
-- **Description:** Create a parity checklist and sign it off.
-- **Files/folders:** parity notes.
-- **Expected output:** Signed parity record.
-- **Verification:** Sign-off recorded.
+**Task 2.4.10 — Produce production UI/UX sign-off**
+- **Description:** Create a UI/UX checklist and sign it off before bridge work.
+- **Files/folders:** UI/UX notes.
+- **Expected output:** Signed UI/UX record.
+- **Verification:** Sign-off recorded for all 7 screens.
 - **Risk/notes:** Gates `docs/` cleanup (8.6).
 
 ### Milestone 2.5 — Font/icon/asset loading reliability
@@ -749,11 +749,83 @@ Each task has:
 - **Risk/notes:** Licensing check needed (8.4.1).
 
 **Task 2.5.10 — Confirm no premature link rewrite**
-- **Description:** Ensure `<link>`s are NOT changed yet.
+- **Description:** Ensure external font/icon `<link>`s are not rewritten to local files yet.
 - **Files/folders:** `POS.Desktop/Assets/ui/*`.
-- **Expected output:** Links unchanged.
-- **Verification:** Diff shows no link edits.
+- **Expected output:** Google Fonts / Material Symbols still load as characterized dependencies.
+- **Verification:** No local font bundling changes before Phase 8.4.
 - **Risk/notes:** Bundling is strictly Phase 8.4.
+
+### Milestone 2.6 — Dark UI/UX modernization (shared `app.css` design system)
+
+**Task 2.6.1 — Define dark terminal tokens**
+- **Description:** Create the shared `app.css` token layer for charcoal surfaces, IMAGYN green, semantic states, borders, type, radii, and shadows.
+- **Files/folders:** `docs/ui-prototype/screens/app.css`, `POS.Desktop/Assets/ui/app.css`.
+- **Expected output:** One reusable dark design system.
+- **Verification:** Tokens exist and override legacy per-screen light variables.
+- **Risk/notes:** Keep receipt/Z-report paper readable; do not globally darken pure white paper blindly.
+
+**Task 2.6.2 — Link app.css from every screen**
+- **Description:** Add the shared stylesheet link to all 7 screens.
+- **Files/folders:** all 7 `.html` screens in both folders.
+- **Expected output:** Every screen consumes the shared design system.
+- **Verification:** Grep confirms `app.css` in all 14 screen files.
+- **Risk/notes:** Preserve existing Google Font/Icon links until 8.4.
+
+**Task 2.6.3 — Normalize legacy light surfaces**
+- **Description:** Override old hardcoded light cards, panels, tables, tabs, inputs, and badges.
+- **Files/folders:** `app.css` plus screen-specific style blocks.
+- **Expected output:** No accidental bright panels except intentional paper surfaces.
+- **Verification:** Static scan and visual pass show no unreadable light/dark combinations.
+- **Risk/notes:** Old inline styles may need `!important` token remaps.
+
+**Task 2.6.4 — Upgrade touch ergonomics**
+- **Description:** Ensure primary CTAs, numpads, tender tabs, and cash controls feel large and stable for cashier touch use.
+- **Files/folders:** `app.css`, affected screen CSS.
+- **Expected output:** Comfortable operator controls.
+- **Verification:** Main controls are at least 44px high/wide where practical.
+- **Risk/notes:** Avoid hover transforms that shift layout.
+
+**Task 2.6.5 — Verify readable states**
+- **Description:** Check normal, hover, active, disabled, selected, warning, error, and success states.
+- **Files/folders:** all 7 screens.
+- **Expected output:** High-contrast states across the terminal.
+- **Verification:** No dark text on dark surfaces and no light text on light surfaces.
+- **Risk/notes:** Pay special attention to pills, badges, modals, and disabled buttons.
+
+**Task 2.6.6 — Keep JS hooks stable**
+- **Description:** Preserve existing IDs/classes/functions used by the demo scripts and future bridge work.
+- **Files/folders:** all 7 screens.
+- **Expected output:** UI styling changes do not break current screen behavior.
+- **Verification:** Hooks such as `operator-grid`, `pin-dots`, `login-btn`, `cart-items-list`, `denom-list`, and tender tabs remain present.
+- **Risk/notes:** Do not rename script-targeted elements for styling convenience.
+
+**Task 2.6.7 — Remove production-unfit visible wording**
+- **Description:** Confirm demo shortcut bars, visible credential hints, and simulator-only copy are absent.
+- **Files/folders:** all 7 screens.
+- **Expected output:** Cashier-facing copy reads production-ready.
+- **Verification:** Grep for Tailwind CDN, simulator references, demo/security hints, and visible PIN hints.
+- **Risk/notes:** Demo data may still exist in JS until Phase 3/5, but it should not be visible as a security hint.
+
+**Task 2.6.8 — Sync source and production copies**
+- **Description:** Copy the modernized source screens and `app.css` into `POS.Desktop/Assets/ui/`.
+- **Files/folders:** both UI folders.
+- **Expected output:** Source and production assets match.
+- **Verification:** Hash-compare all 7 screens and `app.css`.
+- **Risk/notes:** Do this after every UI edit until one source is promoted.
+
+**Task 2.6.9 — Update planning docs**
+- **Description:** Replace strict parity/no-redesign language with the controlled Phase 2 UI/UX modernization direction.
+- **Files/folders:** `DESKTOP_UI_INTEGRATION_PLAN.md`, `DESKTOP_UI_PHASE_MILESTONES.md`, `DESKTOP_UI_MILESTONE_TASKS.md`.
+- **Expected output:** Roadmap matches the new UI direction.
+- **Verification:** Search for conflicting `do not redesign`, `pixel-identical`, `byte-identical prototype copy`, and `script-only` wording.
+- **Risk/notes:** Do not rewrite unrelated backend/sync/hardware phases.
+
+**Task 2.6.10 — Build and handoff review**
+- **Description:** Run a full solution build and record any visual-review gaps before Phase 3.
+- **Files/folders:** `POS.slnx`, UI assets.
+- **Expected output:** Build passes; remaining visual QA items are explicit.
+- **Verification:** `dotnet build POS.slnx` succeeds.
+- **Risk/notes:** Build success does not replace manual WebView2 visual sign-off.
 
 ---
 
@@ -3134,11 +3206,11 @@ Each task has:
 - **Verification:** List produced.
 - **Risk/notes:** Don't delete blindly.
 
-**Task 8.6.8 — Retire docs/ui-prototype after parity**
-- **Description:** Remove prototype only after parity sign-off (2.4.10).
+**Task 8.6.8 — Retire docs/ui-prototype after UI/UX sign-off**
+- **Description:** Remove prototype only after production UI/UX sign-off (2.4.10).
 - **Files/folders:** `docs/ui-prototype/*`.
 - **Expected output:** Clean repo.
-- **Verification:** Parity sign-off recorded first.
+- **Verification:** UI/UX sign-off recorded first.
 - **Risk/notes:** Irreversible — gate strictly.
 
 **Task 8.6.9 — Test fresh install runs full flow**
@@ -3159,9 +3231,9 @@ Each task has:
 
 ## Summary
 
-- **8 phases · 43 milestones · 430 tasks** (every milestone = exactly 10 ordered tasks).
+- **8 phases · 44 milestones · 440 tasks** (every milestone = exactly 10 ordered tasks).
 - Tasks are sequential within a milestone and small enough to implement one at a time.
-- The build order from the integration plan still applies: do **Phase 1 → 2 → 3 → 4 → 5 (login/shift/checkout/payment slice)** first for a usable terminal; **Phase 6 (sync)** and **Phase 7 (hardware)** can run in parallel after Phase 5; **Phase 8** finishes (except 8.4, which only needs 2.5).
-- Standing guardrails held throughout: no UI redesign, `docs/ui-prototype/screens/*` is the visual source of truth, `index.html` is a simulator only, no business logic in the UI, offline-first, and the prototype is not deleted until in-app parity is signed off.
+- The build order from the integration plan still applies: do **Phase 1 → 2 (including production UI/UX sign-off) → 3 → 4 → 5 (login/shift/checkout/payment slice)** first for a usable terminal; **Phase 6 (sync)** and **Phase 7 (hardware)** can run in parallel after Phase 5; **Phase 8** finishes (except 8.4, which only needs 2.5).
+- Standing guardrails held throughout: Phase 2 allows controlled UI modernization, `docs/ui-prototype/screens/*` and `Assets/ui/*` stay synchronized until one source is promoted, `index.html` is a simulator only, no business logic in the UI, offline-first, and the prototype is not deleted until production UI/UX sign-off is recorded.
 
 **Next step (separate effort):** implementation, one task at a time, starting at Task 1.1.1. This document defines the boundaries; it does not contain code.

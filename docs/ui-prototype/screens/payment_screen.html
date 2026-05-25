@@ -4,6 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>IMAGYN POS — Payment</title>
+<link rel="stylesheet" href="app.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -339,6 +340,25 @@
   .toast.show { transform:translateY(0); opacity:1; }
   .toast.success { background:#10B981; }
   .toast.error   { background:#EF4444; }
+
+  /* ── Phase 2 dark-theme overrides (production UI). Receipt paper stays light by design. ── */
+  #topbar, #summary-panel, #tender-tabs { background: var(--surface) !important; }
+  .order-line { border-bottom-color: var(--border) !important; }
+  .amount-display, .method-card, .change-card, .card-tender-info,
+  .qa-btn, .np-btn, #back-btn, .tender-tab { background: var(--surface-2) !important; }
+  .tender-tab:hover:not(.active) { background: var(--surface) !important; }
+  #status-badge,
+  .tender-tab.active .material-symbols-outlined,
+  .tender-tab.active span.label,
+  .np-btn.exact-btn,
+  .change-row.highlight .v { color: var(--green) !important; }
+  #complete-btn:disabled { background: var(--surface-2) !important; color: var(--text-dim) !important; }
+  .icon-wrapper-blue { background: rgba(90,160,255,0.16) !important; }
+  .icon-wrapper-purple { background: rgba(185,140,255,0.16) !important; }
+  .np-btn.clear-btn:hover { background: var(--red-dim) !important; }
+  .np-btn.exact-btn:hover { background: var(--green-dim) !important; color: var(--green) !important; }
+  .receipt-paper { color: #111827 !important; border-color: #CBD5E1 !important; }
+  .r-btn:hover { background: var(--surface-2) !important; border-color: var(--border-2) !important; color: var(--text) !important; }
   .toast.info    { background:var(--navy); }
 </style>
 </head>
@@ -397,16 +417,16 @@
       <div style="width:1px;height:28px;background:var(--border);"></div>
       <div class="tb-meta"><span>Terminal</span><span id="tb-terminal">POS-01</span></div>
       <div style="width:1px;height:28px;background:var(--border);"></div>
-      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#FFF7ED;border:1px solid #FDE68A;border-radius:20px;">
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--amber-dim);border:1px solid rgba(245,181,61,0.45);border-radius:20px;">
         <span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:block;"></span>
-        <span style="font-size:11px;font-weight:700;color:#92400E;">Awaiting Payment</span>
+        <span style="font-size:11px;font-weight:700;color:var(--amber);">Awaiting Payment</span>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <div style="font-size:12px;font-weight:600;color:var(--muted);font-family:var(--mono);" id="tb-clock">--:--</div>
-      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:20px;">
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--green-dim);border:1px solid rgba(168,230,61,0.45);border-radius:20px;">
         <span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:block;"></span>
-        <span style="font-size:11px;font-weight:700;color:#065F46;">Shift Active</span>
+        <span style="font-size:11px;font-weight:700;color:var(--green);">Shift Active</span>
       </div>
     </div>
   </div>
@@ -562,7 +582,7 @@
 
           <!-- Split view -->
           <div id="view-split" style="display:none;">
-            <div style="background:white;border:1.5px solid var(--border);border-radius:12px;padding:16px;">
+            <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px;">
               <div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
                 <span class="material-symbols-outlined" style="font-size:16px;color:var(--muted);">call_split</span>
                 Split Tender
@@ -593,7 +613,7 @@
           <div class="change-card">
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:4px;">Transaction</div>
             <div class="change-row"><span class="l">Amount Due</span><span class="v" id="ch-due">PKR 0</span></div>
-            <div class="change-row"><span class="l">Tendered</span><span class="v" id="ch-tendered" style="color:var(--navy);">PKR 0</span></div>
+            <div class="change-row"><span class="l">Tendered</span><span class="v" id="ch-tendered" style="color:var(--text);">PKR 0</span></div>
             <div style="height:1px;background:var(--border);"></div>
             <div class="change-row highlight" id="change-row-display">
               <span class="l" style="font-size:13px;font-weight:700;">Change Due</span>
@@ -602,7 +622,7 @@
           </div>
 
           <!-- Refund type info -->
-          <div style="background:#FFF7ED;border:1px solid #FDE68A;border-radius:10px;padding:12px;font-size:12px;color:#92400E;display:flex;align-items:flex-start;gap:8px;">
+          <div style="background:var(--amber-dim);border:1px solid rgba(245,181,61,0.45);border-radius:10px;padding:12px;font-size:12px;color:var(--amber);display:flex;align-items:flex-start;gap:8px;">
             <span class="material-symbols-outlined" style="font-size:16px;flex-shrink:0;margin-top:1px;">info</span>
             <span>Always verify cash amount before completing the transaction.</span>
           </div>

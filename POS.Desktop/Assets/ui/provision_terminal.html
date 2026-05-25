@@ -4,6 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Terminal Provisioning — IMAGYN POS</title>
+  <link rel="stylesheet" href="app.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
@@ -234,6 +235,10 @@
     /* Animations */
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
     @keyframes ping  { 0%{opacity:1;transform:scale(1)} 60%{opacity:0;transform:scale(2)} 100%{opacity:0} }
+
+    /* ── Phase 2 dark-theme overrides (production UI). White brand chip stays light by design. ── */
+    .form-title, .progress-title, .field-label { color: var(--text) !important; }
+    .bar-bg { background: var(--border) !important; }
   </style>
 </head>
 <body>

@@ -4,6 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cash Control — IMAGYN POS</title>
+  <link rel="stylesheet" href="app.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -324,6 +325,23 @@
     .btn-ghost:hover { background: var(--surface); border-color: var(--text); color: var(--text); }
     .btn-green  { background: var(--green); color: #202020; flex: 1; box-shadow: var(--green-glow); }
     .btn-green:hover { background: var(--green-dark); }
+
+    /* ── Phase 2 dark-theme overrides (production UI). Receipt paper stays light by design. ── */
+    .topbar, .form-panel, .sum-card, .txn-badge { background: var(--surface) !important; }
+    .tb-badge { background: var(--surface-2) !important; }
+    .amount-display.focused { background: var(--surface) !important; }
+    .amount-clear { background: var(--surface-2) !important; }
+    .amount-clear:hover { background: var(--border) !important; }
+    .qa-btn, .np-key { background: var(--surface-2) !important; }
+    .field-select, .field-input, .remarks-area, .btn-ghost { background: var(--surface) !important; }
+    .ledger-table tbody tr:hover { background: var(--surface-2) !important; }
+    #form-title { color: var(--text) !important; }
+    .status-banner.ok .sb-title,
+    .status-banner.ok .sb-desc,
+    .badge.ok { color: var(--green) !important; }
+    .status-banner.warn .sb-title,
+    .status-banner.warn .sb-desc { color: var(--red) !important; }
+    .ra-btn.secondary:hover { background: var(--surface-2) !important; border-color: var(--border-2) !important; }
 
     /* ── Receipt Modal ── */
     .overlay {
@@ -711,7 +729,7 @@ function renderLedger(floatVal, txns, drops) {
   const tbody = document.getElementById('ledger-body');
   const rows = [];
 
-  rows.push({ ref:'INIT', time:'Shift Open', type:'Opening Float', desc:'Declared opening cash', amt:floatVal, sign:'+', color:'color:var(--navy)', status:'ok' });
+  rows.push({ ref:'INIT', time:'Shift Open', type:'Opening Float', desc:'Declared opening cash', amt:floatVal, sign:'+', color:'color:var(--text)', status:'ok' });
 
   txns.forEach(t => {
     if ((t.tender||'').toLowerCase()==='cash') {

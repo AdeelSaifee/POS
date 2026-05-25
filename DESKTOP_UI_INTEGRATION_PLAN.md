@@ -11,13 +11,13 @@
 
 `POS.Desktop` is the Windows terminal for a multi-tenant, offline-first POS platform. Today the project compiles and runs but shows **nothing useful**: `MainWindow.xaml` is an empty `<Grid/>`. Meanwhile, a complete, polished UI already exists — but only as an **HTML prototype** under `docs/ui-prototype/screens/*` (7 screens, ~6,690 lines, 100% inline CSS/JS, full IMAGYN branding). All of its behaviour is fake: demo arrays, `localStorage`/`sessionStorage`, and `setTimeout` simulations.
 
-The goal is to turn those exact prototype screens into the real terminal **without redesigning them**, and to progressively replace the fake browser logic with real C# services backed by local SQLite and the `POS.Shared` domain model — then later wire sync to `POS.Api` and hardware via `POS.Desktop.Hardware`.
+The goal is to turn the prototype screens into the real terminal — **modernizing them into a production-ready UI** (a controlled Phase 2 step) — and to progressively replace the fake browser logic with real C# services backed by local SQLite and the `POS.Shared` domain model — then later wire sync to `POS.Api` and hardware via `POS.Desktop.Hardware`.
 
-> **Prime directive:** The final desktop UI must look and behave like `docs/ui-prototype/screens/*` — same theme, colors, layout, spacing, buttons, branding, flow. We do **not** redesign. We change *logic*, not *appearance*.
+> **Prime directive (updated 2026-05-25):** Strict prototype parity is **superseded** by a **production-ready UI/UX** standard. The screens are now a polished dark "IMAGYN Operator Terminal" design system (shared `Assets/ui/app.css`), approved on UX quality — touch-friendly, high-contrast, cashier-fast — rather than pixel-matching the original light prototype. IMAGYN branding and the cashier workflow are preserved; theme/layout may evolve where it improves real store operation. `docs/ui-prototype/screens/*` and `POS.Desktop/Assets/ui/*` are kept byte-identical.
 >
 > `docs/ui-prototype/index.html` is **only a simulator/launcher** (an iframe wrapper). It is **not** the app design. The individual screen files are the source of truth.
 
-> **Architecture Note:** `POS.Desktop` targets `net8.0-windows` and uses **WebView2 (SDK v1.0.2903.40)** to host the existing HTML prototype as the production UI. This ensures visual parity and avoids a costly redesign. Deployment requires the **Microsoft Edge WebView2 Evergreen Runtime** on all terminals. This dependency is strictly for the Desktop UI shell, not the backend API.
+> **Architecture Note:** `POS.Desktop` targets `net8.0-windows` and uses **WebView2 (SDK v1.0.2903.40)** to host the existing HTML prototype as the production UI. This hosts the UI as HTML/CSS so it can be modernized quickly (see the Phase 2 UI/UX modernization) while avoiding a costly native-XAML rewrite. Deployment requires the **Microsoft Edge WebView2 Evergreen Runtime** on all terminals. This dependency is strictly for the Desktop UI shell, not the backend API.
 
 ---
 
@@ -62,7 +62,7 @@ We were asked to evaluate four options. Summary verdict first, rationale after.
 
 | Option | Verdict | Why |
 |---|---|---|
-| **1. Pure WPF native UI** | ❌ Reject | Reproducing numpads, modals, animations, glassmorphism, custom Google fonts, and exact spacing in XAML cannot match the approved design pixel-for-pixel. Discards ~6,690 lines of finished UI and costs weeks — incompatible with the deadline and the "do not redesign" directive. |
+| **1. Pure WPF native UI** | ❌ Reject | Reproducing numpads, modals, animations, custom fonts, and cashier workflows in XAML would discard the HTML screens and cost weeks. The current UI direction is to modernize the HTML/CSS into a production terminal, not rewrite it as native WPF. |
 | **2. WPF + WebView2 (host the existing HTML)** | ✅ **Core mechanism** | Renders the *actual* prototype files → **zero visual drift**. Mature JS↔C# seam: `CoreWebView2.SetVirtualHostNameToFolderMapping(...)` to serve screens, `WebMessageReceived` / `AddHostObjectToScript` to call C#. |
 | **3. WPF + BlazorWebView** | ❌ Reject (for now) | Requires porting all markup to `.razor` and re-wiring CSS — that *is* a UI rewrite, i.e. redesign risk + slower. Blazor's benefit (C# in markup) is moot when finished markup already exists and must be preserved. Keep as an optional future north-star only. |
 | **4. Phased: HTML first, then swap fakes for services** | ✅ **Recommended strategy** | This is the *process*, realized on top of Option 2. Ship a working terminal quickly, preserve identity, and migrate business logic into testable C# services incrementally — no UI churn. |
@@ -112,11 +112,12 @@ Layout, theme, fonts, colors, spacing, animations/transitions, tab switching, mo
 4. **Navigate between screens** either by letting existing `window.location.href = '...html'` links resolve under the virtual host, or by routing navigation through the shell. The WPF shell **replaces `index.html`** as the launcher.
 5. **Bridge:** register a host object (`window.chrome.webview.hostObjects.pos`) and/or use `postMessage` → `WebMessageReceived`. A `PosWebMessageRouter` dispatches typed requests to services and returns JSON responses.
 
-### Preserving the exact design
-- Host the HTML **unmodified**; the *only* edits are inside `<script>` blocks (replace fake logic with bridge calls). **Never touch markup, CSS, class names, or `logo.png`.**
-- Keep the Google Fonts `<link>`s for now; for kiosk/offline reliability, **bundle the fonts** (Space Grotesk, Inter Tight, IBM Plex Mono, Material Symbols) under `Assets/ui/fonts/` and switch the `<link>`s to local `@font-face` in Phase 8 — a technical change with **no visual effect**.
+### UI/UX direction (production-ready, not strict parity)
+- **HTML/CSS may be modernized** to a production standard. All 7 screens share one dark design system — `Assets/ui/app.css` (canonical tokens, components, touch sizing) — linked by every screen. Visual evolution is allowed where it improves real cashier operation; IMAGYN branding and the workflow are preserved.
+- **Still off-limits until later phases:** no business logic in JavaScript, no bridge/SQLite/services, no replacing `localStorage`/`sessionStorage` (Phases 3–5). UI-only JS (modals, tabs, demo rendering) may change.
+- **Offline assets:** Google Fonts + Material Symbols bundling remains scheduled for **Phase 8.4**.
 
-> **Phase 2 production UI freeze (2026-05-25).** Before parity is locked, the 7 screens were finalized for a real terminal in one sanctioned UI-editing pass: removed demo "Quick Shortcuts" bars, on-screen credential hints (e.g. "Manager PIN: 1234" and the login PIN hint), and dead `index.html` simulator coupling (`syncParent`/`syncParentSidebar`); fixed broken markup (a corrupted `</style></head>` block in provisioning, a duplicate `</style>` in login). The login screen's **Tailwind CDN (`cdn.tailwindcss.com`) was removed** and replaced with a small local utility-CSS block inside the same file — no build pipeline, no external CDN, layout preserved. Remaining Google Fonts + Material Symbols offline bundling stays scheduled for **Phase 8.4**. After this freeze the "host HTML unmodified" rule resumes.
+> **Phase 2 history.** (1) *Production UI freeze, 2026-05-25:* removed demo "Quick Shortcuts" bars, on-screen credential hints, and dead `index.html` simulator coupling; fixed broken markup; removed the login Tailwind CDN. (2) *Dark UI/UX modernization, 2026-05-25:* introduced the shared `app.css` dark "Operator Terminal" theme and re-skinned all 7 screens (dark surfaces, high-contrast text, larger primary CTAs, consistent pills/cards/keypads) while preserving every JS hook. Strict prototype parity is **retired** in favor of production-ready UI/UX approval. `docs/ui-prototype/screens/*` and `Assets/ui/*` are kept byte-identical.
 
 ---
 
@@ -305,12 +306,12 @@ Response DTO (JSON) travels back up the same path → screen renders authoritati
 - **Expected output:** App launches full-screen and displays a hosted HTML page; DB migrates on first run.
 - **Risks:** WebView2 runtime missing on dev/target machine; ensure consistent TFM (`net8.0-windows`).
 
-### Phase 2 — Preserve prototype screens & route them
-- **Objective:** All 7 screens render *identically* inside the app and navigate correctly.
-- **Files/folders:** `POS.Desktop/Assets/ui/*` (copied screens + `logo.png`), `Shell/WebViewHost.cs`.
-- **Tasks:** copy screens as build Content; `SetVirtualHostNameToFolderMapping("pos.app", …)`; navigate to `terminal_login.html`; verify in-app navigation; **WPF shell replaces `index.html`**.
-- **Expected output:** Pixel-identical screens, full flow navigable in-app. Prototype in `docs/` untouched.
-- **Risks:** asset paths/case sensitivity; relative links; font/icon loading.
+### Phase 2 — Host screens, route them, and modernize the UI/UX
+- **Objective:** All 7 screens render and navigate correctly in-app **and** meet a production-ready UI/UX bar (cohesive dark terminal theme, touch-friendly, high-contrast). Strict pixel parity with the old prototype is **not** required.
+- **Files/folders:** `POS.Desktop/Assets/ui/*` (screens + `app.css` + `logo.png`), `Shell/WebViewHost.cs`.
+- **Tasks:** copy screens as build Content; `SetVirtualHostNameToFolderMapping("pos.app", …)`; navigate to `terminal_login.html`; **WPF shell replaces `index.html`**; introduce the shared `app.css` dark design system and re-skin all screens; keep `docs/` and `Assets/ui/` byte-identical.
+- **Expected output:** One polished dark POS terminal; full flow navigable in-app; UI/UX sign-off (replaces the old pixel-parity gate).
+- **Risks:** theme regressions on a screen; asset paths/case sensitivity; font/icon loading (offline bundling deferred to 8.4).
 
 ### Phase 3 — Replace fake browser state
 - **Objective:** State owned by C#, proven by one real round-trip.
@@ -395,7 +396,7 @@ Response DTO (JSON) travels back up the same path → screen renders authoritati
 ## 20. Honest gaps & assumptions
 
 - **Technical Dependency Baseline (WebView2):**
-  - **Rationale:** Chosen to host the existing high-fidelity HTML prototype directly, ensuring 100% visual parity and zero redesign risk.
+  - **Rationale:** Chosen to host the high-fidelity HTML screens directly, enabling the controlled Phase 2 production UI/UX modernization without a native-XAML rewrite.
   - **SDK Version:** `Microsoft.Web.WebView2` v1.0.2903.40.
   - **Target Framework:** `net8.0-windows`.
   - **Runtime Baseline:** Microsoft Edge WebView2 Evergreen Runtime.

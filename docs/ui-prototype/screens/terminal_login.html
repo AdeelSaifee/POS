@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>IMAGYN POS • Operator Login</title>
+    <link rel="stylesheet" href="app.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -256,9 +257,9 @@
             pointer-events: all;
         }
 
-        /* Local layout utilities — replaces the Tailwind CDN removed in the Phase 2 production UI freeze.
-           These reproduce the exact utility classes used in this screen plus the few preflight
-           resets Tailwind was providing (body margin, element margins, border style). No build step, no CDN. */
+        /* Local layout utilities for the login screen.
+           These reproduce the utility classes used here plus the few base resets needed.
+           No build step and no external utility CSS dependency. */
         html, body { margin: 0; }
         p, h1, h2, h3, h4, h5, h6 { margin: 0; }
         .flex { display: flex; }
@@ -275,6 +276,9 @@
         .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
         .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
         .border-b { border-bottom-width: 1px; border-bottom-style: solid; }
+
+        /* ── Phase 2 dark-theme overrides (production UI) ── */
+        .op-card:hover, .pin-key:hover { background: var(--surface-2) !important; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -306,8 +310,8 @@
         <div class="flex items-center gap-4">
             <div style="font-family:var(--mono);font-size:13px;color:var(--text-muted);" id="live-clock">--:--:--</div>
             <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:var(--green-dim);border:1px solid var(--green);">
-                <span style="width:6px;height:6px;border-radius:50%;background:var(--navy);animation:pulse 2s infinite;display:block;"></span>
-                <span style="font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--navy);text-transform:uppercase;">SYSTEM ONLINE</span>
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;display:block;"></span>
+                <span style="font-size:10px;font-weight:700;letter-spacing:0.14em;color:var(--green);text-transform:uppercase;">SYSTEM ONLINE</span>
             </div>
         </div>
     </header>

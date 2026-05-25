@@ -194,6 +194,14 @@ Hardware is invoked by services (not the UI). The scanner feeds the **checkout**
 
 ## 11. Cleanup plan for duplicate prototype/design folders
 
+### Asset Sync Policy (Phase 2)
+- **Source of Truth:** `docs/ui-prototype/screens/*` remains the visual reference during Phase 2 parity work.
+- **Production Assets:** `POS.Desktop/Assets/ui/` is a copied production asset set used by the terminal.
+- **No Independent Edits:** The two folders must not be edited independently. Any intentional design update in `docs/` must be copied to `Assets/ui/` and hash-verified again.
+- **Promotion:** Once Phase 2 parity is confirmed, `Assets/ui/` will be promoted to the single production source, and the `docs/` originals will be retired (§11.4).
+
+---
+
 Conservative and parity-gated:
 1. Keep `docs/ui-prototype/screens/*` as the **canonical design reference** until Phase 2 parity is confirmed.
 2. Promote the screens into `POS.Desktop/Assets/ui/` as the **production copy** (single source going forward).

@@ -52,12 +52,10 @@ public sealed class WebViewHost
             _isInitialized = true;
             _logger.LogInformation("WebView2 shell initialized successfully.");
 
-            var assetsPath = GetAssetsUiPath();
-            _logger.LogDebug("UI assets folder verified: {AssetsPath}", assetsPath);
+            ConfigureVirtualHostMapping();
 
             RenderPlaceholderPage();
 
-            // TODO: ConfigureVirtualHostMapping (Phase 2 - Task 2.2.2)
             // TODO: RegisterMessageBridge (Phase 3)
             // TODO: NavigateToInitialScreen (Phase 2 - Task 2.2.4)
         }
@@ -147,11 +145,24 @@ public sealed class WebViewHost
     }
 
     /// <summary>
-    /// TODO Phase 2: Sets up virtual host mapping to serve local assets.
+    /// Sets up virtual host mapping to serve local UI assets through a stable origin.
+    /// Maps 'https://pos.app/' to the local 'Assets/ui/' folder.
     /// </summary>
     private void ConfigureVirtualHostMapping()
     {
         EnsureInitialized();
+
+        var assetsPath = GetAssetsUiPath();
+        const string hostName = "pos.app";
+
+        _logger.LogInformation("Configuring virtual host mapping for {HostName} to {AssetsPath}", hostName, assetsPath);
+
+        _webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+            hostName,
+            assetsPath,
+            CoreWebView2HostResourceAccessKind.Allow);
+
+        _logger.LogInformation("Virtual host mapping active for https://{HostName}/", hostName);
     }
 
     /// <summary>

@@ -227,37 +227,6 @@
     .footer-left  { font-family: var(--mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.12em; }
     .footer-right { font-size: 9px; color: var(--text-dim); letter-spacing: 0.05em; }
 
-    /* ── Shortcuts bar (light glass) ── */
-    .shortcuts-bar {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      z-index: 300;
-      background: rgba(255,255,255,0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(203,213,225,0.9); border-radius: 40px;
-      padding: 7px 14px; display: flex; align-items: center; gap: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.02);
-      white-space: nowrap; overflow-x: auto; max-width: 95vw;
-    }
-    .shortcuts-bar::-webkit-scrollbar { display: none; }
-    .sc-label {
-      font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: #94A3B8;
-      text-transform: uppercase; padding-right: 8px; border-right: 1px solid #E2E8F0;
-      margin-right: 2px; white-space: nowrap;
-    }
-    .sc-btn {
-      padding: 5px 13px; border-radius: 20px; border: none; cursor: pointer;
-      font-size: 10px; font-weight: 700; transition: all 0.13s;
-      font-family: var(--sans); white-space: nowrap; letter-spacing: 0.02em;
-    }
-    .sc-btn:active { transform: scale(0.95); }
-    .sc-btn.green { background: var(--green-dim); border: 1px solid var(--green); color: var(--navy); }
-    .sc-btn.green:hover { background: var(--green); }
-    .sc-btn.blue  { background: var(--surface); border: 1px solid var(--border-2); color: var(--text); }
-    .sc-btn.blue:hover  { background: var(--border); }
-    .sc-btn.amber { background: var(--amber-dim); border: 1px solid var(--amber); color: var(--navy); }
-    .sc-btn.amber:hover { background: var(--amber); }
-    .sc-btn.ghost { background: var(--white); border: 1px solid var(--border); color: var(--text-muted); }
-    .sc-btn.ghost:hover { background: var(--surface); color: var(--text); }
-
     /* Fade in */
     @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
     .fade-in { animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) forwards; }
@@ -265,8 +234,6 @@
     /* Animations */
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
     @keyframes ping  { 0%{opacity:1;transform:scale(1)} 60%{opacity:0;transform:scale(2)} 100%{opacity:0} }
-  </style>
-</head>orm:scale(2)} 100%{opacity:0} }
   </style>
 </head>
 <body>
@@ -388,15 +355,6 @@
 
   </div><!-- end card -->
 
-  <!-- ── Shortcuts Bar ── -->
-  <div class="shortcuts-bar">
-    <span class="sc-label">Quick Shortcuts</span>
-    <button class="sc-btn green" onclick="quickProvision()">⚡ Instant Provision</button>
-    <button class="sc-btn blue"  onclick="demoFill()">📋 Fill Demo Data</button>
-    <button class="sc-btn ghost" onclick="window.location.href='terminal_login.html'">→ Skip to Login</button>
-    <button class="sc-btn ghost" onclick="resetTerminal()">↺ Reset</button>
-  </div>
-
   <script>
     const LOGS = [
       { text: "Initializing socket to api.imagyntechnologies.com/v1...", ok: false, pct: 5 },
@@ -457,7 +415,6 @@
           if (log.pct === 100) {
             setStatus('provisioned');
             setDbStatus('active');
-            syncParent();
             setTimeout(() => { window.location.href = 'terminal_login.html'; }, 1100);
           }
         }, i * 220);
@@ -490,52 +447,6 @@
       }
     }
 
-    function quickProvision() { startProvisioning(); }
-
-    function demoFill() {
-      document.getElementById('store-id').value = 'IMAGYN-KHI-01';
-      document.getElementById('terminal-code').value = 'POS-01';
-    }
-
-    function resetTerminal() {
-      localStorage.removeItem('terminal_config');
-      localStorage.removeItem('terminal_operator');
-      sessionStorage.clear();
-      document.getElementById('footer-terminal').textContent = 'UNREGISTERED TERMINAL';
-      setStatus('unconfigured');
-      // Reset badge manually
-      const badge = document.getElementById('status-badge');
-      const text  = document.getElementById('status-text');
-      badge.className = 'status-badge';
-      text.textContent = 'UNCONFIGURED';
-      // Reset db
-      const dot = document.getElementById('db-dot');
-      const label = document.getElementById('db-label');
-      dot.className = 'tele-dot warn';
-      label.style.color = 'var(--amber)';
-      label.textContent = 'Inactive';
-      // Show form
-      document.getElementById('form-panel').style.display = '';
-      document.getElementById('progress-panel').style.display = 'none';
-      document.getElementById('bar-fill').style.width = '0';
-      document.getElementById('pct-label').textContent = '0%';
-      document.getElementById('console-log').innerHTML = '';
-    }
-
-    function syncParent() {
-      try {
-        const doc = window.parent.document;
-        doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
-        const el = doc.getElementById('step-0');
-        if (el) el.classList.add('flow-step-active');
-        const url = doc.getElementById('simulator-url-display');
-        if (url) url.innerText = 'screens/provision_terminal.html';
-        const newTab = doc.getElementById('open-new-tab-btn');
-        if (newTab) newTab.href = 'screens/provision_terminal.html';
-      } catch(e) {}
-    }
-
-    document.addEventListener('DOMContentLoaded', syncParent);
   </script>
 </body>
 </html>

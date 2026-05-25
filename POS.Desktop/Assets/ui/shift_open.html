@@ -310,7 +310,7 @@
   </nav>
 
   <div class="sidebar-footer">
-    <div class="op-avatar-circle" id="op-avatar" onclick="showToast('Manager PIN: 1234','info')">AS</div>
+    <div class="op-avatar-circle" id="op-avatar">AS</div>
     <a class="logout-btn" onclick="doLogout()" title="Sign Out">
       <span class="icon">logout</span>
     </a>
@@ -493,19 +493,6 @@ function showToast(msg, type='success') {
   setTimeout(() => { t.style.transform='translateY(6px)'; t.style.opacity='0'; setTimeout(()=>t.remove(),280); }, 3500);
 }
 
-function syncParent() {
-  try {
-    const doc = window.parent.document;
-    doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
-    const el = doc.getElementById('step-2');
-    if (el) el.classList.add('flow-step-active');
-    const url = doc.getElementById('simulator-url-display');
-    if (url) url.innerText = 'screens/shift_open.html';
-    const newTab = doc.getElementById('open-new-tab-btn');
-    if (newTab) newTab.href = 'screens/shift_open.html';
-  } catch(e) {}
-}
-
 // Float input
 const floatInput = document.getElementById('float-input');
 floatInput.addEventListener('input', function() {
@@ -547,7 +534,6 @@ function doLogout() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  syncParent();
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('date-display').textContent = today;
   document.getElementById('date-field').textContent   = today;

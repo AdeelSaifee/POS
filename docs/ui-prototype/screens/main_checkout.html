@@ -515,29 +515,6 @@
 
   @keyframes slideUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
   .fade-in { animation: slideUp 0.25s ease forwards; }
-
-  /* ── SHORTCUTS BAR ──────────────────────── */
-  .shortcuts-bar {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    z-index: 300;
-    background: rgba(255,255,255,0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(203,213,225,0.9); border-radius: 40px;
-    padding: 7px 14px; display: flex; align-items: center; gap: 8px;
-    box-shadow: 0 8px 24px rgba(15,58,125,0.1), 0 2px 8px rgba(0,0,0,0.05);
-    white-space: nowrap; overflow-x: auto; max-width: 95vw;
-  }
-  .shortcuts-bar::-webkit-scrollbar { display: none; }
-  .sc-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: #94A3B8; text-transform: uppercase; padding-right: 8px; border-right: 1px solid #E2E8F0; margin-right: 2px; }
-  .sc-btn { padding: 5px 13px; border-radius: 20px; border: none; cursor: pointer; font-size: 10px; font-weight: 700; transition: all 0.13s; font-family: var(--sans); white-space: nowrap; }
-  .sc-btn:active { transform: scale(0.95); }
-  .sc-btn.green { background: #ECFDF5; border: 1px solid #6EE7B7; color: #065F46; }
-  .sc-btn.green:hover { background: #D1FAE5; }
-  .sc-btn.blue  { background: #EFF6FF; border: 1px solid #93C5FD; color: #1D4ED8; }
-  .sc-btn.blue:hover  { background: #DBEAFE; }
-  .sc-btn.amber { background: #FFFBEB; border: 1px solid #FCD34D; color: #92400E; }
-  .sc-btn.amber:hover { background: #FEF3C7; }
-  .sc-btn.ghost { background: #F8FAFC; border: 1px solid #E2E8F0; color: #64748B; }
-  .sc-btn.ghost:hover { background: #F1F5F9; color: #0F172A; }
 </style>
 </head>
 <body>
@@ -578,7 +555,7 @@
   </nav>
 
   <div class="sidebar-footer">
-    <div class="op-avatar-circle" id="op-avatar" onclick="showToast('Manager PIN: 1234','info')">AS</div>
+    <div class="op-avatar-circle" id="op-avatar">AS</div>
     <a class="logout-btn" onclick="doLogout();return false;" title="Sign Out">
       <span class="icon">logout</span>
     </a>
@@ -794,7 +771,7 @@
         <button class="mk-btn" onclick="pressManagerPin('0')">0</button>
         <button class="mk-btn confirm" onclick="submitManagerOverride()">OK</button>
       </div>
-      <p style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:10px;">Demo PIN: <code style="font-family:var(--mono);background:var(--bg);padding:1px 6px;border-radius:4px;font-weight:700;">1234</code></p>
+      <p style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:10px;">Enter manager PIN to authorize</p>
     </div>
   </div>
 </div>
@@ -929,15 +906,6 @@
 <!-- Toast Container -->
 <div id="toast-wrapper"></div>
 
-<!-- Shortcuts Bar -->
-<div class="shortcuts-bar">
-  <span class="sc-label">Shortcuts</span>
-  <button class="sc-btn green" onclick="loadDemoCart()">🛒 Load Demo Cart</button>
-  <button class="sc-btn blue"  onclick="window.location.href='payment_screen.html'">→ Payment</button>
-  <button class="sc-btn amber" onclick="window.location.href='cash_control.html'">💰 Cash Control</button>
-  <button class="sc-btn ghost" onclick="window.location.href='shift_close.html'">→ Close Shift</button>
-</div>
-
 <!-- ══════════════════════════════════════════ -->
 <script>
 // ─── DATA ────────────────────────────────────
@@ -999,18 +967,6 @@ let orderSeq = 42;
 function fmt(n) { return 'PKR ' + new Intl.NumberFormat('en-PK').format(n); }
 function fmtNum(n) { return new Intl.NumberFormat('en-PK').format(n); }
 
-function syncParentSidebar(idx) {
-  try {
-    if (!window.parent || window.parent === window) return;
-    const doc = window.parent.document;
-    doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
-    const el = doc.getElementById('step-' + idx);
-    if (el) el.classList.add('flow-step-active');
-    const ud = doc.getElementById('simulator-url-display');
-    if (ud) ud.innerText = 'screens/main_checkout.html';
-  } catch(e) {}
-}
-
 // ─── TOAST ───────────────────────────────────
 function showToast(msg, type='success') {
   const w = document.getElementById('toast-wrapper');
@@ -1035,7 +991,6 @@ function updateClock() {
 
 // ─── INIT ────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  syncParentSidebar(3);
   updateClock();
   setInterval(updateClock, 1000);
 
@@ -1106,21 +1061,6 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function saveCartToSession() { sessionStorage.setItem('pos_cart', JSON.stringify(currentCart)); }
-
-// ─── DEMO CART ───────────────────────────────
-function loadDemoCart() {
-  currentCart = [
-    { id:'I1001', name:'Milk 1L Tetra',    qty:2, price:280,  unit:'L',  cat:'dairy' },
-    { id:'I1002', name:'Rice 5kg Premium', qty:1, price:1850, unit:'kg', cat:'grocery' },
-    { id:'I1008', name:'Coca Cola 1.5L',   qty:3, price:220,  unit:'L',  cat:'beverage' },
-    { id:'I1005', name:'Notebook Pack ×5', qty:1, price:480,  unit:'pk', cat:'stationery' },
-  ];
-  activeDiscount = 0;
-  saveCartToSession();
-  renderCart();
-  renderGrid();
-  showToast('Demo cart loaded with 4 items.', 'success');
-}
 
 // ─── CATEGORIES ──────────────────────────────
 function renderCategories() {

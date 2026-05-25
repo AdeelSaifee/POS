@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>IMAGYN POS • Operator Login</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -256,7 +255,26 @@
             opacity: 1;
             pointer-events: all;
         }
-    </style>
+
+        /* Local layout utilities — replaces the Tailwind CDN removed in the Phase 2 production UI freeze.
+           These reproduce the exact utility classes used in this screen plus the few preflight
+           resets Tailwind was providing (body margin, element margins, border style). No build step, no CDN. */
+        html, body { margin: 0; }
+        p, h1, h2, h3, h4, h5, h6 { margin: 0; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .flex-1 { flex: 1 1 0%; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-4 { gap: 1rem; }
+        .relative { position: relative; }
+        .z-10 { z-index: 10; }
+        .h-screen { height: 100vh; }
+        .w-full { width: 100%; }
+        .overflow-hidden { overflow: hidden; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .border-b { border-bottom-width: 1px; border-bottom-style: solid; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -351,7 +369,7 @@
                     <div class="pin-dot" id="dot-4" style="display:none;"></div>
                     <div class="pin-dot" id="dot-5" style="display:none;"></div>
                 </div>
-                <p style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:10px;" id="pin-hint">Hint: Demo PIN is 1234</p>
+                <p style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:10px;" id="pin-hint">Enter your 4-digit PIN</p>
             </div>
 
             <!-- PIN Keypad -->
@@ -400,37 +418,6 @@
             90% { transform: translateX(2px); }
         }
         .shake { animation: shake 0.4s ease; }
-
-    /* ── Quick Shortcuts floating bar ── */
-    .shortcuts-bar {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      z-index: 300;
-      background: rgba(255,255,255,0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(203,213,225,0.9); border-radius: 40px;
-      padding: 7px 14px; display: flex; align-items: center; gap: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.02);
-      white-space: nowrap; overflow-x: auto; max-width: 95vw;
-    }
-    .shortcuts-bar::-webkit-scrollbar { display: none; }
-    .sc-label {
-      font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: #94A3B8;
-      text-transform: uppercase; padding-right: 8px; border-right: 1px solid #E2E8F0;
-      margin-right: 2px; white-space: nowrap;
-    }
-    .sc-btn {
-      padding: 5px 13px; border-radius: 20px; border: none; cursor: pointer;
-      font-size: 10px; font-weight: 700; transition: all 0.13s;
-      font-family: var(--sans); white-space: nowrap; letter-spacing: 0.02em;
-    }
-    .sc-btn:active { transform: scale(0.95); }
-    .sc-btn.green { background: var(--green-dim); border: 1px solid var(--green); color: var(--navy); }
-    .sc-btn.green:hover { background: var(--green); }
-    .sc-btn.blue  { background: var(--surface); border: 1px solid var(--border-2); color: var(--text); }
-    .sc-btn.blue:hover  { background: var(--border); }
-    .sc-btn.amber { background: var(--amber-dim); border: 1px solid var(--amber); color: var(--navy); }
-    .sc-btn.amber:hover { background: var(--amber); }
-    .sc-btn.ghost { background: var(--white); border: 1px solid var(--border); color: var(--text-muted); }
-    .sc-btn.ghost:hover { background: var(--surface); color: var(--text); }
     </style>
 
     <script>
@@ -617,9 +604,9 @@
             hintEl.style.color = 'var(--text-muted)';
             hintEl.style.fontWeight = '400';
             if (selectedOp) {
-                hintEl.textContent = 'Hint: PIN is ' + selectedOp.pin;
+                hintEl.textContent = 'Enter your 4-digit PIN';
             } else {
-                hintEl.textContent = 'Hint: Select an operator to see PIN';
+                hintEl.textContent = 'Select an operator to begin';
             }
         }
 
@@ -696,60 +683,14 @@
         spinStyle.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
         document.head.appendChild(spinStyle);
 
-        // ── Parent iframe sync ──
-        function syncParentSidebar(stepIndex) {
-            if (window.parent && typeof window.parent.document !== 'undefined') {
-                try {
-                    const doc = window.parent.document;
-                    doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
-                    const stepEl = doc.getElementById('step-' + stepIndex);
-                    if (stepEl) stepEl.classList.add('flow-step-active');
-                    const urlDisplay = doc.getElementById('simulator-url-display');
-                    if (urlDisplay) urlDisplay.innerText = 'screens/terminal_login.html';
-                } catch(e) {}
-            }
-        }
-
         // ── Init ──
         document.addEventListener('DOMContentLoaded', () => {
             renderOperators();
-            syncParentSidebar(1);
             clearPinDotsError(); // Set default hint text
             // Clear any stale session
             sessionStorage.removeItem('pos_shift_open');
         });
 
-        // ── Demo quick-login shortcuts ──
-        function demoQuickLogin(opId) {
-            const op = operators.find(o => o.id === opId);
-            if (!op) return;
-            selectOperator(op);
-            // Reset state
-            pinValue = '';
-            clearPinDotsError();
-            updatePinDots();
-            isAuthenticating = false;
-            isErrorState = false;
-
-            const demoPin = op.pin;
-            let i = 0;
-            const fillNext = () => {
-                if (i >= demoPin.length) {
-                    return;
-                }
-                pinPress(demoPin[i++]);
-                setTimeout(fillNext, 120);
-            };
-            setTimeout(fillNext, 180);
-        }
     </script>
-    <!-- ── Quick Shortcuts floating bar ── -->
-    <div class="shortcuts-bar">
-        <span class="sc-label">Shortcuts</span>
-        <button class="sc-btn green" onclick="demoQuickLogin('OP001')">⚡ Demo: Cashier (Adeel)</button>
-        <button class="sc-btn amber" onclick="demoQuickLogin('MGR01')">👔 Demo: Manager (Zainab)</button>
-        <button class="sc-btn blue"  onclick="demoQuickLogin('OP002')">👤 Demo: Cashier 2 (Ahmed)</button>
-        <button class="sc-btn ghost" onclick="window.location.href='provision_terminal.html'">← Provision</button>
-    </div>
 </body>
 </html>

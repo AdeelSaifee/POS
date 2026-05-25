@@ -116,6 +116,8 @@ Layout, theme, fonts, colors, spacing, animations/transitions, tab switching, mo
 - Host the HTML **unmodified**; the *only* edits are inside `<script>` blocks (replace fake logic with bridge calls). **Never touch markup, CSS, class names, or `logo.png`.**
 - Keep the Google Fonts `<link>`s for now; for kiosk/offline reliability, **bundle the fonts** (Space Grotesk, Inter Tight, IBM Plex Mono, Material Symbols) under `Assets/ui/fonts/` and switch the `<link>`s to local `@font-face` in Phase 8 — a technical change with **no visual effect**.
 
+> **Phase 2 production UI freeze (2026-05-25).** Before parity is locked, the 7 screens were finalized for a real terminal in one sanctioned UI-editing pass: removed demo "Quick Shortcuts" bars, on-screen credential hints (e.g. "Manager PIN: 1234" and the login PIN hint), and dead `index.html` simulator coupling (`syncParent`/`syncParentSidebar`); fixed broken markup (a corrupted `</style></head>` block in provisioning, a duplicate `</style>` in login). The login screen's **Tailwind CDN (`cdn.tailwindcss.com`) was removed** and replaced with a small local utility-CSS block inside the same file — no build pipeline, no external CDN, layout preserved. Remaining Google Fonts + Material Symbols offline bundling stays scheduled for **Phase 8.4**. After this freeze the "host HTML unmodified" rule resumes.
+
 ---
 
 ## 6. Replacing browser state with real desktop state

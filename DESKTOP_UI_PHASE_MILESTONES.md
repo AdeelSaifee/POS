@@ -399,6 +399,7 @@ Each milestone is described with:
 - **Risk notes:** Don't log sensitive data (PINs, card data, tokens); scrub payloads.
 
 ### Milestone 8.4 — Offline asset bundling (fonts/icons)
+- **Note (Phase 2 freeze, 2026-05-25):** the login screen's **Tailwind CDN was already removed** and inlined as local utility CSS during the Phase 2 production UI freeze, so this milestone now covers only the remaining **Google Fonts + Material Symbols** offline bundling.
 - **Purpose:** Remove the runtime dependency on Google Fonts/Material Symbols for kiosk reliability.
 - **Expected output:** Fonts/icons bundled under `Assets/ui/fonts/`; `<link>`s switched to local `@font-face` — **no visual change**.
 - **Files/folders:** `POS.Desktop/Assets/ui/fonts/*`, `Assets/ui/*` (`<link>`/`@font-face` only).

@@ -414,7 +414,7 @@
   </nav>
 
   <div class="sidebar-footer">
-    <div class="op-avatar-circle" id="op-avatar" onclick="showToast('Manager PIN: 1234','info')">AS</div>
+    <div class="op-avatar-circle" id="op-avatar">AS</div>
     <a class="logout-btn" href="terminal_login.html" title="Sign Out">
       <span class="icon">logout</span>
     </a>
@@ -557,7 +557,6 @@
                 </label>
                 <input class="field-input pin" id="mgr-pin" type="password" maxlength="4"
                        placeholder="••••" onclick="setFocus('pin')"/>
-                <div style="font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 1px;">Demo: 1234</div>
               </div>
             </div>
             <!-- Remarks -->
@@ -663,19 +662,6 @@ function showToast(msg, type='success') {
   s.appendChild(t);
   requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 280); }, 3500);
-}
-
-function syncParent() {
-  try {
-    const doc = window.parent.document;
-    doc.querySelectorAll('.flow-step').forEach(s => s.classList.remove('flow-step-active'));
-    const el = doc.getElementById('step-5');
-    if (el) el.classList.add('flow-step-active');
-    const url = doc.getElementById('simulator-url-display');
-    if (url) url.innerText = 'screens/cash_control.html';
-    const newTab = doc.getElementById('open-new-tab-btn');
-    if (newTab) newTab.href = 'screens/cash_control.html';
-  } catch(e) {}
 }
 
 function updateClock() {
@@ -915,7 +901,6 @@ function doLogout() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  syncParent();
   updateClock();
   setInterval(updateClock, 20000);
 

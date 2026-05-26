@@ -56,6 +56,7 @@ public static class DesktopHostBuilder
             {
                 // UI Services
                 services.AddSingleton<MainWindow>();
+                services.AddSingleton<PosWebMessageRouter>();
 
                 // Register context first as DbContext depends on it
                 services.AddScoped<IProvisionedTerminalContext, NoProvisionedTerminalContext>();

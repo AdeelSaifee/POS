@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using POS.Desktop.Bridge;
 
 namespace POS.Desktop.Shell;
@@ -16,18 +18,23 @@ public delegate Task<BridgeResponseEnvelope> BridgeMessageHandler(BridgeRequestE
 /// </summary>
 public sealed class PosWebMessageRouter
 {
-    private readonly Dictionary<string, BridgeMessageHandler> _handlers = new(StringComparer.Ordinal);
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<PosWebMessageRouter> _logger;
+    private readonly Dictionary<string, Func<IServiceProvider, BridgeMessageHandler>> _handlers = new(StringComparer.Ordinal);
 
-    public PosWebMessageRouter()
+    public PosWebMessageRouter(IServiceScopeFactory scopeFactory, ILogger<PosWebMessageRouter> logger)
     {
+        _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
         // Built-in handlers for proving the router foundation without business logic.
-        Register("transport.echo", HandleTransportEchoAsync);
+        Register("transport.echo", _ => HandleTransportEchoAsync);
     }
 
     /// <summary>
-    /// Registers a handler for a specific message type.
+    /// Registers a handler factory for a specific message type.
     /// </summary>
-    private void Register(string type, BridgeMessageHandler handler)
+    public void Register(string type, Func<IServiceProvider, BridgeMessageHandler> handlerFactory)
     {
         if (string.IsNullOrWhiteSpace(type))
         {
@@ -39,7 +46,7 @@ public sealed class PosWebMessageRouter
             throw new InvalidOperationException($"A handler for message type '{type}' is already registered.");
         }
 
-        _handlers[type] = handler ?? throw new ArgumentNullException(nameof(handler));
+        _handlers[type] = handlerFactory ?? throw new ArgumentNullException(nameof(handlerFactory));
     }
 
     /// <summary>
@@ -56,17 +63,17 @@ public sealed class PosWebMessageRouter
     }
 
     /// <summary>
-    /// Attempts to retrieve the registered handler for the given type.
+    /// Attempts to retrieve the registered handler factory for the given type.
     /// </summary>
-    public bool TryGetHandler(string type, out BridgeMessageHandler handler)
+    public bool TryGetHandlerFactory(string type, out Func<IServiceProvider, BridgeMessageHandler> handlerFactory)
     {
         if (string.IsNullOrWhiteSpace(type))
         {
-            handler = null!;
+            handlerFactory = null!;
             return false;
         }
 
-        return _handlers.TryGetValue(type, out handler!);
+        return _handlers.TryGetValue(type, out handlerFactory!);
     }
 
     /// <summary>
@@ -75,6 +82,30 @@ public sealed class PosWebMessageRouter
     public IReadOnlyCollection<string> GetRegisteredTypes()
     {
         return _handlers.Keys;
+    }
+
+    /// <summary>
+    /// Routes the incoming request to the appropriate handler within a dedicated dependency injection scope.
+    /// Provisional minimal scope verification support. Full dispatch pipeline (Task 3.3.5),
+    /// unknown type handling (Task 3.3.6), and exception handling (Task 3.3.7) will be completed later.
+    /// </summary>
+    public async Task<BridgeResponseEnvelope> RouteAsync(BridgeRequestEnvelope request, CancellationToken cancellationToken)
+    {
+        if (request == null) throw new ArgumentNullException(nameof(request));
+
+        if (!TryGetHandlerFactory(request.Type, out var factory))
+        {
+            // Provisional: Task 3.3.6 will formally handle unknown types.
+            throw new KeyNotFoundException($"No handler registered for message type '{request.Type}'.");
+        }
+
+        _logger.LogDebug("Creating DI scope for message type '{Type}' (RequestId: {RequestId}).", request.Type, request.RequestId);
+        using var scope = _scopeFactory.CreateScope();
+
+        // Task 3.3.3 & 3.3.4: Resolve service and execute in scope.
+        // Task 3.3.5 will formalize the return pipeline.
+        var handler = factory(scope.ServiceProvider);
+        return await handler(request, cancellationToken);
     }
 
     /// <summary>

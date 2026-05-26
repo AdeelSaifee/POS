@@ -20,6 +20,7 @@ public sealed class WebViewHost
     private readonly IConfiguration _configuration;
     private readonly ILogger<WebViewHost> _logger;
     private bool _isInitialized;
+    private bool _isWebMessageHandlerRegistered;
 
     public WebViewHost(WebView2 webView, IConfiguration configuration, ILogger<WebViewHost> logger)
     {
@@ -57,9 +58,9 @@ public sealed class WebViewHost
 
             ConfigureVirtualHostMapping();
 
-            NavigateToInitialScreen();
+            RegisterWebMessageHandler();
 
-            // TODO: RegisterMessageBridge (Phase 3)
+            NavigateToInitialScreen();
         }
         catch (Exception ex)
         {
@@ -167,11 +168,36 @@ public sealed class WebViewHost
     }
 
     /// <summary>
-    /// TODO Phase 3: Registers the JS-to-C# message bridge.
+    /// Registers the JS-to-C# message bridge transport hook.
     /// </summary>
-    private void RegisterMessageBridge()
+    private void RegisterWebMessageHandler()
     {
         EnsureInitialized();
+
+        if (_isWebMessageHandlerRegistered) return;
+
+        _logger.LogInformation("Registering WebView2 WebMessageReceived handler.");
+        _webView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
+        _isWebMessageHandlerRegistered = true;
+    }
+
+    /// <summary>
+    /// Handles inbound messages from the WebView2 content.
+    /// </summary>
+    private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        // Minimal transport-level logging to verify reachability.
+        // Full payload logging is avoided to prevent accidental PII/credential exposure.
+        _logger.LogInformation("Received WebView2 message from {Source}.", e.Source);
+
+        try
+        {
+            // TODO Phase 3.3: Dispatch to PosWebMessageRouter
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error in WebView2 message handler.");
+        }
     }
 
     /// <summary>

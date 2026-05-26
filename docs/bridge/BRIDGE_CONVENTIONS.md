@@ -69,10 +69,12 @@ This guide covers:
 - `transport.ping` / `transport.pong` is a legacy probe introduced in Milestone 3.1 and may remain during the transition period.
 - Formal v1 request/response flows use the complete `version`/`requestId`/`ok`/`error` shape.
 
-## 12. Future Router Rules
-- Milestone 3.3 will introduce `PosWebMessageRouter`.
+## 12. Router and Handler Rules
+- Bridge messages are processed by `PosWebMessageRouter`.
 - Handler authors must not bypass these envelope conventions when adding features.
 - All router and handler logic must use the shared DTOs (`BridgeRequestEnvelope`, `BridgeResponseEnvelope`) and the shared serializer options (`BridgeJsonSerializerOptions.Default`).
+- **Registration:** Handlers must be registered in the `PosWebMessageRouter` constructor or via an extension method. The registration should follow a one-line, DI-ready pattern.
+- **Example:** `transport.echo` is the reference non-business handler that proves the end-to-end routing pipeline.
 
 ## 13. Checklist
 When authoring a new bridge handler or reviewing code:

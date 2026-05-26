@@ -27,7 +27,9 @@ public sealed class PosWebMessageRouter
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        // Built-in handlers for proving the router foundation without business logic.
+        // Task 3.3.8 & 3.3.9: Register built-in handlers for proving the router foundation.
+        // Ergonomic registration pattern: One line, DI-ready.
+        // Example for a separate handler class: Register("auth.login", sp => sp.GetRequiredService<LoginHandler>().HandleAsync);
         Register("transport.echo", _ => HandleTransportEchoAsync);
     }
 

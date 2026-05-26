@@ -96,6 +96,20 @@ public class PosWebMessageRouterTests
     }
 
     [Fact]
+    public void Register_SupportsOneLineDiErgonomics()
+    {
+        // Arrange
+        var router = CreateRouter();
+
+        // Act
+        // Task 3.3.9: Proving one-line registration ergonomics.
+        router.Register("ergonomic.action", _ => (req, token) => Task.FromResult(BridgeResponseEnvelope.Success(req.Type, req.RequestId)));
+
+        // Assert
+        Assert.True(router.CanHandle("ergonomic.action"));
+    }
+
+    [Fact]
     public async Task BuiltInTransportEcho_ReturnsValidResponse()
     {
         // Arrange

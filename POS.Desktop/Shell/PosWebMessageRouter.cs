@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using POS.Desktop.Bridge;
+using POS.Desktop.Services.Session;
 
 namespace POS.Desktop.Shell;
 
@@ -31,6 +32,10 @@ public sealed class PosWebMessageRouter
         // Ergonomic registration pattern: One line, DI-ready.
         // Example for a separate handler class: Register("auth.login", sp => sp.GetRequiredService<LoginHandler>().HandleAsync);
         Register("transport.echo", _ => HandleTransportEchoAsync);
+
+        // Task 3.4.4 - 3.4.6: Session management handlers.
+        Register("session.get", sp => (req, ct) => HandleSessionGetAsync(sp.GetRequiredService<ISessionService>(), req, ct));
+        Register("session.clear", sp => (req, ct) => HandleSessionClearAsync(sp.GetRequiredService<ISessionService>(), req, ct));
     }
 
     /// <summary>
@@ -140,6 +145,44 @@ public sealed class PosWebMessageRouter
             type: request.Type,
             requestId: request.RequestId,
             payload: new { message = "echo-routed", receivedType = request.Type }
+        );
+
+        return Task.FromResult(response);
+    }
+
+    /// <summary>
+    /// Handles the session.get message, returning the current operator session status.
+    /// </summary>
+    private Task<BridgeResponseEnvelope> HandleSessionGetAsync(ISessionService sessionService, BridgeRequestEnvelope request, CancellationToken cancellationToken)
+    {
+        var response = BridgeResponseEnvelope.Success(
+            type: request.Type,
+            requestId: request.RequestId,
+            payload: new
+            {
+                isActive = sessionService.IsActive,
+                currentSession = sessionService.CurrentSession
+            }
+        );
+
+        return Task.FromResult(response);
+    }
+
+    /// <summary>
+    /// Handles the session.clear message, clearing the current operator session.
+    /// </summary>
+    private Task<BridgeResponseEnvelope> HandleSessionClearAsync(ISessionService sessionService, BridgeRequestEnvelope request, CancellationToken cancellationToken)
+    {
+        sessionService.ClearSession();
+
+        var response = BridgeResponseEnvelope.Success(
+            type: request.Type,
+            requestId: request.RequestId,
+            payload: new
+            {
+                cleared = true,
+                isActive = false
+            }
         );
 
         return Task.FromResult(response);

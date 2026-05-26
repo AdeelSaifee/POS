@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using POS.Desktop.Bridge;
+using POS.Desktop.Services.Session;
 using POS.Desktop.Shell;
 using Xunit;
 
@@ -16,6 +17,7 @@ public class PosWebMessageRouterTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton<ISessionService, OperatorSessionService>();
         configureServices?.Invoke(services);
         var provider = services.BuildServiceProvider();
         var scopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
@@ -23,16 +25,15 @@ public class PosWebMessageRouterTests
     }
 
     [Fact]
-    public void Router_ExposesBuiltInTransportEcho()
+    public void Router_ExposesBuiltInHandlers()
     {
         // Arrange
         var router = CreateRouter();
 
-        // Act
-        var canHandle = router.CanHandle("transport.echo");
-
-        // Assert
-        Assert.True(canHandle);
+        // Act & Assert
+        Assert.True(router.CanHandle("transport.echo"));
+        Assert.True(router.CanHandle("session.get"));
+        Assert.True(router.CanHandle("session.clear"));
     }
 
     [Fact]
@@ -105,7 +106,9 @@ public class PosWebMessageRouterTests
 
         // Assert
         Assert.Contains("transport.echo", types);
-        Assert.Single(types); // Assuming only transport.echo is registered by default
+        Assert.Contains("session.get", types);
+        Assert.Contains("session.clear", types);
+        Assert.Equal(3, types.Count);
     }
 
     [Fact]
@@ -168,6 +171,99 @@ public class PosWebMessageRouterTests
         Assert.Equal("req-1", response.RequestId);
         Assert.NotNull(response.Payload);
         Assert.Null(response.Error);
+    }
+
+    [Fact]
+    public async Task SessionGet_ReturnsInactive_WhenNoSession()
+    {
+        // Arrange
+        var router = CreateRouter();
+        var request = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "session.get",
+            RequestId = "req-get-1"
+        };
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.True(response.Ok);
+        Assert.Equal("session.get", response.Type);
+        Assert.Equal("req-get-1", response.RequestId);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(response.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        Assert.False(doc.RootElement.GetProperty("isActive").GetBoolean());
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, doc.RootElement.GetProperty("currentSession").ValueKind);
+    }
+
+    [Fact]
+    public async Task SessionGet_ReturnsActive_WhenSessionExists()
+    {
+        // Arrange
+        var session = new OperatorSession("op-1", "Test Operator", "Cashier", DateTimeOffset.UtcNow);
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        sessionService.StartSession(session);
+        services.AddSingleton<ISessionService>(sessionService);
+        var provider = services.BuildServiceProvider();
+        var scopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
+        var routerWithSession = new PosWebMessageRouter(scopeFactory, NullLogger<PosWebMessageRouter>.Instance);
+
+        var request = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "session.get",
+            RequestId = "req-get-2"
+        };
+
+        // Act
+        var response = await routerWithSession.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.True(response.Ok);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(response.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        Assert.True(doc.RootElement.GetProperty("isActive").GetBoolean());
+        Assert.Equal("op-1", doc.RootElement.GetProperty("currentSession").GetProperty("operatorId").GetString());
+    }
+
+    [Fact]
+    public async Task SessionClear_ClearsSessionAndReturnsSuccess()
+    {
+        // Arrange
+        var session = new OperatorSession("op-1", "Test Operator", "Cashier", DateTimeOffset.UtcNow);
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        sessionService.StartSession(session);
+
+        var router = CreateRouter(services =>
+        {
+            services.AddSingleton<ISessionService>(sessionService);
+        });
+
+        var request = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "session.clear",
+            RequestId = "req-clear-1"
+        };
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.True(response.Ok);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(response.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        Assert.True(doc.RootElement.GetProperty("cleared").GetBoolean());
+        Assert.False(doc.RootElement.GetProperty("isActive").GetBoolean());
+        Assert.False(sessionService.IsActive);
     }
 
     [Fact]

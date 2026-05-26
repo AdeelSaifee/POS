@@ -16,11 +16,11 @@ namespace POS.Desktop
     {
         private readonly WebViewHost _webViewHost;
 
-        public MainWindow(IConfiguration configuration, ILogger<WebViewHost> logger)
+        public MainWindow(IConfiguration configuration, ILogger<WebViewHost> logger, PosWebMessageRouter router)
         {
             InitializeComponent();
             ApplyWindowIcon();
-            _webViewHost = new WebViewHost(MainWebView, configuration, logger);
+            _webViewHost = new WebViewHost(MainWebView, configuration, logger, router);
             SourceInitialized += MainWindow_SourceInitialized;
             Loaded += MainWindow_Loaded;
         }

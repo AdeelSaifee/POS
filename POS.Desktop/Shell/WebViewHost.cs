@@ -20,15 +20,17 @@ public sealed class WebViewHost
     private readonly WebView2 _webView;
     private readonly IConfiguration _configuration;
     private readonly ILogger<WebViewHost> _logger;
+    private readonly PosWebMessageRouter _router;
     private bool _isInitialized;
     private bool _isWebMessageHandlerRegistered;
     private bool _isPosHostObjectRegistered;
 
-    public WebViewHost(WebView2 webView, IConfiguration configuration, ILogger<WebViewHost> logger)
+    public WebViewHost(WebView2 webView, IConfiguration configuration, ILogger<WebViewHost> logger, PosWebMessageRouter router)
     {
         _webView = webView ?? throw new ArgumentNullException(nameof(webView));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _router = router ?? throw new ArgumentNullException(nameof(router));
     }
 
     /// <summary>
@@ -230,7 +232,7 @@ public sealed class WebViewHost
         // Task 3.1.6: Marshal handlers correctly.
         // Task 3.1.8: Basic message logging.
         // Task 3.2.7: Handle malformed messages.
-        // Task 3.2.8: Handle unknown message types.
+        // Task 3.3.5: Dispatch via router.
 
         try
         {
@@ -265,20 +267,18 @@ public sealed class WebViewHost
                 return;
             }
 
-            _logger.LogDebug("Inbound bridge message [Type: {Type}] from {Source}", messageType, source);
-
-            // 4. Dispatch to Handlers (Task 3.2.6 Echo & Task 3.2.8 Unknown Types).
-            switch (messageType)
+            // 4. Formal v1 Dispatch via Router (Tasks 3.3.5, 3.3.6, 3.3.7).
+            var request = System.Text.Json.JsonSerializer.Deserialize<BridgeRequestEnvelope>(rawJson, BridgeJsonSerializerOptions.Default);
+            if (request == null)
             {
-                case "transport.echo":
-                    await HandleTransportEchoAsync(root, requestId!, source);
-                    break;
-
-                default:
-                    _logger.LogWarning("Unsupported bridge message type '{Type}' from {Source}", messageType, source);
-                    await SendBridgeErrorAsync(messageType!, requestId!, "UNSUPPORTED_TYPE", "The requested action is not implemented.", source, new { type = messageType });
-                    break;
+                await SendBridgeErrorAsync(messageType ?? "unknown", requestId ?? "unrecognized", "MALFORMED_REQUEST", "The message could not be deserialized.", source);
+                return;
             }
+
+            _logger.LogDebug("Routing bridge message [Type: {Type}, RequestId: {RequestId}] from {Source}", request.Type, request.RequestId, source);
+
+            var response = await _router.RouteAsync(request, default);
+            await SendBridgeResponseAsync(response, source);
         }
         catch (System.Text.Json.JsonException ex)
         {
@@ -344,20 +344,6 @@ public sealed class WebViewHost
         });
 
         _logger.LogDebug("Outbound bridge legacy pong to {Source}", source);
-    }
-
-    /// <summary>
-    /// Handles the v1 transport.echo verification request.
-    /// </summary>
-    private async Task HandleTransportEchoAsync(System.Text.Json.JsonElement root, string requestId, string source)
-    {
-        var response = BridgeResponseEnvelope.Success(
-            type: "transport.echo",
-            requestId: requestId,
-            payload: new { message = "echo", receivedType = "transport.echo" }
-        );
-
-        await SendBridgeResponseAsync(response, source);
     }
 
     /// <summary>

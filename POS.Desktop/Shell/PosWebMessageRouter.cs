@@ -86,26 +86,47 @@ public sealed class PosWebMessageRouter
 
     /// <summary>
     /// Routes the incoming request to the appropriate handler within a dedicated dependency injection scope.
-    /// Provisional minimal scope verification support. Full dispatch pipeline (Task 3.3.5),
-    /// unknown type handling (Task 3.3.6), and exception handling (Task 3.3.7) will be completed later.
+    /// Handles dispatch (Task 3.3.5), unknown type mapping (Task 3.3.6), and safe exception recovery (Task 3.3.7).
     /// </summary>
     public async Task<BridgeResponseEnvelope> RouteAsync(BridgeRequestEnvelope request, CancellationToken cancellationToken)
     {
         if (request == null) throw new ArgumentNullException(nameof(request));
 
-        if (!TryGetHandlerFactory(request.Type, out var factory))
+        var type = request.Type;
+        var requestId = request.RequestId;
+
+        try
         {
-            // Provisional: Task 3.3.6 will formally handle unknown types.
-            throw new KeyNotFoundException($"No handler registered for message type '{request.Type}'.");
+            if (!TryGetHandlerFactory(type, out var factory))
+            {
+                _logger.LogWarning("Unsupported bridge message type '{Type}' (RequestId: {RequestId}).", type, requestId);
+
+                return BridgeResponseEnvelope.Failure(
+                    type: string.IsNullOrWhiteSpace(type) ? "unknown" : type,
+                    requestId: string.IsNullOrWhiteSpace(requestId) ? "unrecognized" : requestId,
+                    code: "UNSUPPORTED_TYPE",
+                    message: "The requested action is not implemented.",
+                    details: new { type }
+                );
+            }
+
+            _logger.LogDebug("Creating DI scope for message type '{Type}' (RequestId: {RequestId}).", type, requestId);
+            using var scope = _scopeFactory.CreateScope();
+
+            var handler = factory(scope.ServiceProvider);
+            return await handler(request, cancellationToken);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Handler error for message type '{Type}' (RequestId: {RequestId}).", type, requestId);
 
-        _logger.LogDebug("Creating DI scope for message type '{Type}' (RequestId: {RequestId}).", request.Type, request.RequestId);
-        using var scope = _scopeFactory.CreateScope();
-
-        // Task 3.3.3 & 3.3.4: Resolve service and execute in scope.
-        // Task 3.3.5 will formalize the return pipeline.
-        var handler = factory(scope.ServiceProvider);
-        return await handler(request, cancellationToken);
+            return BridgeResponseEnvelope.Failure(
+                type: type,
+                requestId: requestId,
+                code: "HANDLER_ERROR",
+                message: "The requested action could not be completed."
+            );
+        }
     }
 
     /// <summary>

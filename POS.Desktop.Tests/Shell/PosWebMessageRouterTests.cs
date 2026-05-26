@@ -152,14 +152,41 @@ public class PosWebMessageRouterTests
     }
 
     [Fact]
-    public async Task RouteAsync_ThrowsKeyNotFoundException_ForUnknownType_Provisional()
+    public async Task RouteAsync_ReturnsUnsupportedType_ForUnknownAction()
     {
         // Arrange
         var router = CreateRouter();
         var request = new BridgeRequestEnvelope { Type = "unknown.action", RequestId = "req-3", Version = "v1" };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => router.RouteAsync(request, CancellationToken.None));
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.False(response.Ok);
+        Assert.Equal("unknown.action", response.Type);
+        Assert.Equal("req-3", response.RequestId);
+        Assert.NotNull(response.Error);
+        Assert.Equal("UNSUPPORTED_TYPE", response.Error.Code);
+    }
+
+    [Fact]
+    public async Task RouteAsync_ReturnsHandlerError_WhenHandlerThrows()
+    {
+        // Arrange
+        var router = CreateRouter();
+        router.Register("fail.action", _ => (req, token) => throw new InvalidOperationException("Handler failed."));
+        var request = new BridgeRequestEnvelope { Type = "fail.action", RequestId = "req-4", Version = "v1" };
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.False(response.Ok);
+        Assert.Equal("fail.action", response.Type);
+        Assert.Equal("req-4", response.RequestId);
+        Assert.NotNull(response.Error);
+        Assert.Equal("HANDLER_ERROR", response.Error.Code);
+        Assert.Equal("The requested action could not be completed.", response.Error.Message);
     }
 
     private class FakeDisposableService : IDisposable

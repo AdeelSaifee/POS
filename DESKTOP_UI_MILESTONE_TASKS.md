@@ -3,7 +3,7 @@
 **Project:** IMAGYN POS — `POS.Desktop` terminal build-out
 **Companion to:** `DESKTOP_UI_INTEGRATION_PLAN.md` (roadmap) and `DESKTOP_UI_PHASE_MILESTONES.md` (milestones)
 **Status:** Planning document — **no implementation code yet**
-**Last updated:** 2026-05-23
+**Last updated:** 2026-05-26
 
 ---
 
@@ -1993,7 +1993,7 @@ Each task has:
 
 ---
 
-## Phase 6 — Sync / outbox ↔ POS.Api
+## Phase 6 — Push / Pull Sync ↔ POS.Api
 
 ### Milestone 6.1 — POS.Api sync ingest endpoint (server side)
 
@@ -2353,7 +2353,223 @@ Each task has:
 - **Files/folders:** `Services/Sync/*`.
 - **Expected output:** Non-blocking design.
 - **Verification:** Profiling confirms.
-- **Risk/notes:** Final Phase 6 gate.
+- **Risk/notes:** Final push-sync Phase 6 gate; pull sync (6.7) and manual sync (6.8) follow.
+
+### Milestone 6.6 — POS.Api master-data pull endpoints (server side)
+
+**Task 6.6.1 — Design pull request/response DTOs**
+- **Description:** Define shared DTOs for pull requests (cursor in) and pull responses (delta records + new cursor out) for each master-data entity type.
+- **Files/folders:** `POS.Shared/*` (shared pull DTOs), `POS.Api/Sync/*` (new).
+- **Expected output:** Pull contract spec with DTOs covering all entity types (items, categories, pricing, employees, tender methods, tax rules, reason codes).
+- **Verification:** DTOs documented and match what both client and server will use.
+- **Risk/notes:** Decide cursor type (timestamp vs sequence) once; inconsistency between push/pull cursors causes drift.
+
+**Task 6.6.2 — Add pull endpoint skeleton and route**
+- **Description:** Create the pull endpoint in `POS.Api/Sync/` with the `PosDevice` auth policy and a versioned route.
+- **Files/folders:** `POS.Api/Sync/*` (new), `POS.Api/Controllers/*`, `POS.Api/Program.cs`.
+- **Expected output:** Reachable, authenticated pull endpoint returning an empty payload.
+- **Verification:** Authorized device token → 200; unauthorized → 401/403.
+- **Risk/notes:** Reuse the `PosDevice` JWT policy pattern from the push ingest endpoint (6.1).
+
+**Task 6.6.3 — Implement item and category pull (delta)**
+- **Description:** Return `Item`/`ItemVariant`/`ItemIdentifier` and `Category` records changed since the provided cursor.
+- **Files/folders:** `POS.Api/Sync/*`, `PosCentralDbContext` (reads).
+- **Expected output:** Delta items/categories returned when cursor is behind; empty response when up to date.
+- **Verification:** First pull returns all records; repeat pull returns empty (no changes).
+- **Risk/notes:** Scope by provisioned tenant/location — do not leak other tenants' catalog.
+
+**Task 6.6.4 — Implement pricing and tax rule pull (delta)**
+- **Description:** Return `ItemPrice`, `PriceList`, and `TaxRule` records changed since cursor.
+- **Files/folders:** `POS.Api/Sync/*`, `PosCentralDbContext`.
+- **Expected output:** Delta pricing/tax records returned correctly.
+- **Verification:** Price update on server → appears in next pull response.
+- **Risk/notes:** Pricing is location-scoped; ensure filters match the terminal's provisioned location.
+
+**Task 6.6.5 — Implement employee pull (delta)**
+- **Description:** Return `Employee` and `EmployeeLocationRole` records for the provisioned location changed since cursor.
+- **Files/folders:** `POS.Api/Sync/*`, `PosCentralDbContext`.
+- **Expected output:** Delta employee records returned; includes role/PIN-hash data needed for login.
+- **Verification:** New employee added on server → appears in next pull.
+- **Risk/notes:** Never return plaintext PINs — return hashed credential only. Scope strictly to the provisioned location.
+
+**Task 6.6.6 — Implement tender method and reason code pull (delta)**
+- **Description:** Return `TenderMethod` and `ReasonCode` records changed since cursor.
+- **Files/folders:** `POS.Api/Sync/*`, `PosCentralDbContext`.
+- **Expected output:** Available tenders and reason codes kept current from server.
+- **Verification:** Disabled tender method on server → removed from next pull response.
+- **Risk/notes:** Reason codes may be optional; return empty list gracefully if not configured.
+
+**Task 6.6.7 — Return updated pull cursor in response**
+- **Description:** Include a new cursor value in the response so the client knows where to resume next time.
+- **Files/folders:** `POS.Api/Sync/*`.
+- **Expected output:** Each pull response carries a cursor the client must store.
+- **Verification:** Client using the returned cursor on next pull gets only newer records.
+- **Risk/notes:** Cursor must be stable and monotonic; clock-based cursors need UTC and skew tolerance.
+
+**Task 6.6.8 — Handle no-change and empty states**
+- **Description:** Return a valid empty response (not an error) when no records have changed since the cursor.
+- **Files/folders:** `POS.Api/Sync/*`.
+- **Expected output:** Empty delta response with the same cursor value.
+- **Verification:** Client receives 200 with empty record list; cursor unchanged.
+- **Risk/notes:** Client must treat empty-delta as success, not a failure.
+
+**Task 6.6.9 — Add integration tests for pull endpoints**
+- **Description:** Test happy path (full pull), repeat pull (empty delta), auth enforcement, and cross-tenant isolation.
+- **Files/folders:** `POS.Tests/*` (uses `Mvc.Testing`).
+- **Expected output:** Passing tests for all paths.
+- **Verification:** Green; cross-tenant isolation confirmed.
+- **Risk/notes:** Isolation test is security-critical — a tenant leak in pull data is a serious bug.
+
+**Task 6.6.10 — Document pull endpoint contracts**
+- **Description:** Write request/response/cursor/auth documentation for the pull endpoints.
+- **Files/folders:** repo notes / API docs.
+- **Expected output:** Pull contract doc covering all entity types.
+- **Verification:** Doc exists and is referenced by Milestone 6.7.
+- **Risk/notes:** Client (6.7) is built against this contract.
+
+### Milestone 6.7 — Pull sync processor (Desktop side)
+
+**Task 6.7.1 — Define IPullSyncService**
+- **Description:** Interface for triggering a pull cycle and retrieving pull status per entity type.
+- **Files/folders:** `POS.Desktop/Services/Sync/` (new or extended).
+- **Expected output:** Interface with pull-trigger and status methods.
+- **Verification:** Compiles; expresses per-entity cursor management.
+- **Risk/notes:** Keep separate from the push `SyncProcessor` so each can fail independently.
+
+**Task 6.7.2 — Implement item and category pull and upsert**
+- **Description:** Call the pull endpoint for items/categories, receive delta records, and upsert them into local SQLite (server-authoritative — local copy is overwritten).
+- **Files/folders:** `POS.Desktop/Services/Sync/*`, `POS.Desktop/Data/*` (catalog entities).
+- **Expected output:** Local SQLite item/category tables reflect server data after pull.
+- **Verification:** Items added/changed on server appear in local checkout after pull.
+- **Risk/notes:** Upsert must handle inserts, updates, and soft-deletes (inactive items should not appear in checkout).
+
+**Task 6.7.3 — Implement pricing and tax rule pull and upsert**
+- **Description:** Pull `ItemPrice`/`PriceList`/`TaxRule` deltas and upsert into local SQLite.
+- **Files/folders:** `POS.Desktop/Services/Sync/*`, `POS.Desktop/Data/*`.
+- **Expected output:** Checkout uses server-current prices and tax rules after pull.
+- **Verification:** Price change on server → reflected in next checkout after pull.
+- **Risk/notes:** Tax rule changes affect cart totals — verify totals recompute correctly with pulled rules.
+
+**Task 6.7.4 — Implement employee pull and upsert**
+- **Description:** Pull `Employee`/`EmployeeLocationRole` deltas and upsert into local SQLite so login validates against current operators.
+- **Files/folders:** `POS.Desktop/Services/Sync/*`, `POS.Desktop/Data/*`.
+- **Expected output:** New/updated employees can log in after pull; removed employees cannot.
+- **Verification:** New employee added on server → can log in after pull; deactivated employee cannot.
+- **Risk/notes:** PIN hash storage must match what `IAuthService` (5.1) compares against — align the hash format before implementing.
+
+**Task 6.7.5 — Implement tender method and reason code pull and upsert**
+- **Description:** Pull `TenderMethod` and `ReasonCode` deltas and upsert into local SQLite.
+- **Files/folders:** `POS.Desktop/Services/Sync/*`, `POS.Desktop/Data/*`.
+- **Expected output:** Payment screen shows server-current tenders; cash control shows server-current reason codes.
+- **Verification:** Disabled tender on server disappears from payment screen after pull.
+- **Risk/notes:** Reason codes may be optional — handle gracefully when the server returns none.
+
+**Task 6.7.6 — Track pull cursor per entity in SyncCursor**
+- **Description:** Store and advance the pull cursor for each entity type in the existing `SyncCursor` table, using a distinct key per entity (e.g., `pull:items`, `pull:employees`).
+- **Files/folders:** `POS.Desktop/Data/LocalEntities/SyncCursor.cs`, `Services/Sync/*`.
+- **Expected output:** Each entity's pull cursor is independently persisted and advanced after a successful pull.
+- **Verification:** Restart → pull resumes from stored cursor; cursors are per-entity, not shared.
+- **Risk/notes:** A shared cursor across entity types would cause unnecessary re-pulls or missed deltas.
+
+**Task 6.7.7 — Integrate pull into the sync cycle**
+- **Description:** Run the pull phase as part of the overall sync cycle (triggered by the `SyncProcessor` or run in a coordinated pull pass), respecting online/offline state.
+- **Files/folders:** `POS.Desktop/Services/Sync/*`.
+- **Expected output:** Pull runs automatically when online (e.g., after push, or on a separate timer); does not run when offline.
+- **Verification:** Going online triggers both push drain and pull; going offline stops both.
+- **Risk/notes:** Pull failures must not block push or vice versa; errors in one direction are independent.
+
+**Task 6.7.8 — Apply server-authoritative conflict policy**
+- **Description:** Ensure pulled records overwrite local copies unconditionally (no merge/conflict UI needed for master data).
+- **Files/folders:** `POS.Desktop/Services/Sync/*`, `POS.Desktop/Data/*` (upsert implementations).
+- **Expected output:** Upsert always applies the server version; local edits to pulled records are not possible.
+- **Verification:** Manually altering a local item row → next pull overwrites it with server value.
+- **Risk/notes:** Document this constraint clearly so future developers don't add local catalog editing without understanding the implications.
+
+**Task 6.7.9 — Test pull populates checkout with server data**
+- **Description:** End-to-end: add an item on the server, trigger a pull, confirm it appears in the local checkout catalog.
+- **Files/folders:** `POS.Tests/*` / runtime.
+- **Expected output:** Server-added item is visible in checkout after pull.
+- **Verification:** Confirmed in integration test or manual run.
+- **Risk/notes:** Requires a running POS.Api instance with the pull endpoint live (6.6).
+
+**Task 6.7.10 — Test pull is idempotent on repeat**
+- **Description:** Run the same pull twice; confirm no duplicate rows and no errors.
+- **Files/folders:** `POS.Tests/*`.
+- **Expected output:** Row counts stable; second pull is a no-op when nothing changed.
+- **Verification:** Item count unchanged after repeat pull with no server changes.
+- **Risk/notes:** Upsert logic (not insert) must be verified here.
+
+### Milestone 6.8 — Manual sync button / action
+
+**Task 6.8.1 — Define the sync status data model**
+- **Description:** Define the sync status structure: last synced timestamp, online/offline flag, pending push count (unsynced outbox rows), last pull result (success/failure/last entity pulled).
+- **Files/folders:** `POS.Desktop/Services/Sync/*`, `POS.Desktop/Bridge/*` (status DTO).
+- **Expected output:** A `SyncStatusDto` that the bridge can return and the UI can display.
+- **Verification:** DTO covers all required status fields; serializes cleanly.
+- **Risk/notes:** Last-synced time must survive app restarts — persist it (e.g., a row in SQLite or a settings file), not just in memory.
+
+**Task 6.8.2 — Persist and expose last-synced time**
+- **Description:** Record the timestamp of the last successful push+pull cycle and expose it via the sync status DTO.
+- **Files/folders:** `POS.Desktop/Services/Sync/*`, `POS.Desktop/Data/*` (or a settings store).
+- **Expected output:** Last-synced time shown in sync status survives restart.
+- **Verification:** Sync completes → timestamp recorded; restart → timestamp still correct.
+- **Risk/notes:** Use UTC; format for display in the local timezone in the UI layer.
+
+**Task 6.8.3 — Add getSyncStatus bridge handler**
+- **Description:** Bridge handler returning the current `SyncStatusDto` (last synced, online/offline, pending count, pull result).
+- **Files/folders:** `POS.Desktop/Shell/`, `POS.Desktop/Bridge/*`.
+- **Expected output:** JS can query sync status over the bridge and receive a structured response.
+- **Verification:** Handler returns accurate data; pending count matches outbox rows.
+- **Risk/notes:** This handler must be cheap to call — do not trigger sync on status query.
+
+**Task 6.8.4 — Add triggerSync bridge handler**
+- **Description:** Bridge handler that triggers a full push + pull cycle on demand, runs it in the background, and returns immediately (non-blocking).
+- **Files/folders:** `POS.Desktop/Shell/`, `POS.Desktop/Services/Sync/*`.
+- **Expected output:** Calling `triggerSync` starts push+pull in the background; the caller is not blocked; a subsequent `getSyncStatus` call shows the updated result.
+- **Verification:** Trigger → background sync starts; UI remains responsive; status updates after completion.
+- **Risk/notes:** Prevent duplicate concurrent syncs (debounce/guard if already in progress).
+
+**Task 6.8.5 — Add a sync status panel to the terminal UI**
+- **Description:** Add a minimal sync status indicator to the relevant screen(s) (e.g., a status bar on `main_checkout.html` or a shared header element) showing online/offline state, last synced time, and pending upload count. Script-only changes to existing screens; no layout redesign.
+- **Files/folders:** `POS.Desktop/Assets/ui/*` (`<script>` and minimal markup additions), `docs/ui-prototype/screens/*` (kept synchronized).
+- **Expected output:** Sync status visible to the operator without cluttering the cashier workspace; consistent with the refined white/light IMAGYN POS theme.
+- **Verification:** Status indicator renders correctly; does not overlap existing UI elements; shows accurate data from `getSyncStatus`.
+- **Risk/notes:** Keep the addition visually minimal — a small pill, icon, or status line. Do not redesign the screen layout. Sync the change to both UI folders.
+
+**Task 6.8.6 — Wire the manual sync button to triggerSync**
+- **Description:** Connect the sync button/action in the UI to the `triggerSync` bridge handler.
+- **Files/folders:** `POS.Desktop/Assets/ui/*` (`<script>` only).
+- **Expected output:** Clicking/tapping the sync action triggers push+pull via the bridge.
+- **Verification:** Button tap → sync starts (observable via status update and logs).
+- **Risk/notes:** Disable the button briefly while sync is in progress to prevent double-trigger; re-enable on completion.
+
+**Task 6.8.7 — Display pull success/failure in the status panel**
+- **Description:** Update the status panel to show the last pull result: success (with timestamp) or failure (with a brief error indicator).
+- **Files/folders:** `POS.Desktop/Assets/ui/*` (`<script>` only), `POS.Desktop/Bridge/*` (status DTO pull-result field).
+- **Expected output:** Operator can see at a glance whether the last pull succeeded or failed.
+- **Verification:** Simulate a pull failure → error indicator shown; successful pull → success shown with time.
+- **Risk/notes:** Show a human-readable indicator, not a technical error message. Log the technical detail server-side.
+
+**Task 6.8.8 — Confirm sync does not block cashier checkout**
+- **Description:** Verify end-to-end that a sync cycle running in the background does not freeze or delay the checkout flow (add items, pay, complete sale) even during an active sync.
+- **Files/folders:** runtime.
+- **Expected output:** Full checkout flow completes normally while sync runs concurrently.
+- **Verification:** Manual test: trigger sync, immediately process a sale — both complete without interference.
+- **Risk/notes:** Any UI-thread blocking in the sync path will be caught here. This is the key non-functional requirement for the manual sync feature.
+
+**Task 6.8.9 — Test manual sync triggers both push and pull**
+- **Description:** Confirm that triggering the manual sync action causes both the push processor (outbox drain) and pull processor (master data fetch) to run.
+- **Files/folders:** `POS.Tests/*` / runtime (integration).
+- **Expected output:** One manual sync trigger → push runs (outbox drained) and pull runs (master data updated).
+- **Verification:** Confirmed in integration test or manual observation via logs.
+- **Risk/notes:** Test both directions — it's easy to wire only push and forget pull.
+
+**Task 6.8.10 — Phase 6 end-to-end sync verification**
+- **Description:** Full Phase 6 acceptance test: make a sale offline → go online → trigger manual sync → confirm sale appears on server (push) and server-side catalog change appears locally (pull); verify status panel reflects accurate state throughout.
+- **Files/folders:** runtime (requires POS.Api + SQL Server).
+- **Expected output:** Complete two-way sync cycle verified; status panel accurate at each step.
+- **Verification:** All Phase 6 acceptance criteria confirmed; offline operation unaffected.
+- **Risk/notes:** This is the Phase 6 gate — all prior milestones must pass before this test.
 
 ---
 

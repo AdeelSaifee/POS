@@ -3,7 +3,7 @@
 **Project:** IMAGYN POS — converting the HTML prototype screens into the real `POS.Desktop` terminal application
 **Author:** Senior .NET Desktop Architecture review
 **Status:** Planning document — **no implementation code yet**
-**Last updated:** 2026-05-23
+**Last updated:** 2026-05-26
 
 ---
 
@@ -152,12 +152,46 @@ The HTML must only (a) capture input, (b) call a bridge method, (c) render the r
 
 ---
 
-## 8. Sync / outbox → POS.Api (later)
+## 8. Push / Pull Sync ↔ POS.Api (later)
+
+**Sync model:** the terminal operates fully offline-first on local SQLite. When online, it synchronizes with the central SQL Server via `POS.Api` in two directions.
+
+### Push (local → central)
 
 The local side already has the pieces: writes enqueue `SyncOutbox` events; `SyncCursor` tracks progress; `LocalRecoveryJournal` + `PaymentReconciliationQueue` cover retries/reconciliation. To complete the loop:
 - Add a typed `HttpClient` (auth via the `PosDevice` JWT policy already in POS.Api).
 - Add a `SyncProcessor` background service that drains `SyncOutbox`, posts to a **new** POS.Api `Sync/` ingest endpoint (currently an empty folder), and advances the cursor; the API acks via `SyncIngestAck`.
 - Idempotency keys/correlation IDs on outbox events make retries safe. Everything stays offline-first: the terminal never blocks on the network.
+- **Push payload includes:** `Order`, `OrderLine`, `Payment`, `Shift`, `CashDrawerMovement`, `ZReport`, and sync-acknowledgement records.
+
+### Pull (central → local)
+
+Master data must be pulled from the central server into local SQLite so the terminal can operate correctly offline:
+- **Items** — product catalog with identifiers/SKUs/barcodes.
+- **Categories** — product groupings for the checkout grid.
+- **Pricing** — `ItemPrice` and `PriceList` records for the provisioned location.
+- **Employees** — operator records with roles for the provisioned location (for PIN login).
+- **Tender methods** — available payment types.
+- **Tax rules** — tax rates and applicability rules.
+- **Reason codes** — for cash drawer movements and discounts (if needed).
+
+A POS.Api pull endpoint (new, in the `Sync/` area) returns master data deltas since the last pull cursor. The terminal stores a pull cursor per entity type in `SyncCursor`.
+
+### Manual Sync button / action
+
+A manual **Sync** action must be available in the terminal UI (planned now, implemented in Phase 6):
+- Triggers a full push + pull cycle on demand.
+- Displays sync status: last synced time; online / offline state; pending upload count (outbox rows not yet sent); pull success / failure indicator.
+- Must **not** block cashier checkout — sync runs in the background; the status panel is informational only.
+- Background auto-sync may still run on a timer, but the manual action is always available for operators.
+
+### Cross-cutting sync guidance
+
+- **Online/offline detection:** a lightweight connectivity check drives whether the processor attempts sync. Offline → queue only; online → drain push queue and execute pull.
+- **Idempotency:** all push events carry an idempotency key; pull is delta-based with a cursor; retries are safe on both sides.
+- **Conflict policy:** local operational data (orders, payments, shifts) is append-only and never conflicts. Master data pull is server-authoritative; local overrides are not supported.
+- **Sync cursor / versioning:** `SyncCursor` tracks the last-processed position per entity/direction. Cursors advance monotonically and are persisted to SQLite so they survive restarts.
+- **Retry / backoff:** transient failures retry with exponential backoff via `LocalRecoveryJournal`. Poison events are quarantined after a bounded attempt count.
 
 ---
 
@@ -320,26 +354,29 @@ Response DTO (JSON) travels back up the same path → screen renders authoritati
 - **Expected output:** No business state in the browser; login PIN validated in C#.
 - **Risks:** serialization/contract mismatches; async timing; bridge error handling.
 
-### Phase 4 — Connect SQLite/local services
-- **Objective:** Screens read real data from SQLite.
+### Phase 4 — Connect SQLite/local services (real offline data in)
+- **Objective:** SQLite is the terminal's offline-first local store. Screens read real data from local SQLite — no JS arrays. The minimal local dataset (items/categories/prices/tax rules/employees/tender methods/reason codes) is seeded here so the terminal works offline before sync exists. Dummy/demo JS arrays (`ITEMS[]`, `CATEGORIES[]`, `operators[]`) are replaced entity by entity as each service is wired.
 - **Files/folders:** `Services/Provisioning/*`, `Services/Catalog/*`, `Data/*`.
-- **Tasks:** real `IProvisionedTerminalContext` (replace `NoProvisionedTerminalContext`); catalog read service replacing `ITEMS[]`; seed a minimal local catalog for offline checkout.
-- **Expected output:** Login/checkout show real persisted data; tenant filters resolve.
-- **Risks:** query filters block reads if provisioning isn't set first — provision before everything.
+- **Tasks:** real `IProvisionedTerminalContext` (replace `NoProvisionedTerminalContext`); catalog read service replacing `ITEMS[]` and `CATEGORIES[]`; seed a minimal local dataset for offline checkout; employee data seeded for login. Full catalog seeding from POS.Api (the real source) is deferred to Phase 6 pull sync.
+- **Expected output:** Login/checkout show real persisted data from SQLite; tenant filters resolve; no demo arrays remain for provisioned entities.
+- **Risks:** query filters block reads if provisioning isn't set first — provision before everything. The static seed is a temporary stand-in; Phase 6 pull sync replaces it with live server data.
 
 ### Phase 5 — Real flows (login, shift, order, payment, cash control)
-- **Objective:** End-to-end shift on real data.
+- **Objective:** End-to-end shift on real SQLite data. All operational data (orders, payments, shifts, cash movements, Z-reports) is persisted locally first. Completed sales enqueue `SyncOutbox` records so Phase 6 can push them to the server.
 - **Files/folders:** `Services/{Auth,Shifts,Orders,Payments,CashControl,Reporting}/*`.
-- **Tasks:** implement each flow per §7; append-only persistence; enqueue `SyncOutbox` + `PrintQueue`; compute tax/totals/change/variance in C#.
-- **Expected output:** Open shift → sell → pay → cash control → close + Z-report, fully on SQLite.
-- **Risks:** money rounding/tax correctness; concurrency; ensure idempotent writes.
+- **Tasks:** implement each flow per §7; append-only local persistence to SQLite; enqueue `SyncOutbox` on each committed sale, shift close, and cash movement (atomic with the write); enqueue `PrintQueue` on payment; compute tax/totals/change/variance in C#.
+- **Expected output:** Open shift → sell → pay → cash control → close + Z-report, fully on SQLite; outbox rows created for each completed operation, ready for Phase 6 push sync.
+- **Risks:** money rounding/tax correctness; concurrency; ensure idempotent writes; ensure outbox enqueue is atomic with the operation commit.
 
-### Phase 6 — Sync / outbox ↔ POS.Api
-- **Objective:** Offline-created records replicate when online.
-- **Files/folders:** `Services/Sync/*`; **new** POS.Api `Sync/` ingest.
-- **Tasks:** typed `HttpClient` (PosDevice JWT); `SyncProcessor` draining `SyncOutbox`; cursor advance; retry via `LocalRecoveryJournal`; API ack via `SyncIngestAck`.
-- **Expected output:** Terminal data appears centrally; offline still works.
-- **Risks:** auth/token refresh; partial failures; idempotency on the server.
+### Phase 6 — Push / Pull Sync ↔ POS.Api
+- **Objective:** Full two-way sync between local SQLite and central SQL Server via `POS.Api`. Push: offline-created sales, shifts, and cash movements replicate to the server when online. Pull: master data (items, categories, pricing, employees, tender methods, tax rules, reason codes) flows from the server into local SQLite. A manual Sync action lets operators trigger sync on demand and view status — without blocking checkout.
+- **Files/folders:** `Services/Sync/*`; **new** POS.Api `Sync/` ingest endpoint + pull endpoints.
+- **Tasks (push):** typed `HttpClient` (PosDevice JWT); `SyncProcessor` draining `SyncOutbox`; cursor advance; retry via `LocalRecoveryJournal`; API ack via `SyncIngestAck`. Push entities: orders, order lines, payments, shifts, cash drawer movements, Z-reports.
+- **Tasks (pull):** POS.Api pull endpoints for master data deltas; `PullSyncProcessor` fetching items/categories/pricing/employees/tender methods/tax rules/reason codes and upserting into local SQLite; pull cursor tracking per entity.
+- **Tasks (manual sync):** Sync button/action in the terminal UI triggering push + pull; sync status panel (last synced time, online/offline indicator, pending upload count, pull result); runs in background — never blocks cashier checkout.
+- **Tasks (cross-cutting):** online/offline detection driving processor activity; idempotency on both sides; server-authoritative conflict policy for pull; retry/backoff; sync cursor persistence.
+- **Expected output:** Terminal data appears centrally; master data updated from server; manual sync action works; offline still works.
+- **Risks:** auth/token refresh; partial failures; idempotency on both sides; pull cursor correctness; ensuring manual sync never blocks the cashier.
 
 ### Phase 7 — Hardware integration
 - **Objective:** Pluggable devices, stubs by default.

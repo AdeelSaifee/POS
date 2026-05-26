@@ -3,7 +3,7 @@
 **Project:** IMAGYN POS — `POS.Desktop` terminal build-out
 **Companion to:** `DESKTOP_UI_INTEGRATION_PLAN.md` (the 8-phase roadmap is §16 there)
 **Status:** Planning document — **no implementation code yet**
-**Last updated:** 2026-05-23
+**Last updated:** 2026-05-26
 
 ---
 
@@ -28,7 +28,7 @@ Each milestone is described with:
 - No business logic in the UI — the HTML captures input and renders responses; C# owns all decisions.
 - Offline-first: the terminal never blocks on the network.
 
-**Phase → milestone count:** P1 (5), P2 (6), P3 (5), P4 (5), P5 (6), P6 (5), P7 (6), P8 (6) = **44 milestones**.
+**Phase → milestone count:** P1 (5), P2 (6), P3 (5), P4 (5), P5 (6), P6 (8), P7 (6), P8 (6) = **47 milestones**. *(P6 expanded 2026-05-26 to cover push/pull sync + manual sync button.)*
 
 ---
 
@@ -178,9 +178,9 @@ Each milestone is described with:
 
 ---
 
-## Phase 4 — Connect SQLite / local services (real data in)
+## Phase 4 — Connect SQLite / local services (real offline data in)
 
-**Phase objective:** Make provisioning real so tenant filters resolve, then feed screens real catalog data from SQLite.
+**Phase objective:** Establish SQLite as the terminal's offline-first local store. Make provisioning real so tenant filters resolve, then replace all JS demo arrays with real data served from local SQLite — items, categories, prices, tax rules, employees, tender methods, and reason codes. A minimal static seed covers offline operation until Phase 6 pull sync brings live server data.
 
 ### Milestone 4.1 — Real provisioned-terminal context
 - **Purpose:** Replace `NoProvisionedTerminalContext` so the local DB's tenant query filters return data.
@@ -199,7 +199,7 @@ Each milestone is described with:
 - **Risk notes:** Catalog seeding from POS.Api isn't available yet — provisioning must succeed without it (seed handled in 4.3).
 
 ### Milestone 4.3 — Minimal local catalog schema & seed
-- **Purpose:** Provide enough local catalog data for offline checkout before sync exists.
+- **Purpose:** Provide enough local catalog data (items/categories/prices/tax/employees/tender methods/reason codes) for offline operation before Phase 6 pull sync exists. This is a **temporary static seed** — Phase 6 replaces it with live server data pulled from POS.Api.
 - **Expected output:** Local representation of catalog (items/categories/prices/identifiers/tax) and a minimal seed routine.
 - **Files/folders:** `POS.Desktop/Data/*` (entities/config/migration as needed), `POS.Shared` model reuse, a seed source under `POS.Desktop/`.
 - **Dependencies:** Milestones 4.1, 4.2.
@@ -226,7 +226,7 @@ Each milestone is described with:
 
 ## Phase 5 — Real flows (login, shift, order, payment, cash control, Z-report)
 
-**Phase objective:** Deliver an end-to-end shift on real SQLite data: login → open shift → sell → pay → cash control → close + Z-report, with append-only persistence and outbox/print enqueue.
+**Phase objective:** Deliver an end-to-end shift on real SQLite data: login → open shift → sell → pay → cash control → close + Z-report, with append-only local persistence and outbox/print enqueue. Every committed sale, shift close, and cash movement must enqueue a `SyncOutbox` record (atomically) so Phase 6 push sync can replicate them to the server.
 
 ### Milestone 5.1 — Authentication & login service
 - **Purpose:** Validate operator PIN against `Employee` and open a `TerminalSession`.
@@ -278,9 +278,9 @@ Each milestone is described with:
 
 ---
 
-## Phase 6 — Sync / outbox ↔ POS.Api
+## Phase 6 — Push / Pull Sync ↔ POS.Api
 
-**Phase objective:** Replicate offline-created records to the central API when connectivity allows, without ever blocking the terminal.
+**Phase objective:** Full two-way sync between local SQLite and the central SQL Server via `POS.Api`. **Push:** offline-created sales, shifts, and cash movements replicate to the server when connectivity allows. **Pull:** master data (items, categories, pricing, employees, tender methods, tax rules, reason codes) flows from the server into local SQLite, replacing the Phase 4 static seed with live data. A **manual Sync action** lets operators trigger push + pull on demand and view sync status — without blocking checkout.
 
 ### Milestone 6.1 — POS.Api sync ingest endpoint (server side)
 - **Purpose:** Build the currently-empty central `Sync/` ingest so the terminal has a target.
@@ -321,6 +321,30 @@ Each milestone is described with:
 - **Dependencies:** Milestone 6.4.
 - **Acceptance criteria:** Going offline pauses attempts gracefully; coming online resumes; pending/last-synced counts are observable; offline operation is unaffected.
 - **Risk notes:** Don't let connectivity checks themselves block; keep them cheap and out of the UI thread.
+
+### Milestone 6.6 — POS.Api master-data pull endpoints (server side)
+- **Purpose:** Build the central pull endpoints that supply master data deltas to terminals, so the terminal has a server-side target for pull sync.
+- **Expected output:** Authenticated POS.Api endpoints returning delta master data (items, categories, pricing, employees, tender methods, tax rules, reason codes) since a given pull cursor. Returns an empty/no-change response when nothing is new.
+- **Files/folders:** `POS.Api/Sync/*` (new pull endpoint(s)), `POS.Api/Controllers/*`, `POS.Shared` (shared pull DTOs), `PosCentralDbContext` (reads).
+- **Dependencies:** Milestone 6.1 complete (ingest pattern established); Phase 5 complete (push data exists).
+- **Acceptance criteria:** Endpoints accept a cursor per entity type and return only changed records since that cursor; duplicate/repeat pulls return the same result (idempotent reads); unauthorized callers are rejected; an empty delta is a valid response.
+- **Risk notes:** Cursor design must be consistent with `SyncCursor` on the client. Consider whether one combined pull endpoint or per-entity endpoints fits the data volume better.
+
+### Milestone 6.7 — Pull sync processor (Desktop side)
+- **Purpose:** Fetch master data from POS.Api pull endpoints and upsert it into local SQLite, so items/prices/employees/tender methods/tax rules/reason codes stay current from the server.
+- **Expected output:** A pull sync processor (or a pull phase within `SyncProcessor`) that fetches each entity type using its stored pull cursor, upserts results into local SQLite (server-authoritative — no local conflict), and advances the pull cursor. After a successful pull, the static Phase 4 seed data is superseded by real server data.
+- **Files/folders:** `POS.Desktop/Services/Sync/*` (pull processor), `Data/LocalEntities/SyncCursor.cs` (pull cursors per entity), `POS.Desktop/Data/*` (upsert into catalog/employee/config tables).
+- **Dependencies:** Milestones 6.2, 6.6; Phase 4 local schema exists to receive pulled data.
+- **Acceptance criteria:** After a pull, checkout shows server-sourced items/prices/categories; employee login validates against pulled employees; pull is idempotent on repeat; pull cursor advances per entity; pull runs off the UI thread and does not block checkout.
+- **Risk notes:** Upsert must handle new records, updates, and (eventually) soft-deletes. Pull cursors per entity type must be independently tracked. Server-authoritative means local edits to pulled records are overwritten — document this constraint clearly.
+
+### Milestone 6.8 — Manual sync button / action
+- **Purpose:** Give operators a visible, on-demand sync trigger with status feedback, without blocking cashier operation.
+- **Expected output:** A Sync button/action in the terminal UI (e.g., in the header, footer, or operator menu) that triggers a full push + pull cycle. A sync status panel shows: last synced time, online/offline indicator, pending upload count (outbox rows), and pull success/failure. Sync runs in the background; the cashier can continue checkout during sync.
+- **Files/folders:** `POS.Desktop/Services/Sync/*` (trigger API), `POS.Desktop/Shell/` (bridge handler for sync trigger and status query), `POS.Desktop/Assets/ui/*` (sync status panel — `<script>` and minimal markup additions only, no design overhaul), `Bridge/*` (sync status DTO).
+- **Dependencies:** Milestones 6.3 (push processor), 6.7 (pull processor), 6.5 (connectivity/status).
+- **Acceptance criteria:** Manual sync triggers push + pull; status panel updates after sync; pending upload count is accurate; last synced time is persisted and shown after restart; sync does not block or interrupt an active checkout session; background auto-sync (if configured) continues independently of the manual trigger.
+- **Risk notes:** The sync status panel must be added to the existing screens without disrupting the production UI/UX sign-off. Limit to minimal additions (a status bar or icon) rather than a redesign. Ensure the panel is readable on the refined white/light IMAGYN POS theme.
 
 ---
 

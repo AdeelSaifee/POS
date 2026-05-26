@@ -4,4 +4,5 @@
   <Project Path="POS.Desktop/POS.Desktop.csproj" />
   <Project Path="POS.Shared/POS.Shared.csproj" />
   <Project Path="POS.Tests/POS.Tests.csproj" />
+  <Project Path="POS.Desktop.Tests/POS.Desktop.Tests.csproj" />
 </Solution>

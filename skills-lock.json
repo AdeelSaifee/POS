@@ -25,6 +25,12 @@
       "skillPath": "skills/dotnet-design-pattern-review/SKILL.md",
       "computedHash": "0b2b93ae1950e075045546dcf8d5a0971eea77abc5707916c99033c334accf69"
     },
+    "git-commit": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/git-commit/SKILL.md",
+      "computedHash": "2607fc60629b82b257136dd2a7a373f0a4466c0b49df7746d845d59313c99b21"
+    },
     "javascript-mastery": {
       "source": "sickn33/antigravity-awesome-skills",
       "sourceType": "github",

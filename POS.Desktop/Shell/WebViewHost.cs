@@ -228,72 +228,167 @@ public sealed class WebViewHost
     private async Task HandleWebMessageAsync(string rawJson, string source)
     {
         // Task 3.1.6: Marshal handlers correctly.
-        // Task 3.1.8: Basic message logging (transport direction and types).
-        // This method provides an async-safe entry point for bridge processing.
+        // Task 3.1.8: Basic message logging.
+        // Task 3.2.7: Handle malformed messages.
+        // Task 3.2.8: Handle unknown message types.
 
         try
         {
             using var doc = System.Text.Json.JsonDocument.Parse(rawJson);
-            var messageType = "unknown";
-            
-            if (doc.RootElement.TryGetProperty("type", out var typeElement))
+            var root = doc.RootElement;
+
+            // 1. Detect Message Type and identify if it is a Legacy Probe or v1 Envelope.
+            string? messageType = null;
+            if (root.TryGetProperty("type", out var typeElement))
             {
-                messageType = typeElement.GetString() ?? "unknown";
-                _logger.LogDebug("Inbound bridge message [Type: {Type}] from {Source}", messageType, source);
-            }
-            else
-            {
-                _logger.LogWarning("Inbound bridge message missing 'type' field from {Source}", source);
+                messageType = typeElement.GetString();
             }
 
+            // 2. Handle Legacy Milestone 3.1 Transport Probe (transport.ping).
+            // This does not require version or requestId.
             if (messageType == "transport.ping")
             {
-                var pong = new
-                {
-                    type = "transport.pong",
-                    source = "desktop-shell",
-                    receivedType = "transport.ping",
-                    timestamp = DateTime.UtcNow.ToString("O")
-                };
-
-                var responseJson = System.Text.Json.JsonSerializer.Serialize(pong);
-
-                // Ensure WebView2 UI-thread operations remain safely marshalled.
-                await _webView.Dispatcher.InvokeAsync(() =>
-                {
-                    _webView.CoreWebView2.PostWebMessageAsJson(responseJson);
-                });
-
-                _logger.LogDebug("Outbound bridge message [Type: transport.pong] to {Source}", source);
+                await HandleLegacyPingAsync(source);
+                return;
             }
-            else if (messageType == "transport.echo")
+
+            // 3. Validate v1 Envelope Shape.
+            if (!TryValidateV1Envelope(root, out var requestId, out var versionError))
             {
-                // Task 3.2.6: Minimal v1 echo support for JS request helper verification.
-                if (doc.RootElement.TryGetProperty("requestId", out var reqIdElement))
-                {
-                    var requestId = reqIdElement.GetString() ?? "unknown";
+                _logger.LogWarning("Inbound malformed bridge request from {Source}. Reason: {Reason}", source, versionError);
 
-                    var response = BridgeResponseEnvelope.Success(
-                        type: "transport.echo",
-                        requestId: requestId,
-                        payload: new { message = "echo", receivedType = "transport.echo" }
-                    );
+                // Fallback to "unknown" type if extraction failed.
+                var safeType = messageType ?? "unknown";
+                var safeId = requestId ?? "unrecognized";
 
-                    var responseJson = System.Text.Json.JsonSerializer.Serialize(response, BridgeJsonSerializerOptions.Default);
+                await SendBridgeErrorAsync(safeType, safeId, "MALFORMED_REQUEST", "The message envelope was invalid.", source);
+                return;
+            }
 
-                    await _webView.Dispatcher.InvokeAsync(() =>
-                    {
-                        _webView.CoreWebView2.PostWebMessageAsJson(responseJson);
-                    });
+            _logger.LogDebug("Inbound bridge message [Type: {Type}] from {Source}", messageType, source);
 
-                    _logger.LogDebug("Outbound bridge response [Type: transport.echo, RequestId: {RequestId}] to {Source}", requestId, source);
-                }
+            // 4. Dispatch to Handlers (Task 3.2.6 Echo & Task 3.2.8 Unknown Types).
+            switch (messageType)
+            {
+                case "transport.echo":
+                    await HandleTransportEchoAsync(root, requestId!, source);
+                    break;
+
+                default:
+                    _logger.LogWarning("Unsupported bridge message type '{Type}' from {Source}", messageType, source);
+                    await SendBridgeErrorAsync(messageType!, requestId!, "UNSUPPORTED_TYPE", "The requested action is not implemented.", source, new { type = messageType });
+                    break;
             }
         }
         catch (System.Text.Json.JsonException ex)
         {
-            _logger.LogWarning(ex, "Failed to parse malformed JSON bridge message from {Source}.", source);
+            _logger.LogWarning(ex, "Failed to parse raw JSON bridge message from {Source}.", source);
+
+            // Task 3.2.7: Malformed JSON recovery.
+            await SendBridgeErrorAsync("unknown", "unrecognized", "MALFORMED_REQUEST", "The message envelope was invalid.", source);
         }
+    }
+
+    /// <summary>
+    /// Validates the basic requirements of a v1 bridge envelope.
+    /// </summary>
+    private bool TryValidateV1Envelope(System.Text.Json.JsonElement root, out string? requestId, out string? error)
+    {
+        requestId = null;
+        error = null;
+
+        if (root.TryGetProperty("requestId", out var idElement))
+        {
+            requestId = idElement.GetString();
+        }
+
+        if (!root.TryGetProperty("version", out var verElement) || verElement.GetString() != BridgeEnvelopeVersion.V1)
+        {
+            error = "Missing or unsupported version.";
+            return false;
+        }
+
+        if (!root.TryGetProperty("type", out var typeElement) || string.IsNullOrWhiteSpace(typeElement.GetString()))
+        {
+            error = "Missing or empty message type.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(requestId))
+        {
+            error = "Missing or empty requestId.";
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Handles the legacy transport.ping probe from Milestone 3.1.
+    /// </summary>
+    private async Task HandleLegacyPingAsync(string source)
+    {
+        var pong = new
+        {
+            type = "transport.pong",
+            source = "desktop-shell",
+            receivedType = "transport.ping",
+            timestamp = DateTime.UtcNow.ToString("O")
+        };
+
+        var responseJson = System.Text.Json.JsonSerializer.Serialize(pong);
+
+        await _webView.Dispatcher.InvokeAsync(() =>
+        {
+            _webView.CoreWebView2.PostWebMessageAsJson(responseJson);
+        });
+
+        _logger.LogDebug("Outbound bridge legacy pong to {Source}", source);
+    }
+
+    /// <summary>
+    /// Handles the v1 transport.echo verification request.
+    /// </summary>
+    private async Task HandleTransportEchoAsync(System.Text.Json.JsonElement root, string requestId, string source)
+    {
+        var response = BridgeResponseEnvelope.Success(
+            type: "transport.echo",
+            requestId: requestId,
+            payload: new { message = "echo", receivedType = "transport.echo" }
+        );
+
+        await SendBridgeResponseAsync(response, source);
+    }
+
+    /// <summary>
+    /// Marshals and sends a structured v1 bridge response to the UI.
+    /// </summary>
+    private async Task SendBridgeResponseAsync(BridgeResponseEnvelope response, string source)
+    {
+        var responseJson = System.Text.Json.JsonSerializer.Serialize(response, BridgeJsonSerializerOptions.Default);
+
+        await _webView.Dispatcher.InvokeAsync(() =>
+        {
+            _webView.CoreWebView2.PostWebMessageAsJson(responseJson);
+        });
+
+        if (response.Ok)
+        {
+            _logger.LogDebug("Outbound bridge response [Type: {Type}, RequestId: {RequestId}] to {Source}", response.Type, response.RequestId, source);
+        }
+        else
+        {
+            _logger.LogWarning("Outbound bridge error [Type: {Type}, RequestId: {RequestId}, Code: {Code}] to {Source}", response.Type, response.RequestId, response.Error?.Code, source);
+        }
+    }
+
+    /// <summary>
+    /// Creates and sends a v1 bridge error response.
+    /// </summary>
+    private async Task SendBridgeErrorAsync(string type, string requestId, string code, string message, string source, object? details = null)
+    {
+        var response = BridgeResponseEnvelope.Failure(type, requestId, code, message, details);
+        await SendBridgeResponseAsync(response, source);
     }
 
     /// <summary>

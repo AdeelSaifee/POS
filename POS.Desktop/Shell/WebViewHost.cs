@@ -227,14 +227,25 @@ public sealed class WebViewHost
     private async Task HandleWebMessageAsync(string rawJson, string source)
     {
         // Task 3.1.6: Marshal handlers correctly.
+        // Task 3.1.8: Basic message logging (transport direction and types).
         // This method provides an async-safe entry point for bridge processing.
-        // Future Phase 3.3: Dispatch to PosWebMessageRouter.
 
         try
         {
             using var doc = System.Text.Json.JsonDocument.Parse(rawJson);
-            if (doc.RootElement.TryGetProperty("type", out var typeElement) &&
-                typeElement.GetString() == "transport.ping")
+            var messageType = "unknown";
+            
+            if (doc.RootElement.TryGetProperty("type", out var typeElement))
+            {
+                messageType = typeElement.GetString() ?? "unknown";
+                _logger.LogDebug("Inbound bridge message [Type: {Type}] from {Source}", messageType, source);
+            }
+            else
+            {
+                _logger.LogWarning("Inbound bridge message missing 'type' field from {Source}", source);
+            }
+
+            if (messageType == "transport.ping")
             {
                 var pong = new
                 {
@@ -247,18 +258,17 @@ public sealed class WebViewHost
                 var responseJson = System.Text.Json.JsonSerializer.Serialize(pong);
 
                 // Ensure WebView2 UI-thread operations remain safely marshalled.
-                // CoreWebView2 operations must be called on the thread that created the control (UI thread).
                 await _webView.Dispatcher.InvokeAsync(() =>
                 {
                     _webView.CoreWebView2.PostWebMessageAsJson(responseJson);
                 });
 
-                _logger.LogInformation("Sent transport.pong response to {Source}.", source);
+                _logger.LogDebug("Outbound bridge message [Type: transport.pong] to {Source}", source);
             }
         }
         catch (System.Text.Json.JsonException ex)
         {
-            _logger.LogWarning(ex, "Failed to parse malformed JSON message from {Source}.", source);
+            _logger.LogWarning(ex, "Failed to parse malformed JSON bridge message from {Source}.", source);
         }
     }
 

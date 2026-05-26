@@ -13,17 +13,17 @@
       "skillPath": "plugins/dotnet-contribution/skills/dotnet-backend-patterns/SKILL.md",
       "computedHash": "624af9f8faea713dadaa51fc2f2040a4b365b4e083b9b9f82d7e9df1f627ea79"
     },
-    "pos-dotnet-best-practices": {
-      "source": "github/awesome-copilot",
-      "sourceType": "github",
-      "skillPath": "skills/dotnet-best-practices/SKILL.md",
-      "computedHash": "9ef94db7f06c167d544369817e5a4415eeb7886dcff0d47026837a1aada260e3"
-    },
     "dotnet-design-pattern-review": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
       "skillPath": "skills/dotnet-design-pattern-review/SKILL.md",
       "computedHash": "0b2b93ae1950e075045546dcf8d5a0971eea77abc5707916c99033c334accf69"
+    },
+    "dotnet-testing-strategy": {
+      "source": "wshaddix/dotnet-skills",
+      "sourceType": "github",
+      "skillPath": "skills/dotnet-testing-strategy/SKILL.md",
+      "computedHash": "84751a4c56ae1f0d2c65bdfa84194729f9926c26d95b5b67dfe6c212aa8ac229"
     },
     "git-commit": {
       "source": "github/awesome-copilot",
@@ -55,17 +55,35 @@
       "skillPath": "plugins/javascript-typescript/skills/modern-javascript-patterns/SKILL.md",
       "computedHash": "0d820adbeaa73ee1f6b1e075fb3ef1698d5d68ad59cb30fc935c857025e9b24f"
     },
+    "pos-dotnet-best-practices": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/dotnet-best-practices/SKILL.md",
+      "computedHash": "9ef94db7f06c167d544369817e5a4415eeb7886dcff0d47026837a1aada260e3"
+    },
     "repo-intake-and-plan": {
       "source": "lllllllama/ai-paper-reproduction-skill",
       "sourceType": "github",
       "skillPath": "skills/repo-intake-and-plan/SKILL.md",
       "computedHash": "f98680f5f682259526266307680c9e7fab3e71b8d32b78f7eea506609d07fbcf"
     },
+    "run-tests": {
+      "source": "dotnet/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/dotnet-test/skills/run-tests/SKILL.md",
+      "computedHash": "73f0cdce5b08ee02fd35f02b80b1ca026a09de29e5691056dc958aebd6d0ae20"
+    },
     "systematic-debugging": {
       "source": "obra/superpowers",
       "sourceType": "github",
       "skillPath": "skills/systematic-debugging/SKILL.md",
       "computedHash": "7246fdd3a795fc3daff0af72044ca99bf836e4e6a46844742858786fdfb86488"
+    },
+    "test-anti-patterns": {
+      "source": "dotnet/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/dotnet-test/skills/test-anti-patterns/SKILL.md",
+      "computedHash": "6c3e8c143fffa1315ff7667b5c66b088cffc0fd51a3e439d48f167243ae0d483"
     },
     "verification-before-completion": {
       "source": "obra/superpowers",

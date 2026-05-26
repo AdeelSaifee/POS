@@ -1,5 +1,5 @@
 ---
-name: dotnet-best-practices
+name: pos-dotnet-best-practices
 description: 'Ensure .NET/C# code meets best practices for the solution/project.'
 ---
 

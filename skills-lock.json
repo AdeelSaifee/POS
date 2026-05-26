@@ -13,7 +13,7 @@
       "skillPath": "plugins/dotnet-contribution/skills/dotnet-backend-patterns/SKILL.md",
       "computedHash": "624af9f8faea713dadaa51fc2f2040a4b365b4e083b9b9f82d7e9df1f627ea79"
     },
-    "dotnet-best-practices": {
+    "pos-dotnet-best-practices": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
       "skillPath": "skills/dotnet-best-practices/SKILL.md",

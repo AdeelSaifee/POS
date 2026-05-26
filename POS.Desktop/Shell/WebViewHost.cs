@@ -209,6 +209,28 @@ public sealed class WebViewHost
 
         try
         {
+            var rawJson = e.WebMessageAsJson;
+
+            // Task 3.1.5: Minimal transport echo (pong) for verification.
+            // Using System.Text.Json for safe, low-overhead parsing.
+            using var doc = System.Text.Json.JsonDocument.Parse(rawJson);
+            if (doc.RootElement.TryGetProperty("type", out var typeElement) && 
+                typeElement.GetString() == "transport.ping")
+            {
+                var pong = new
+                {
+                    type = "transport.pong",
+                    source = "desktop-shell",
+                    receivedType = "transport.ping",
+                    timestamp = DateTime.UtcNow.ToString("O")
+                };
+
+                var responseJson = System.Text.Json.JsonSerializer.Serialize(pong);
+                _webView.CoreWebView2.PostWebMessageAsJson(responseJson);
+                
+                _logger.LogInformation("Sent transport.pong response to {Source}.", e.Source);
+            }
+
             // TODO Phase 3.3: Dispatch to PosWebMessageRouter
         }
         catch (Exception ex)

@@ -46,4 +46,17 @@
         }
     };
 
+    // Task 3.1.5: Listen for transport-level responses from the C# shell.
+    // This allows verifying two-way bridge connectivity.
+    if (window.chrome && window.chrome.webview && typeof window.chrome.webview.addEventListener === "function") {
+        window.chrome.webview.addEventListener('message', function (event) {
+            const data = event.data;
+            if (data && data.type === "transport.pong") {
+                if (window.console && typeof window.console.debug === "function") {
+                    console.debug("[Bridge] Received transport pong:", data);
+                }
+            }
+        });
+    }
+
 })(window);

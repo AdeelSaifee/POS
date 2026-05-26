@@ -21,6 +21,7 @@ public sealed class WebViewHost
     private readonly ILogger<WebViewHost> _logger;
     private bool _isInitialized;
     private bool _isWebMessageHandlerRegistered;
+    private bool _isPosHostObjectRegistered;
 
     public WebViewHost(WebView2 webView, IConfiguration configuration, ILogger<WebViewHost> logger)
     {
@@ -59,6 +60,8 @@ public sealed class WebViewHost
             ConfigureVirtualHostMapping();
 
             RegisterWebMessageHandler();
+
+            RegisterPosHostObject();
 
             NavigateToInitialScreen();
         }
@@ -179,6 +182,20 @@ public sealed class WebViewHost
         _logger.LogInformation("Registering WebView2 WebMessageReceived handler.");
         _webView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
         _isWebMessageHandlerRegistered = true;
+    }
+
+    /// <summary>
+    /// Registers the COM-visible host object for the WebView2 JS-to-C# bridge.
+    /// </summary>
+    private void RegisterPosHostObject()
+    {
+        EnsureInitialized();
+
+        if (_isPosHostObjectRegistered) return;
+
+        _logger.LogInformation("Registering 'pos' host object for JS bridge.");
+        _webView.CoreWebView2.AddHostObjectToScript("pos", new PosHostApi());
+        _isPosHostObjectRegistered = true;
     }
 
     /// <summary>

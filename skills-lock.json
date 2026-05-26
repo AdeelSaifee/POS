@@ -25,11 +25,29 @@
       "skillPath": "skills/dotnet-design-pattern-review/SKILL.md",
       "computedHash": "0b2b93ae1950e075045546dcf8d5a0971eea77abc5707916c99033c334accf69"
     },
+    "javascript-mastery": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/javascript-mastery/SKILL.md",
+      "computedHash": "8aa63cb1fa3113a884f51d9be617a06cd7d91729c7335c9253f9a8f4dd857541"
+    },
+    "javascript-pro": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/javascript-pro/SKILL.md",
+      "computedHash": "bc70eb57659b6ce03a7f5ab7b508d580e72ce9f16897a726a2399a40b77ee973"
+    },
     "modern-csharp-coding-standards": {
       "source": "aaronontheweb/dotnet-skills",
       "sourceType": "github",
       "skillPath": "skills/csharp-coding-standards/SKILL.md",
       "computedHash": "38d6547db382a391ed740eef9d376f718639d27ecafe5bdedb981001b190acc9"
+    },
+    "modern-javascript-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/javascript-typescript/skills/modern-javascript-patterns/SKILL.md",
+      "computedHash": "0d820adbeaa73ee1f6b1e075fb3ef1698d5d68ad59cb30fc935c857025e9b24f"
     },
     "repo-intake-and-plan": {
       "source": "lllllllama/ai-paper-reproduction-skill",

@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+    <script src="pos-bridge-transport.js"></script>
     <style>
         :root {
             --bg: #FFFFFF;
@@ -691,26 +692,9 @@
             sessionStorage.removeItem('pos_shift_open');
             
             // Task 3.1.4: Transport-level ping to verify bridge connectivity
-            sendWebViewTransportPing();
+            window.posBridgeTransport?.sendPing?.("terminal_login");
         });
 
-        /**
-         * Sends a minimal transport-level ping to the C# shell.
-         * Used for bridge verification in Phase 3.1.
-         */
-        function sendWebViewTransportPing() {
-            if (window.chrome && window.chrome.webview && window.chrome.webview.postMessage) {
-                const ping = {
-                    type: "transport.ping",
-                    source: "terminal_login",
-                    timestamp: new Date().toISOString()
-                };
-                console.debug("[Bridge] Sending transport ping:", ping);
-                window.chrome.webview.postMessage(ping);
-            } else {
-                console.debug("[Bridge] WebView2 messaging not available.");
-            }
-        }
     </script>
 </body>
 </html>

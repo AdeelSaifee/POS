@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
+using POS.Desktop.Bridge;
 
 namespace POS.Desktop.Shell;
 
@@ -264,6 +265,29 @@ public sealed class WebViewHost
                 });
 
                 _logger.LogDebug("Outbound bridge message [Type: transport.pong] to {Source}", source);
+            }
+            else if (messageType == "transport.echo")
+            {
+                // Task 3.2.6: Minimal v1 echo support for JS request helper verification.
+                if (doc.RootElement.TryGetProperty("requestId", out var reqIdElement))
+                {
+                    var requestId = reqIdElement.GetString() ?? "unknown";
+
+                    var response = BridgeResponseEnvelope.Success(
+                        type: "transport.echo",
+                        requestId: requestId,
+                        payload: new { message = "echo", receivedType = "transport.echo" }
+                    );
+
+                    var responseJson = System.Text.Json.JsonSerializer.Serialize(response, BridgeJsonSerializerOptions.Default);
+
+                    await _webView.Dispatcher.InvokeAsync(() =>
+                    {
+                        _webView.CoreWebView2.PostWebMessageAsJson(responseJson);
+                    });
+
+                    _logger.LogDebug("Outbound bridge response [Type: transport.echo, RequestId: {RequestId}] to {Source}", requestId, source);
+                }
             }
         }
         catch (System.Text.Json.JsonException ex)

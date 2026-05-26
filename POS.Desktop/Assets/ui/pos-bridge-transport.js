@@ -18,6 +18,32 @@
         },
 
         /**
+         * Checks if the 'pos' host object is available for direct JS-to-C# calls.
+         * @returns {boolean} True if the host object exists.
+         */
+        isHostObjectAvailable: function () {
+            return !!(window.chrome && window.chrome.webview && window.chrome.webview.hostObjects && window.chrome.webview.hostObjects.pos);
+        },
+
+        /**
+         * Logs the current bridge transport status to the console.
+         * Used for reachability verification across screens.
+         * @param {string} source - The name of the screen or component.
+         */
+        logStatus: function (source) {
+            const status = {
+                source: source || "unknown",
+                postMessage: this.isAvailable(),
+                hostObject: this.isHostObjectAvailable(),
+                timestamp: new Date().toISOString()
+            };
+            if (window.console && typeof window.console.debug === "function") {
+                console.debug("[Bridge] Transport status:", status);
+            }
+            return status;
+        },
+
+        /**
          * Sends a transport-level ping message to the C# shell.
          * Used to verify that JS-to-C# messaging is working.
          * @param {string} source - The name of the screen or component sending the ping.

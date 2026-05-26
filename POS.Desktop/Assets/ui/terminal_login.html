@@ -691,7 +691,8 @@
             // Clear any stale session
             sessionStorage.removeItem('pos_shift_open');
             
-            // Task 3.1.4: Transport-level ping to verify bridge connectivity
+            // Task 3.1.7: Confirm bridge reachability from any screen
+            window.posBridgeTransport?.logStatus?.("terminal_login");
             window.posBridgeTransport?.sendPing?.("terminal_login");
         });
 

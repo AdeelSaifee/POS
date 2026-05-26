@@ -689,8 +689,28 @@
             clearPinDotsError(); // Set default hint text
             // Clear any stale session
             sessionStorage.removeItem('pos_shift_open');
+            
+            // Task 3.1.4: Transport-level ping to verify bridge connectivity
+            sendWebViewTransportPing();
         });
 
+        /**
+         * Sends a minimal transport-level ping to the C# shell.
+         * Used for bridge verification in Phase 3.1.
+         */
+        function sendWebViewTransportPing() {
+            if (window.chrome && window.chrome.webview && window.chrome.webview.postMessage) {
+                const ping = {
+                    type: "transport.ping",
+                    source: "terminal_login",
+                    timestamp: new Date().toISOString()
+                };
+                console.debug("[Bridge] Sending transport ping:", ping);
+                window.chrome.webview.postMessage(ping);
+            } else {
+                console.debug("[Bridge] WebView2 messaging not available.");
+            }
+        }
     </script>
 </body>
 </html>

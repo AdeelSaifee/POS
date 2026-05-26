@@ -1023,7 +1023,7 @@ function updateClock() {
 }
 
 // ─── INIT ────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   updateClock();
   setInterval(updateClock, 1000);
 
@@ -1034,22 +1034,22 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load operator
-  const opStr = localStorage.getItem('terminal_operator');
-  if (opStr) {
-    try {
-      const op = JSON.parse(opStr);
-      const opNameEl = document.getElementById('op-name');
-      if (opNameEl) opNameEl.textContent = op.name;
-      
-      const opAvatarEl = document.getElementById('op-avatar');
-      if (opAvatarEl) {
-        opAvatarEl.textContent = op.initials || op.name.slice(0,2).toUpperCase();
-        opAvatarEl.style.background = op.color || '#10B981';
+  const session = await getCurrentSessionOrNull();
+  if (session) {
+    const opNameEl = document.getElementById('op-name');
+    if (opNameEl) opNameEl.textContent = session.displayName;
+
+    const opAvatarEl = document.getElementById('op-avatar');
+    if (opAvatarEl) {
+      opAvatarEl.textContent = session.operatorId.slice(0,2).toUpperCase();
+      if (session.displayName.includes(' ')) {
+        opAvatarEl.textContent = session.displayName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
       }
-      
-      const tbCashierEl = document.getElementById('tb-cashier');
-      if (tbCashierEl) tbCashierEl.textContent = op.name.split(' ')[0];
-    } catch(e) {}
+      opAvatarEl.style.background = '#10B981';
+    }
+
+    const tbCashierEl = document.getElementById('tb-cashier');
+    if (tbCashierEl) tbCashierEl.textContent = session.displayName.split(' ')[0];
   }
 
   // Load config
@@ -1453,10 +1453,37 @@ function proceedToPayment() {
 function navigateToShift() {
   window.location.href = sessionStorage.getItem('pos_shift_open') === 'true' ? 'shift_close.html' : 'shift_open.html';
 }
-function doLogout() {
+async function doLogout() {
   if (!confirm('Sign out? Your shift will remain open.')) return;
-  sessionStorage.removeItem('terminal_operator');
+  await clearDesktopSession('logout');
   window.location.href = 'terminal_login.html';
+}
+
+// ── Session Helpers ───────────────────────────────────────────────────────────
+async function getCurrentSessionOrNull() {
+  try {
+    if (!window.posBridge || !window.posBridge.isAvailable || !window.posBridge.isAvailable()) {
+      return null;
+    }
+    const payload = await window.posBridge.request('session.get', null);
+    if (payload && payload.isActive && payload.currentSession) {
+      return payload.currentSession;
+    }
+  } catch (e) {
+    console.error('[Session] Failed to get session:', e);
+  }
+  return null;
+}
+
+async function clearDesktopSession(reason) {
+  try {
+    if (window.posBridge && window.posBridge.isAvailable && window.posBridge.isAvailable()) {
+      await window.posBridge.request('session.clear', { reason: reason || 'manual' });
+    }
+  } catch (e) {
+    console.error('[Session] Failed to clear session:', e);
+  }
+  sessionStorage.removeItem('terminal_operator');
 }
 
 // ─── MODAL HELPERS ───────────────────────────

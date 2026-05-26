@@ -46,7 +46,7 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height:100%; margin:0; padding:0; overflow:hidden; }
   body { font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px; -webkit-font-smoothing:antialiased; }
-  
+
   .icon {
     font-family: 'Material Symbols Outlined';
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -414,7 +414,7 @@
 
   <div class="sidebar-footer">
     <div class="op-avatar-circle" id="op-avatar">AS</div>
-    <a class="logout-btn" href="terminal_login.html" title="Sign Out">
+    <a class="logout-btn" onclick="doLogout();return false;" title="Sign Out">
       <span class="icon">logout</span><span class="nav-label">Logout</span>
     </a>
   </div>
@@ -714,7 +714,7 @@ function toast(msg, type='success') {
 const showToast = toast;
 
 // ─── INIT ───────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
 
   // Clock
   const clk = () => document.getElementById('tb-clock').textContent =
@@ -722,22 +722,27 @@ window.addEventListener('DOMContentLoaded', () => {
   clk(); setInterval(clk, 1000);
 
   // Operator
-  try {
-    const op = JSON.parse(localStorage.getItem('terminal_operator') || '{}');
-    if (op.name) {
-      const opNameEl = document.getElementById('op-name');
-      if (opNameEl) opNameEl.textContent = op.name;
-      
-      const opAvatarEl = document.getElementById('op-avatar');
-      if (opAvatarEl) {
-        opAvatarEl.textContent = op.initials || op.name.slice(0,2).toUpperCase();
-        if (op.color) opAvatarEl.style.background = op.color;
-      }
-      
-      const heroCashierEl = document.getElementById('hero-cashier');
-      if (heroCashierEl) heroCashierEl.textContent = 'Cashier: ' + op.name.split(' ')[0];
+  let opName = 'Operator';
+  let opInitials = 'OP';
+  let opColor = '#4F46E5';
+
+  const session = await getCurrentSessionOrNull();
+  if (session) {
+    opName = session.displayName;
+    opInitials = session.operatorId.slice(0,2).toUpperCase();
+    if (session.displayName.includes(' ')) {
+      opInitials = session.displayName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
     }
-  } catch(e) {}
+  }
+
+  const opAvatarEl = document.getElementById('op-avatar');
+  if (opAvatarEl) {
+    opAvatarEl.textContent = opInitials;
+    opAvatarEl.style.background = opColor;
+  }
+
+  const heroCashierEl = document.getElementById('hero-cashier');
+  if (heroCashierEl) heroCashierEl.textContent = 'Cashier: ' + opName.split(' ')[0];
 
   // Config
   try {
@@ -765,6 +770,39 @@ window.addEventListener('DOMContentLoaded', () => {
   window.posBridgeTransport?.logStatus?.("payment_screen");
   window.posBridgeTransport?.sendPing?.("payment_screen");
 });
+
+// ── Session Helpers ───────────────────────────────────────────────────────────
+async function getCurrentSessionOrNull() {
+  try {
+    if (!window.posBridge || !window.posBridge.isAvailable || !window.posBridge.isAvailable()) {
+      return null;
+    }
+    const payload = await window.posBridge.request('session.get', null);
+    if (payload && payload.isActive && payload.currentSession) {
+      return payload.currentSession;
+    }
+  } catch (e) {
+    console.error('[Session] Failed to get session:', e);
+  }
+  return null;
+}
+
+async function clearDesktopSession(reason) {
+  try {
+    if (window.posBridge && window.posBridge.isAvailable && window.posBridge.isAvailable()) {
+      await window.posBridge.request('session.clear', { reason: reason || 'manual' });
+    }
+  } catch (e) {
+    console.error('[Session] Failed to clear session:', e);
+  }
+  sessionStorage.removeItem('terminal_operator');
+}
+
+async function doLogout() {
+  if (!confirm('Sign out? Your shift will remain open.')) return;
+  await clearDesktopSession('logout');
+  window.location.href = 'terminal_login.html';
+}
 
 // ─── ORDER SUMMARY ──────────────────────────────
 function renderOrderSummary() {
@@ -935,8 +973,8 @@ function simulateWalletPay() {
 }
 
 // ─── COMPLETE ────────────────────────────────────
-function completeTransaction() {
-  const rcpt = buildReceipt();
+async function completeTransaction() {
+  const rcpt = await buildReceipt();
   document.getElementById('receipt-text').textContent = rcpt;
   document.getElementById('receipt-modal').style.display = 'flex';
   sessionStorage.setItem('pos_cart', JSON.stringify([]));
@@ -948,7 +986,13 @@ function completeTransaction() {
   badge.style.borderColor = 'rgba(16,185,129,.4)';
 }
 
-function buildReceipt() {
+async function buildReceipt() {
+  let opName = 'Operator';
+  const session = await getCurrentSessionOrNull();
+  if (session) {
+    opName = session.displayName;
+  }
+
   const now   = new Date();
   const dstr  = now.toLocaleDateString('en-PK');
   const tstr  = now.toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit' });
@@ -972,7 +1016,7 @@ function buildReceipt() {
 ${line}
 Date: ${dstr}        Time: ${tstr}
 Order: ${seq}       Terminal: POS-01
-Cashier: ${(localStorage.getItem('terminal_operator') ? JSON.parse(localStorage.getItem('terminal_operator')).name : 'Operator').split(' ')[0]}
+Cashier: ${opName.split(' ')[0]}
 ${line}
 ITEM                    QTY × PRICE   TOTAL
 ${line}

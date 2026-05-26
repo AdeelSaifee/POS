@@ -888,14 +888,15 @@ function submitAction() {
 }
 
 // ── Receipt ───────────────────────────────────────────────────────────────────
-function showReceipt(data) {
+async function showReceipt(data) {
   const isW  = data.type === 'drop';
-  let opName = 'Adeel Saifee';
-  try {
-    const parsedOp = JSON.parse(localStorage.getItem('terminal_operator') || '{}');
-    if (parsedOp.name) opName = parsedOp.name;
-    else if (typeof parsedOp === 'string' && parsedOp.trim() !== '') opName = parsedOp;
-  } catch(e) {}
+  let opName = 'Operator';
+
+  const session = await getCurrentSessionOrNull();
+  if (session && session.displayName) {
+    opName = session.displayName;
+  }
+
   const now  = new Date().toISOString().replace('T',' ').slice(0,16);
 
   document.getElementById('receipt-body').innerHTML = `
@@ -926,30 +927,56 @@ function showReceipt(data) {
 
 function closeReceipt() { document.getElementById('receipt-overlay').classList.remove('open'); }
 
-function doLogout() {
-  sessionStorage.clear(); localStorage.removeItem('terminal_operator');
+async function doLogout() {
+  await clearDesktopSession('logout');
   window.location.href = 'terminal_login.html';
 }
 
+// ── Session Helpers ───────────────────────────────────────────────────────────
+async function getCurrentSessionOrNull() {
+  try {
+    if (!window.posBridge || !window.posBridge.isAvailable || !window.posBridge.isAvailable()) {
+      return null;
+    }
+    const payload = await window.posBridge.request('session.get', null);
+    if (payload && payload.isActive && payload.currentSession) {
+      return payload.currentSession;
+    }
+  } catch (e) {
+    console.error('[Session] Failed to get session:', e);
+  }
+  return null;
+}
+
+async function clearDesktopSession(reason) {
+  try {
+    if (window.posBridge && window.posBridge.isAvailable && window.posBridge.isAvailable()) {
+      await window.posBridge.request('session.clear', { reason: reason || 'manual' });
+    }
+  } catch (e) {
+    console.error('[Session] Failed to clear session:', e);
+  }
+  sessionStorage.clear();
+  localStorage.removeItem('terminal_operator');
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   updateClock();
   setInterval(updateClock, 20000);
 
-  let opName = 'Adeel Saifee';
-  let opInitials = 'AS';
+  let opName = 'Operator';
+  let opInitials = 'OP';
   let opColor = '#4F46E5';
-  try {
-    const parsedOp = JSON.parse(localStorage.getItem('terminal_operator') || '{}');
-    if (parsedOp.name) {
-      opName = parsedOp.name;
-      opInitials = parsedOp.initials || parsedOp.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
-      opColor = parsedOp.color || '#4F46E5';
-    } else if (typeof parsedOp === 'string' && parsedOp.trim() !== '') {
-      opName = parsedOp;
-      opInitials = parsedOp.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+
+  const session = await getCurrentSessionOrNull();
+  if (session) {
+    opName = session.displayName;
+    opInitials = session.operatorId.slice(0,2).toUpperCase();
+    if (session.displayName.includes(' ')) {
+      opInitials = session.displayName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
     }
-  } catch (e) {}
+  }
 
   const opNameEl = document.getElementById('op-name');
   if (opNameEl) opNameEl.textContent = opName;

@@ -829,14 +829,15 @@ function updateVariance() {
 }
 
 // ── Z-Report ──────────────────────────────────────────────────────────────────
-function openZReport() {
+async function openZReport() {
   const v   = countedCash - expectedCash;
-  let opName = 'Adeel Saifee';
-  try {
-    const parsedOp = JSON.parse(localStorage.getItem('terminal_operator') || '{}');
-    if (parsedOp.name) opName = parsedOp.name;
-    else if (typeof parsedOp === 'string' && parsedOp.trim() !== '') opName = parsedOp;
-  } catch(e) {}
+  let opName = 'Operator';
+
+  const session = await getCurrentSessionOrNull();
+  if (session && session.displayName) {
+    opName = session.displayName;
+  }
+
   const now = new Date().toISOString().replace('T',' ').slice(0,16);
   const note= document.getElementById('var-note').value.trim() || 'N/A';
   const varTxt = v===0 ? 'BALANCED (PKR 0)' : v>0 ? `OVERAGE  +${fmt(v)}` : `SHORTAGE −${fmt(Math.abs(v))}`;
@@ -912,38 +913,65 @@ function openConfirmClose() {
 
 function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); }
 
-function executeShiftClose() {
+async function executeShiftClose() {
   sessionStorage.setItem('pos_shift_open','false');
   sessionStorage.removeItem('pos_cart');
+  await clearDesktopSession('shift-close');
   closeConfirm();
   showToast('Shift closed. Terminal locking…','success');
   setTimeout(() => { window.location.href = 'terminal_login.html'; }, 1500);
 }
 
-function doLogout() {
-  sessionStorage.clear(); localStorage.removeItem('terminal_operator');
+async function doLogout() {
+  await clearDesktopSession('logout');
   window.location.href = 'terminal_login.html';
 }
 
+// ── Session Helpers ───────────────────────────────────────────────────────────
+async function getCurrentSessionOrNull() {
+  try {
+    if (!window.posBridge || !window.posBridge.isAvailable || !window.posBridge.isAvailable()) {
+      return null;
+    }
+    const payload = await window.posBridge.request('session.get', null);
+    if (payload && payload.isActive && payload.currentSession) {
+      return payload.currentSession;
+    }
+  } catch (e) {
+    console.error('[Session] Failed to get session:', e);
+  }
+  return null;
+}
+
+async function clearDesktopSession(reason) {
+  try {
+    if (window.posBridge && window.posBridge.isAvailable && window.posBridge.isAvailable()) {
+      await window.posBridge.request('session.clear', { reason: reason || 'manual' });
+    }
+  } catch (e) {
+    console.error('[Session] Failed to clear session:', e);
+  }
+  sessionStorage.clear();
+  localStorage.removeItem('terminal_operator');
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   updateClock();
   setInterval(updateClock, 20000);
 
-  let opName = 'Adeel Saifee';
-  let opInitials = 'AS';
+  let opName = 'Operator';
+  let opInitials = 'OP';
   let opColor = '#4F46E5';
-  try {
-    const parsedOp = JSON.parse(localStorage.getItem('terminal_operator') || '{}');
-    if (parsedOp.name) {
-      opName = parsedOp.name;
-      opInitials = parsedOp.initials || parsedOp.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
-      opColor = parsedOp.color || '#4F46E5';
-    } else if (typeof parsedOp === 'string' && parsedOp.trim() !== '') {
-      opName = parsedOp;
-      opInitials = parsedOp.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+
+  const session = await getCurrentSessionOrNull();
+  if (session) {
+    opName = session.displayName;
+    opInitials = session.operatorId.slice(0,2).toUpperCase();
+    if (session.displayName.includes(' ')) {
+      opInitials = session.displayName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
     }
-  } catch (e) {}
+  }
 
   const opNameEl = document.getElementById('op-name');
   if (opNameEl) opNameEl.textContent = opName;

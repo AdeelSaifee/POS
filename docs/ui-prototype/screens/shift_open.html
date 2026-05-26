@@ -560,33 +560,55 @@ function openShift() {
   setTimeout(() => { window.location.href = 'main_checkout.html'; }, 1600);
 }
 
-function doLogout() {
-  sessionStorage.clear();
-  localStorage.removeItem('terminal_operator');
+async function doLogout() {
+  await clearDesktopSession('logout');
   window.location.href = 'terminal_login.html';
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+// ── Session Helpers ───────────────────────────────────────────────────────────
+async function getCurrentSessionOrNull() {
+  try {
+    if (!window.posBridge || !window.posBridge.isAvailable || !window.posBridge.isAvailable()) {
+      return null;
+    }
+    const payload = await window.posBridge.request('session.get', null);
+    if (payload && payload.isActive && payload.currentSession) {
+      return payload.currentSession;
+    }
+  } catch (e) {
+    console.error('[Session] Failed to get session:', e);
+  }
+  return null;
+}
+
+async function clearDesktopSession(reason) {
+  try {
+    if (window.posBridge && window.posBridge.isAvailable && window.posBridge.isAvailable()) {
+      await window.posBridge.request('session.clear', { reason: reason || 'manual' });
+    }
+  } catch (e) {
+    console.error('[Session] Failed to clear session:', e);
+  }
+  sessionStorage.clear();
+  localStorage.removeItem('terminal_operator');
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('date-display').textContent = today;
   document.getElementById('date-field').textContent   = today;
 
-  let opName = 'Adeel Saifee';
+  let opName = 'Operator';
   let opColor = '#10B981';
-  let opInitials = 'AS';
+  let opInitials = 'OP';
 
-  const opStr = localStorage.getItem('terminal_operator');
-  if (opStr) {
-    try {
-      const op = JSON.parse(opStr);
-      if (op.name) opName = op.name;
-      if (op.initials) {
-        opInitials = op.initials;
-      } else if (op.name) {
-        opInitials = op.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
-      }
-      if (op.color) opColor = op.color;
-    } catch(e) {}
+  const session = await getCurrentSessionOrNull();
+  if (session) {
+    opName = session.displayName;
+    opInitials = session.operatorId.slice(0,2).toUpperCase();
+    if (session.displayName.includes(' ')) {
+      opInitials = session.displayName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    }
   }
 
   const opNameEl = document.getElementById('op-name');

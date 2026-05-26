@@ -201,20 +201,39 @@ public sealed class WebViewHost
     /// <summary>
     /// Handles inbound messages from the WebView2 content.
     /// </summary>
-    private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+    private async void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
-        // Minimal transport-level logging to verify reachability.
-        // Full payload logging is avoided to prevent accidental PII/credential exposure.
-        _logger.LogInformation("Received WebView2 message from {Source}.", e.Source);
+        // Extract required data while still on the UI thread and before any async suspension.
+        // This ensures the event args remain valid for the extraction.
+        var rawJson = e.WebMessageAsJson;
+        var source = e.Source;
+
+        _logger.LogInformation("Received WebView2 message from {Source}.", source);
 
         try
         {
-            var rawJson = e.WebMessageAsJson;
+            // Delegate to an async handler to allow future non-blocking service dispatch.
+            await HandleWebMessageAsync(rawJson, source);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error in WebView2 message handler for source {Source}.", source);
+        }
+    }
 
-            // Task 3.1.5: Minimal transport echo (pong) for verification.
-            // Using System.Text.Json for safe, low-overhead parsing.
+    /// <summary>
+    /// Asynchronously processes the web message and dispatches to the appropriate handler.
+    /// </summary>
+    private async Task HandleWebMessageAsync(string rawJson, string source)
+    {
+        // Task 3.1.6: Marshal handlers correctly.
+        // This method provides an async-safe entry point for bridge processing.
+        // Future Phase 3.3: Dispatch to PosWebMessageRouter.
+
+        try
+        {
             using var doc = System.Text.Json.JsonDocument.Parse(rawJson);
-            if (doc.RootElement.TryGetProperty("type", out var typeElement) && 
+            if (doc.RootElement.TryGetProperty("type", out var typeElement) &&
                 typeElement.GetString() == "transport.ping")
             {
                 var pong = new
@@ -226,16 +245,20 @@ public sealed class WebViewHost
                 };
 
                 var responseJson = System.Text.Json.JsonSerializer.Serialize(pong);
-                _webView.CoreWebView2.PostWebMessageAsJson(responseJson);
-                
-                _logger.LogInformation("Sent transport.pong response to {Source}.", e.Source);
-            }
 
-            // TODO Phase 3.3: Dispatch to PosWebMessageRouter
+                // Ensure WebView2 UI-thread operations remain safely marshalled.
+                // CoreWebView2 operations must be called on the thread that created the control (UI thread).
+                await _webView.Dispatcher.InvokeAsync(() =>
+                {
+                    _webView.CoreWebView2.PostWebMessageAsJson(responseJson);
+                });
+
+                _logger.LogInformation("Sent transport.pong response to {Source}.", source);
+            }
         }
-        catch (Exception ex)
+        catch (System.Text.Json.JsonException ex)
         {
-            _logger.LogError(ex, "Unexpected error in WebView2 message handler.");
+            _logger.LogWarning(ex, "Failed to parse malformed JSON message from {Source}.", source);
         }
     }
 

@@ -82,7 +82,20 @@ public class PosWebMessageRouterTests
     }
 
     [Fact]
-    public void Router_GetRegisteredTypes_ReturnsRegisteredTypes()
+    public void Register_ThrowsArgumentException_ForNullOrEmptyType()
+    {
+        // Arrange
+        var router = CreateRouter();
+        Func<IServiceProvider, BridgeMessageHandler> factory = _ => (req, token) => Task.FromResult(BridgeResponseEnvelope.Success(req.Type, req.RequestId));
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => router.Register(null!, factory));
+        Assert.Throws<ArgumentException>(() => router.Register(string.Empty, factory));
+        Assert.Throws<ArgumentException>(() => router.Register("   ", factory));
+    }
+
+    [Fact]
+    public void Register_GetRegisteredTypes_ReturnsRegisteredTypes()
     {
         // Arrange
         var router = CreateRouter();
@@ -93,6 +106,29 @@ public class PosWebMessageRouterTests
         // Assert
         Assert.Contains("transport.echo", types);
         Assert.Single(types); // Assuming only transport.echo is registered by default
+    }
+
+    [Fact]
+    public void Register_ThrowsArgumentNullException_ForNullHandlerFactory()
+    {
+        // Arrange
+        var router = CreateRouter();
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => router.Register("test.action", null!));
+    }
+
+    [Fact]
+    public void Register_ThrowsInvalidOperationException_ForDuplicateRegistration()
+    {
+        // Arrange
+        var router = CreateRouter();
+        router.Register("duplicate.action", _ => (req, token) => Task.FromResult(BridgeResponseEnvelope.Success(req.Type, req.RequestId)));
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            router.Register("duplicate.action", _ => (req, token) => Task.FromResult(BridgeResponseEnvelope.Success(req.Type, req.RequestId))));
+        Assert.Contains("already registered", ex.Message);
     }
 
     [Fact]
@@ -131,6 +167,7 @@ public class PosWebMessageRouterTests
         Assert.Equal("transport.echo", response.Type);
         Assert.Equal("req-1", response.RequestId);
         Assert.NotNull(response.Payload);
+        Assert.Null(response.Error);
     }
 
     [Fact]
@@ -179,8 +216,10 @@ public class PosWebMessageRouterTests
         Assert.False(response.Ok);
         Assert.Equal("unknown.action", response.Type);
         Assert.Equal("req-3", response.RequestId);
+        Assert.Null(response.Payload);
         Assert.NotNull(response.Error);
         Assert.Equal("UNSUPPORTED_TYPE", response.Error.Code);
+        Assert.Equal("The requested action is not implemented.", response.Error.Message);
     }
 
     [Fact]
@@ -198,9 +237,11 @@ public class PosWebMessageRouterTests
         Assert.False(response.Ok);
         Assert.Equal("fail.action", response.Type);
         Assert.Equal("req-4", response.RequestId);
+        Assert.Null(response.Payload);
         Assert.NotNull(response.Error);
         Assert.Equal("HANDLER_ERROR", response.Error.Code);
         Assert.Equal("The requested action could not be completed.", response.Error.Message);
+        Assert.Null(response.Error.Details); // Details should not contain stack trace or raw exception.
     }
 
     private class FakeDisposableService : IDisposable

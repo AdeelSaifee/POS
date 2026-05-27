@@ -41,6 +41,24 @@ public class PosLocalDbContext : DbContext
 
     public DbSet<TerminalProvisioning> TerminalProvisioning => Set<TerminalProvisioning>();
 
+    public DbSet<LocalCategory> LocalCategories => Set<LocalCategory>();
+
+    public DbSet<LocalItem> LocalItems => Set<LocalItem>();
+
+    public DbSet<LocalItemVariant> LocalItemVariants => Set<LocalItemVariant>();
+
+    public DbSet<LocalItemIdentifier> LocalItemIdentifiers => Set<LocalItemIdentifier>();
+
+    public DbSet<LocalItemPrice> LocalItemPrices => Set<LocalItemPrice>();
+
+    public DbSet<LocalUnitOfMeasure> LocalUnitsOfMeasure => Set<LocalUnitOfMeasure>();
+
+    public DbSet<LocalTaxRule> LocalTaxRules => Set<LocalTaxRule>();
+
+    public DbSet<LocalTenderMethod> LocalTenderMethods => Set<LocalTenderMethod>();
+
+    public DbSet<LocalReasonCode> LocalReasonCodes => Set<LocalReasonCode>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -63,6 +81,33 @@ public class PosLocalDbContext : DbContext
             .HasQueryFilter(x => x.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<LocalRetentionState>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalCategory>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalItem>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalItemVariant>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalItemIdentifier>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalItemPrice>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalUnitOfMeasure>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalTaxRule>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalTenderMethod>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalReasonCode>()
             .HasQueryFilter(x => x.TenantId == CurrentTenantId);
     }
 }

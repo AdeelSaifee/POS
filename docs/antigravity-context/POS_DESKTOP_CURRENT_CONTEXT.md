@@ -2,18 +2,20 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 4 / Milestone 4.5 - Data-access conventions & tenant-filter validation
-- **Group**: Group 1 (Tasks 4.5.1 - 4.5.3) - Completed
+- **Group**: Group 2 (Tasks 4.5.4 - 4.5.5) - Completed
 
 ## Status of Tasks in this Session
-- `[x]` Task 4.5.1 - Draft data-access conventions
-- `[x]` Task 4.5.2 - Standardize per-message scope usage
-- `[x]` Task 4.5.3 - Define service base patterns
+- `[x]` Task 4.5.4 - Test: provisioned reads return data (Verified)
+- `[x]` Task 4.5.5 - Test: unprovisioned reads empty (Verified)
 
 ## Files Created/Changed in this Session
 
-### Group 1 (Current uncommitted changes)
-- [ADD] `docs/desktop/DATA_ACCESS_CONVENTIONS.md`
+### Group 2 (Current uncommitted changes)
 - [MODIFY] `docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md`
+
+### Prior Completed Groups & Milestones
+- Group 1 (Tasks 4.5.1 - 4.5.3) - Committed:
+  - [ADD] `docs/desktop/DATA_ACCESS_CONVENTIONS.md`
 
 ### Prior Milestone 4.4 Completed Changes (Committed)
 - [ADD] `POS.Desktop/Services/Catalog/ICatalogService.cs`
@@ -36,9 +38,9 @@
 - [ADD] `POS.Desktop.Tests/Assets/MainCheckoutCatalogWiringTests.cs`
 
 ## Scope Boundaries & Constraints
-- Milestone 4.5 Group 1 is documentation-only, defining core patterns for future database migrations and repository authors.
-- No production C# code changes or JS client UI modifications were made.
-- Did NOT implement unprovisioned test integration or SQLite harnesses (deferred to Group 2).
+- Milestone 4.5 Group 2 focuses purely on verifying existing data-access integration test coverage and confirming tenant isolation behavior.
+- Did NOT make production C# code changes, UI client changes, or migration changes.
+- Did NOT start Milestone 4.5 Group 3 (Tasks 4.5.6 - 4.5.8).
 - Work is left in the working directory uncommitted and unpushed for review.
 
 ## Important Decisions
@@ -55,12 +57,12 @@
 - `catalog.searchItems` - payload: `{ searchText?, limit? }`, response: `{ items: [...] }`
 - `catalog.lookupByIdentifier` - payload: `{ identifierValue }`, response: `{ found, item }`
 
-## Verification Summary (Milestone 4.5 Group 1)
+## Verification Summary (Milestone 4.5 Group 2)
 - `git status --short --untracked-files=all`:
   - ` M docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md`
-  - ` A docs/desktop/DATA_ACCESS_CONVENTIONS.md`
 - `dotnet build POS.slnx --configuration Debug`: 0 warnings, 0 errors.
 - `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: 161/161 passed.
+- `dotnet test POS.Tests/POS.Tests.csproj --configuration Debug`: 49/49 passed.
 - `git diff --check`: No whitespace errors.
 
 ## Existing Test Suite Coverage (161 tests baseline)
@@ -90,7 +92,7 @@
 - `POS.Desktop.Tests` baseline passes at 161/161.
 
 ## Remaining Next Milestone
-- Phase 4 / Milestone 4.5 Group 2 (Tasks 4.5.4 - 4.5.5)
+- Phase 4 / Milestone 4.5 Group 3 (Tasks 4.5.6 - 4.5.8)
 
 ## Known Risks & Notes
 - No EF navigation properties on catalog entities - service uses explicit LINQ joins.

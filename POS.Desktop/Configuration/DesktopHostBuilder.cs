@@ -64,8 +64,12 @@ public static class DesktopHostBuilder
                 services.AddSingleton<ISessionService, OperatorSessionService>();
                 services.AddSingleton<IAuthService, StubAuthService>();
                 services.AddScoped<ITerminalProvisioningStore, EfTerminalProvisioningStore>();
+                services.AddSingleton<TerminalProvisioningStartupLoader>();
 
-                // Register context first as DbContext depends on it
+                // Register context first as DbContext depends on it.
+                // ProvisioningConfigLoader seeds the context with the appsettings.json value (normally
+                // Unprovisioned). The durable SQLite state is loaded after migrations by
+                // TerminalProvisioningStartupLoader, which updates this singleton in-place.
                 var provisioningRecord = ProvisioningConfigLoader.Load(hostContext.Configuration);
                 services.AddSingleton<IProvisionedTerminalContext>(new ProvisionedTerminalContext(provisioningRecord));
 

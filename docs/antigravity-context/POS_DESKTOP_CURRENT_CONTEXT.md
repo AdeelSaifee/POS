@@ -2,42 +2,52 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 4 / Milestone 4.2 — Provisioning persistence & screen wiring
-- **Group**: Group 3 (Tasks 4.2.4 - 4.2.6)
+- **Group**: Group 4 (Tasks 4.2.7 - 4.2.8) — Completed
 
 ## Status of Tasks in this Session
-- `[x]` Task 4.2.4 - Wire provision_terminal.html to bridge (Completed)
-- `[x]` Task 4.2.5 - Replace setTimeout progress with real steps (Completed)
-- `[x]` Task 4.2.6 - Remove terminal_config localStorage (Completed)
+- `[x]` Task 4.2.7 - Persist tenant/location/terminal durably (startup load from SQLite)
+- `[x]` Task 4.2.8 - Verify provisioning survives restart (temp-file restart test)
 
 ## Files Created/Changed in this Session
-- [MODIFY] [provision_terminal.html](file:///A:/Ps/POS/POS.Desktop/Assets/ui/provision_terminal.html)
-- [MODIFY] [POS_DESKTOP_CURRENT_CONTEXT.md](file:///A:/Ps/POS/docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md)
+- [NEW] [TerminalProvisioningStartupLoader.cs](file:///A:/Ps/POS/POS.Desktop/Services/Provisioning/TerminalProvisioningStartupLoader.cs)
+- [NEW] [TerminalProvisioningStartupLoaderTests.cs](file:///A:/Ps/POS/POS.Desktop.Tests/Services/Provisioning/TerminalProvisioningStartupLoaderTests.cs)
+- [MODIFY] [App.xaml.cs](file:///A:/Ps/POS/POS.Desktop/App.xaml.cs)
+- [MODIFY] [DesktopHostBuilder.cs](file:///A:/Ps/POS/POS.Desktop/Configuration/DesktopHostBuilder.cs)
 
 ## Scope Boundaries & Constraints
-- Work ONLY on Tasks 4.2.4, 4.2.5, and 4.2.6.
-- Do NOT start Task 4.2.7.
-- Do NOT add database tables or migrations.
-- Do NOT touch docs/ui-prototype/screens/* files.
-- Do NOT modify skills-lock.json or .agents/skills/*.
+- Work ONLY on Tasks 4.2.7 and 4.2.8.
+- Did NOT start Task 4.2.9.
+- Did NOT implement controlled re-provisioning.
+- Did NOT touch UI files or bridge handlers.
+- Did NOT add migrations.
+- Did NOT modify skills-lock.json or .agents/skills/*.
 
 ## Important Decisions
-- Added temporary numeric inputs for Tenant ID, Location ID, and Terminal ID to satisfy the C# bridge validation constraints without disrupting the store/terminal code UI text fields layout.
-- Used `provisioning.getProvisioningStatus` on load to detect if the terminal is already provisioned, showing a dedicated `PROVISIONED` state, populating/disabling inputs, and replacing the action button with a navigation route to the login screen.
-- Replaced artificial timeout-based console logs and progress indicators with realistic logs and direct promise-driven state updates.
-- Completely removed `terminal_config` read/write blocks from `provision_terminal.html`, establishing the SQLite persistent store as the single source of truth for provisioning config.
+- Used a plain singleton service (`TerminalProvisioningStartupLoader`) rather than `IHostedService`.
+  Reason: `host.StartAsync()` runs hosted services *before* `ApplyLocalDatabaseStartupAsync()` applies migrations. The startup loader must run *after* migrations so the `TerminalProvisioning` table is guaranteed to exist.
+- `DesktopHostBuilder` continues to seed `ProvisionedTerminalContext` as `Unprovisioned` via `ProvisioningConfigLoader` (appsettings has no Provisioning section by default). The startup loader then overwrites that with the durable SQLite state.
+- `TerminalProvisioningStartupLoader.LoadAsync()` catches all non-cancellation exceptions and stays fail-closed — it never crashes the app even if the DB read fails.
+- Logs never contain raw tenant/location/terminal IDs; only state transitions ("provisioned", "unprovisioned", "partial/invalid") are logged.
+- Restart-survival test uses a temp SQLite file + `SqliteConnection.ClearAllPools()` before cleanup to avoid a Windows file-lock on the temp DB.
 
-## Verification Commands & Results
-- `git status --short --untracked-files=all`: Checked prior to and post edits.
-- `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: Built successfully.
-- `dotnet build POS.slnx --configuration Debug`: Built successfully.
-- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: All tests passed.
-- `Select-String -Path POS.Desktop/Assets/ui/provision_terminal.html -Pattern "terminal_config"`: Confirmed zero occurrences.
-- `Select-String -Path POS.Desktop/Assets/ui/provision_terminal.html -Pattern "localStorage|sessionStorage|setTimeout"`: Checked occurrences.
-- `Select-String -Path POS.Desktop/Assets/ui/provision_terminal.html -Pattern "provisioning.provisionTerminal|provisioning.getProvisioningStatus|posBridge"`: Confirmed bridge bindings are present.
+## Startup Durable Load Approach
+- `TerminalProvisioningStartupLoader` is registered as a singleton in `DesktopHostBuilder`.
+- `App.xaml.cs` calls `loader.LoadAsync()` after `ApplyLocalDatabaseStartupAsync()` (migrations).
+- The loader creates a DI scope, resolves `ITerminalProvisioningStore`, reads the persisted record.
+- If record is fully valid → calls `ProvisionedTerminalContext.UpdateState(record)`.
+- If no row / partial/invalid row → leaves context fail-closed (no state change).
+
+## Verification Summary
+- `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: ✅ 0 warnings, 0 errors
+- `dotnet build POS.slnx --configuration Debug`: ✅ 0 warnings, 0 errors
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: ✅ 98/98 passed
+- `Select-String provision_terminal.html terminal_config|localStorage|sessionStorage`: ✅ 0 matches
+- `git diff --check`: ✅ no whitespace errors
+- `git status`: ✅ exactly 4 expected files changed (2 new, 2 modified)
 
 ## Remaining Next Group
-- Milestone 4.2 Group 4: Tasks 4.2.7 - 4.2.8 only (persist tenant/location/terminal durably and verify provisioning survives restart).
+- Milestone 4.2 Group 5: Tasks 4.2.9 - 4.2.10 only (controlled re-provisioning flow and related tests).
 
 ## Known Risks & Notes
-- Redirection from login back to the provisioning screen when unprovisioned is a future task.
-- Unprovisioned reads return empty datasets or fail-closed state as enforced by database-level contexts.
+- `ProvisioningConfigLoader` is still called at DI registration time to provide the initial seed. Since `appsettings.json` has no `Provisioning` section, this always produces `Unprovisioned` — safe. If a `Provisioning` section is ever added to appsettings.json, it would seed the context before the startup loader can override it; the loader still wins because it runs later and calls `UpdateState`.
+- SQLite connection pool holds file handles on Windows; `SqliteConnection.ClearAllPools()` is required before deleting temp test databases.

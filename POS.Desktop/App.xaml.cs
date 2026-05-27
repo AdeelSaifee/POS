@@ -49,6 +49,12 @@ public partial class App : Application
             // Task 1.4.1: Startup database migration/readiness hook
             await ApplyLocalDatabaseStartupAsync();
 
+            // Task 4.2.7: Load durable provisioning state from SQLite into the runtime context.
+            // This must run after migrations so the TerminalProvisioning table is guaranteed to exist.
+            await _host.Services
+                .GetRequiredService<POS.Desktop.Services.Provisioning.TerminalProvisioningStartupLoader>()
+                .LoadAsync();
+
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
             mainWindow.Show();
         }

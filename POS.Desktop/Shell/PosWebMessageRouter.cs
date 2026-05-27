@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using POS.Desktop.Bridge;
 using POS.Desktop.Services.Session;
 using POS.Desktop.Services.Auth;
+using POS.Desktop.Services.Provisioning;
 
 namespace POS.Desktop.Shell;
 
@@ -42,6 +43,16 @@ public sealed class PosWebMessageRouter
         Register("auth.validatePin", sp => (req, ct) => HandleAuthValidatePinAsync(
             sp.GetRequiredService<IAuthService>(),
             sp.GetRequiredService<ISessionService>(),
+            req,
+            ct));
+
+        // Task 4.2.2 & 4.2.3: Provisioning handlers
+        Register("provisioning.provisionTerminal", sp => (req, ct) => HandleProvisionTerminalAsync(
+            sp.GetRequiredService<ITerminalProvisioningStore>(),
+            req,
+            ct));
+        Register("provisioning.getProvisioningStatus", sp => (req, ct) => HandleGetProvisioningStatusAsync(
+            sp.GetRequiredService<ITerminalProvisioningStore>(),
             req,
             ct));
     }
@@ -256,6 +267,88 @@ public sealed class PosWebMessageRouter
             {
                 isValid = false,
                 @operator = (OperatorSession?)null
+            }
+        );
+    }
+
+    /// <summary>
+    /// Handles the provisioning.provisionTerminal message.
+    /// </summary>
+    private async Task<BridgeResponseEnvelope> HandleProvisionTerminalAsync(
+        ITerminalProvisioningStore provisioningStore,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        if (request.Payload == null)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was missing.");
+        }
+
+        try
+        {
+            var payloadJson = System.Text.Json.JsonSerializer.Serialize(request.Payload, BridgeJsonSerializerOptions.Default);
+            using var doc = System.Text.Json.JsonDocument.Parse(payloadJson);
+
+            if (!doc.RootElement.TryGetProperty("tenantId", out var tenantIdProp) ||
+                !doc.RootElement.TryGetProperty("locationId", out var locationIdProp) ||
+                !doc.RootElement.TryGetProperty("terminalId", out var terminalIdProp))
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Required parameters 'tenantId', 'locationId', or 'terminalId' were missing.");
+            }
+
+            if (tenantIdProp.ValueKind != System.Text.Json.JsonValueKind.Number ||
+                locationIdProp.ValueKind != System.Text.Json.JsonValueKind.Number ||
+                terminalIdProp.ValueKind != System.Text.Json.JsonValueKind.Number)
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "IDs must be numeric.");
+            }
+
+            if (!tenantIdProp.TryGetInt32(out var tenantId) ||
+                !locationIdProp.TryGetInt32(out var locationId) ||
+                !terminalIdProp.TryGetInt32(out var terminalId))
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "IDs must be valid 32-bit integers.");
+            }
+
+            var result = await provisioningStore.ProvisionTerminalAsync(tenantId, locationId, terminalId, cancellationToken);
+            if (!result.Success)
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, result.ErrorCode ?? "PROVISIONING_FAILED", result.ErrorMessage ?? "Provisioning failed.");
+            }
+
+            return BridgeResponseEnvelope.Success(
+                type: request.Type,
+                requestId: request.RequestId,
+                payload: new { success = true }
+            );
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was not valid JSON.");
+        }
+    }
+
+    /// <summary>
+    /// Handles the provisioning.getProvisioningStatus message.
+    /// </summary>
+    private async Task<BridgeResponseEnvelope> HandleGetProvisioningStatusAsync(
+        ITerminalProvisioningStore provisioningStore,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        var record = await provisioningStore.GetProvisioningRecordAsync(cancellationToken);
+        bool isProvisioned = record.IsFullyProvisioned;
+
+        return BridgeResponseEnvelope.Success(
+            type: request.Type,
+            requestId: request.RequestId,
+            payload: new
+            {
+                isProvisioned = isProvisioned,
+                tenantId = isProvisioned ? record.TenantId : null,
+                locationId = isProvisioned ? record.LocationId : null,
+                terminalId = isProvisioned ? record.TerminalId : null,
+                updatedAt = isProvisioned ? record.UpdatedAt : null
             }
         );
     }

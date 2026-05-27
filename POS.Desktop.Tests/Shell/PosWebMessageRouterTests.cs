@@ -37,6 +37,8 @@ public class PosWebMessageRouterTests
         Assert.True(router.CanHandle("session.get"));
         Assert.True(router.CanHandle("session.clear"));
         Assert.True(router.CanHandle("auth.validatePin"));
+        Assert.True(router.CanHandle("provisioning.provisionTerminal"));
+        Assert.True(router.CanHandle("provisioning.getProvisioningStatus"));
     }
 
     [Fact]
@@ -112,7 +114,9 @@ public class PosWebMessageRouterTests
         Assert.Contains("session.get", types);
         Assert.Contains("session.clear", types);
         Assert.Contains("auth.validatePin", types);
-        Assert.Equal(4, types.Count);
+        Assert.Contains("provisioning.provisionTerminal", types);
+        Assert.Contains("provisioning.getProvisioningStatus", types);
+        Assert.Equal(6, types.Count);
     }
 
     [Fact]

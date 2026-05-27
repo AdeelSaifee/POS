@@ -63,6 +63,7 @@ public static class DesktopHostBuilder
                 // Business Services
                 services.AddSingleton<ISessionService, OperatorSessionService>();
                 services.AddSingleton<IAuthService, StubAuthService>();
+                services.AddScoped<ITerminalProvisioningStore, EfTerminalProvisioningStore>();
 
                 // Register context first as DbContext depends on it
                 var provisioningRecord = ProvisioningConfigLoader.Load(hostContext.Configuration);

@@ -11,7 +11,8 @@ namespace POS.Desktop.Services.Provisioning;
 public sealed record ProvisioningRecord(
     int? TenantId,
     int? LocationId,
-    int? TerminalId)
+    int? TerminalId,
+    DateTimeOffset? UpdatedAt = null)
 {
     /// <summary>
     /// Gets a value indicating whether the provisioning record is valid and complete.

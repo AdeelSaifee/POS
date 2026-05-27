@@ -86,6 +86,51 @@ public sealed class LocalCatalogMigrationTests
         }
     }
 
+    // Test 2b: MigrateAsync must write the AddLocalCatalogSearchIndexes entry and apply the indexes.
+    [Fact]
+    public async Task MigrateAsync_AppliesSearchIndexes()
+    {
+        var tempDbPath = Path.Combine(Path.GetTempPath(), $"pos_migtest_{Guid.NewGuid():N}.db");
+        try
+        {
+            var connectionString = $"Data Source={tempDbPath}";
+            using var db = new PosLocalDbContext(BuildOptions(connectionString), new NoProvisionedTerminalContext());
+
+            await db.Database.MigrateAsync();
+
+            var appliedMigrations = await db.Database.GetAppliedMigrationsAsync();
+            Assert.Contains("20260527095912_AddLocalCatalogSearchIndexes", appliedMigrations);
+
+            // Verify indexes exist in SQLite schema using direct ADO.NET connection
+            var indexes = new Dictionary<string, string>();
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT name, tbl_name FROM sqlite_master WHERE type='index'";
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var indexName = reader.GetString(0);
+                var tableName = reader.GetString(1);
+                indexes[indexName] = tableName;
+            }
+
+            Assert.True(indexes.TryGetValue("IX_LocalItemVariants_TenantId_ItemId", out var t1) && t1 == "LocalItemVariants");
+            Assert.True(indexes.TryGetValue("IX_LocalItemVariants_TenantId_SKU", out var t2) && t2 == "LocalItemVariants");
+            Assert.True(indexes.TryGetValue("IX_LocalItems_TenantId_CategoryId", out var t3) && t3 == "LocalItems");
+            Assert.True(indexes.TryGetValue("IX_LocalItems_TenantId_Name", out var t4) && t4 == "LocalItems");
+            Assert.True(indexes.TryGetValue("IX_LocalItemPrices_TenantId_ItemVariantId_PriceListId", out var t5) && t5 == "LocalItemPrices");
+            Assert.True(indexes.TryGetValue("IX_LocalItemIdentifiers_TenantId_ItemVariantId", out var t6) && t6 == "LocalItemIdentifiers");
+            Assert.True(indexes.TryGetValue("IX_LocalCategories_TenantId_SortOrder", out var t7) && t7 == "LocalCategories");
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(tempDbPath))
+                File.Delete(tempDbPath);
+        }
+    }
+
     // Test 3: MigrateAsync is idempotent - running it twice on the same file must not throw
     // and must not create duplicate migration history entries.
     [Fact]

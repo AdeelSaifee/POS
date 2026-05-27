@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using POS.Desktop.Data.LocalEntities;
 
@@ -19,6 +19,7 @@ public class LocalCategoryConfiguration : IEntityTypeConfiguration<LocalCategory
         builder.Property(x => x.Code).IsRequired().HasMaxLength(50);
         builder.Property(x => x.Name).IsRequired().HasMaxLength(100);
         builder.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.SortOrder });
     }
 }
 
@@ -37,6 +38,8 @@ public class LocalItemConfiguration : IEntityTypeConfiguration<LocalItem>
         builder.Property(x => x.ItemCode).IsRequired().HasMaxLength(50);
         builder.Property(x => x.Name).IsRequired().HasMaxLength(100);
         builder.HasIndex(x => new { x.TenantId, x.ItemCode }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.CategoryId });
+        builder.HasIndex(x => new { x.TenantId, x.Name });
     }
 }
 
@@ -54,6 +57,8 @@ public class LocalItemVariantConfiguration : IEntityTypeConfiguration<LocalItemV
         builder.Property(x => x.VariantCode).IsRequired().HasMaxLength(50);
         builder.Property(x => x.Name).IsRequired().HasMaxLength(100);
         builder.HasIndex(x => new { x.TenantId, x.VariantCode }).IsUnique();
+        builder.HasIndex(x => new { x.TenantId, x.SKU });
+        builder.HasIndex(x => new { x.TenantId, x.ItemId });
     }
 }
 
@@ -70,6 +75,7 @@ public class LocalItemIdentifierConfiguration : IEntityTypeConfiguration<LocalIt
         builder.Property(x => x.Id).ValueGeneratedNever();
         builder.Property(x => x.IdentifierValue).IsRequired().HasMaxLength(100);
         builder.HasIndex(x => new { x.TenantId, x.IdentifierValue });
+        builder.HasIndex(x => new { x.TenantId, x.ItemVariantId });
     }
 }
 
@@ -84,6 +90,7 @@ public class LocalItemPriceConfiguration : IEntityTypeConfiguration<LocalItemPri
         });
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).ValueGeneratedNever();
+        builder.HasIndex(x => new { x.TenantId, x.ItemVariantId, x.PriceListId });
     }
 }
 

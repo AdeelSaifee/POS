@@ -2,7 +2,7 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 4 / Milestone 4.3 — Minimal local catalog schema & seed
-- **Group**: Group 2 (Tasks 4.3.5 - 4.3.7) — Completed
+- **Group**: Group 3 (Tasks 4.3.8 - 4.3.10) — Completed
 
 ## Status of Tasks in this Session
 - `[x]` Task 4.3.1 - Decide catalog representation
@@ -12,6 +12,9 @@
 - `[x]` Task 4.3.5 - Define a minimal seed dataset
 - `[x]` Task 4.3.6 - Implement an idempotent seed routine
 - `[x]` Task 4.3.7 - Run seed post-provision
+- `[x]` Task 4.3.8 - Verify seed re-run is a no-op
+- `[x]` Task 4.3.9 - Prove startup migration creates catalog tables
+- `[x]` Task 4.3.10 - Test seeded catalog visibility through tenant filters
 
 ## Files Created/Changed in this Session
 - [ADD] `POS.Desktop/Data/Seeding/ILocalCatalogSeeder.cs`
@@ -22,12 +25,13 @@
 - [ADD] `POS.Desktop.Tests/Data/Seeding/LocalCatalogSeederTests.cs`
 - [MODIFY] `POS.Desktop.Tests/Services/Provisioning/TerminalProvisioningStartupLoaderTests.cs`
 - [MODIFY] `POS.Desktop.Tests/Services/Provisioning/TerminalProvisioningStoreHandlerTests.cs`
+- [ADD] `POS.Desktop.Tests/Data/LocalCatalogMigrationTests.cs`
 
 ## Scope Boundaries & Constraints
-- Implemented tasks 4.3.5 through 4.3.7 only.
+- Implemented tasks 4.3.5 through 4.3.10 only.
 - Did NOT add any UI/HTML/JS/CSS changes.
 - Did NOT add any API/network/sync code.
-- Did NOT add a new EF migration (schema from Group 1 is sufficient).
+- Did NOT add a new EF migration.
 - Did NOT add a catalog read service or bridge handler.
 - Did NOT add LocalEmployee/auth/PIN work.
 - No commit or push performed.
@@ -56,23 +60,24 @@
 ## Verification Summary
 - `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: ✔ 0 warnings, 0 errors
 - `dotnet build POS.slnx --configuration Debug`: ✔ 0 warnings, 0 errors
-- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: ✔ 116/116 passed (105 prior + 11 new)
-- `git status --short --untracked-files=all`: ✔ Only expected files; no UI/migration/API changes
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: ✔ 122/122 passed (116 prior + 6 new)
 - `git diff --check`: ✔ No whitespace errors (CRLF warnings only — Windows git normal behavior)
+- `git status --short --untracked-files=all`: ✔ Only expected files; no UI/migration/API changes
 
-## Tests Added (11 new)
-In `POS.Desktop.Tests/Data/Seeding/LocalCatalogSeederTests.cs`:
-1. `SeedAsync_InsertsExpectedRowCounts_ForProvisionedTenant`
-2. `SeedAsync_IsIdempotent_RowCountsStableOnRerun`
-3. `SeedAsync_WithInvalidTenantId_ThrowsAndInsertsNothing` (Theory ×2)
-4. `SeedAsync_EachTenantGetCorrectTenantIdOnAllRows`
-5. `CatalogEntities_DoNotHaveSensitiveProperties`
-6. `ProvisionTerminalAsync_CallsSeeder_WithCorrectTenantIdAfterSuccess`
-7. `ProvisionTerminalAsync_WithInvalidPayload_DoesNotCallSeeder` (Theory ×3)
-8. `ProvisionTerminalAsync_WhenSeederThrows_ReturnsSafeStructuredError`
+## Tests Added (6 new in Group 3)
+
+In `POS.Desktop.Tests/Data/Seeding/LocalCatalogSeederTests.cs` (Task 4.3.8 + 4.3.10):
+9. `SeedAsync_IsIdempotent_FreshContextSeesNoGrowth` — runs seed twice with separate DbContext instances; a third fresh context confirms row counts are stable (eliminates EF tracker ambiguity from Test 2)
+10. `ProvisionedContext_CanReadSeededCatalogThroughQueryFilter` — seeds for tenant 42, reads via provisioned DbContext (no IgnoreQueryFilters); confirms all rows visible with correct TenantId
+11. `UnprovisionedContext_CannotReadSeededCatalog` — seeds for tenant 42, reads via unprovisioned DbContext (CurrentTenantId=0); confirms all sets return empty (fail-closed)
+
+In `POS.Desktop.Tests/Data/LocalCatalogMigrationTests.cs` (Task 4.3.9):
+12. `MigrateAsync_CreatesAllCatalogTables` — runs `Database.MigrateAsync()` on a real temp SQLite file; queries `sqlite_master` via raw ADO.NET to verify all 9 catalog tables exist
+13. `MigrateAsync_RecordsAddLocalCatalogSchemaMigration` — same setup; `Database.GetAppliedMigrationsAsync()` must include `20260527064212_AddLocalCatalogSchema`
+14. `MigrateAsync_IsIdempotent_RunningTwiceDoesNotThrow` — applies migration twice on same file; must not throw, migration history entry must still be present exactly once
 
 ## Remaining Next Group
-- Tasks 4.3.8 – 4.3.10
+- Tasks 4.4.x (next milestone group)
 
 ## Known Risks & Notes
 - Local seed IDs are bootstrap-only. Phase 6 live sync will replace this seed with real central data.

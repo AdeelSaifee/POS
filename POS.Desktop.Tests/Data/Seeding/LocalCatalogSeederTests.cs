@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -245,6 +246,101 @@ public sealed class LocalCatalogSeederTests : IDisposable
         var row = await db.TerminalProvisioning.FirstOrDefaultAsync(x => x.Id == 1);
         Assert.NotNull(row);
         Assert.Equal(42, row.TenantId);
+    }
+
+    // -------------------------------------------------------------------------
+    // Task 4.3.8 — No-op re-run verification
+    // -------------------------------------------------------------------------
+
+    // Test 9: Uses separate DbContext instances per seed run so EF's change tracker
+    // does not mask any actual DB-level duplication. A third independent context is
+    // used for the final count assertion.
+    [Fact]
+    public async Task SeedAsync_IsIdempotent_FreshContextSeesNoGrowth()
+    {
+        using (var db = CreateDbContext())
+            await new LocalCatalogSeeder(db).SeedAsync(42);
+
+        using (var db = CreateDbContext())
+            await new LocalCatalogSeeder(db).SeedAsync(42);
+
+        using var verifyDb = CreateDbContext();
+        Assert.Equal(2, await verifyDb.LocalUnitsOfMeasure.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(1, await verifyDb.LocalTaxRules.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(3, await verifyDb.LocalCategories.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(3, await verifyDb.LocalItems.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(3, await verifyDb.LocalItemVariants.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(3, await verifyDb.LocalItemIdentifiers.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(3, await verifyDb.LocalItemPrices.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(2, await verifyDb.LocalTenderMethods.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(3, await verifyDb.LocalReasonCodes.IgnoreQueryFilters().CountAsync());
+    }
+
+    // -------------------------------------------------------------------------
+    // Task 4.3.10 — Seeded catalog visibility through global query filters
+    // -------------------------------------------------------------------------
+
+    // Test 10: Provisioned context with TenantId=42 must be able to read all seeded
+    // catalog rows via normal DbSet queries (i.e. WITH the global query filter active).
+    // Proves that seeding produces tenant-visible data for the provisioned terminal.
+    [Fact]
+    public async Task ProvisionedContext_CanReadSeededCatalogThroughQueryFilter()
+    {
+        // Seed using the normal (NoProvisionedTerminalContext) seeder path —
+        // inserts bypass the read filter, so seed data lands with TenantId=42.
+        using (var db = CreateDbContext())
+            await new LocalCatalogSeeder(db).SeedAsync(42);
+
+        // Re-open the same SQLite connection with a provisioned context (TenantId=42).
+        // The global query filter x => x.TenantId == CurrentTenantId now passes for 42.
+        var record = new ProvisioningRecord(TenantId: 42, LocationId: 101, TerminalId: 999);
+        var provisionedContext = new ProvisionedTerminalContext(record);
+        using var readDb = new PosLocalDbContext(_options, provisionedContext);
+
+        var categories = await readDb.LocalCategories.ToListAsync();
+        var items = await readDb.LocalItems.ToListAsync();
+        var uoms = await readDb.LocalUnitsOfMeasure.ToListAsync();
+        var taxRules = await readDb.LocalTaxRules.ToListAsync();
+        var variants = await readDb.LocalItemVariants.ToListAsync();
+        var prices = await readDb.LocalItemPrices.ToListAsync();
+        var tenderMethods = await readDb.LocalTenderMethods.ToListAsync();
+        var reasonCodes = await readDb.LocalReasonCodes.ToListAsync();
+
+        Assert.Equal(3, categories.Count);
+        Assert.Equal(3, items.Count);
+        Assert.Equal(2, uoms.Count);
+        Assert.Single(taxRules);
+        Assert.Equal(3, variants.Count);
+        Assert.Equal(3, prices.Count);
+        Assert.Equal(2, tenderMethods.Count);
+        Assert.Equal(3, reasonCodes.Count);
+
+        Assert.All(categories, c => Assert.Equal(42, c.TenantId));
+        Assert.All(items, i => Assert.Equal(42, i.TenantId));
+        Assert.All(uoms, u => Assert.Equal(42, u.TenantId));
+    }
+
+    // Test 11: Unprovisioned context (CurrentTenantId=0) must return zero rows even
+    // after the catalog has been seeded for tenant 42. Proves fail-closed behavior
+    // of the global query filter.
+    [Fact]
+    public async Task UnprovisionedContext_CannotReadSeededCatalog()
+    {
+        using (var db = CreateDbContext())
+            await new LocalCatalogSeeder(db).SeedAsync(42);
+
+        // New context with an unprovisioned terminal — CurrentTenantId=0.
+        var unprovisionedContext = new ProvisionedTerminalContext();
+        using var readDb = new PosLocalDbContext(_options, unprovisionedContext);
+
+        Assert.Empty(await readDb.LocalCategories.ToListAsync());
+        Assert.Empty(await readDb.LocalItems.ToListAsync());
+        Assert.Empty(await readDb.LocalUnitsOfMeasure.ToListAsync());
+        Assert.Empty(await readDb.LocalTaxRules.ToListAsync());
+        Assert.Empty(await readDb.LocalItemVariants.ToListAsync());
+        Assert.Empty(await readDb.LocalItemPrices.ToListAsync());
+        Assert.Empty(await readDb.LocalTenderMethods.ToListAsync());
+        Assert.Empty(await readDb.LocalReasonCodes.ToListAsync());
     }
 
     // Spy and fake seeder helpers

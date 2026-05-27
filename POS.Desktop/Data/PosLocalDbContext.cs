@@ -59,6 +59,10 @@ public class PosLocalDbContext : DbContext
 
     public DbSet<LocalReasonCode> LocalReasonCodes => Set<LocalReasonCode>();
 
+    public DbSet<LocalEmployee> LocalEmployees => Set<LocalEmployee>();
+
+    public DbSet<LocalEmployeeLocationRole> LocalEmployeeLocationRoles => Set<LocalEmployeeLocationRole>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -108,6 +112,12 @@ public class PosLocalDbContext : DbContext
             .HasQueryFilter(x => x.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<LocalReasonCode>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalEmployee>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalEmployeeLocationRole>()
             .HasQueryFilter(x => x.TenantId == CurrentTenantId);
     }
 }

@@ -1,108 +1,61 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 4 / Milestone 4.5 - Data-access conventions & tenant-filter validation - Completed
-- **Group**: Group 4 (Tasks 4.5.9 - 4.5.10) - Completed
+- **Milestone**: Phase 5 / Milestone 5.1 - Authentication & login service
+- **Group**: Group 1 (Tasks 5.1.1 - 5.1.4) - Completed
 
 ## Status of Tasks in this Session
-- `[x]` Task 4.5.9 - Document conventions for Phase 5 (Completed)
-- `[x]` Task 4.5.10 - Review/sign-off conventions (Completed)
+- `[x]` Task 5.1.1 - Define IAuthService (Completed)
+- `[x]` Task 5.1.2 - Implement the auth service & data schema minimal models (Completed)
+- `[x]` Task 5.1.3 - Implement secure PIN handling (Completed)
+- `[x]` Task 5.1.4 - Resolve operator for the location (Completed)
 
 ## Files Created/Changed in this Session
 
-### Group 4 (Current uncommitted changes)
-- [MODIFY] `docs/desktop/DATA_ACCESS_CONVENTIONS.md`
-- [MODIFY] `docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md`
-
-### Prior Completed Groups & Milestones
-- Group 3 (Tasks 4.5.6 - 4.5.8) - Committed:
-  - [ADD] `POS.Desktop.Tests/Data/TenantQueryFilterTests.cs`
-  - [ADD] `POS.Desktop.Tests/TestSupport/SqliteTestDatabase.cs`
-  - [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs`
-- Group 2 (Tasks 4.5.4 - 4.5.5) - Committed
-- Group 1 (Tasks 4.5.1 - 4.5.3) - Committed:
-  - [ADD] `docs/desktop/DATA_ACCESS_CONVENTIONS.md`
-
-### Prior Milestone 4.4 Completed Changes (Committed)
-- [ADD] `POS.Desktop/Services/Catalog/ICatalogService.cs`
-- [ADD] `POS.Desktop/Services/Catalog/CatalogService.cs`
-- [ADD] `POS.Desktop/Services/Catalog/CatalogItemQuery.cs`
-- [ADD] `POS.Desktop/Services/Catalog/CatalogCategoryDto.cs`
-- [ADD] `POS.Desktop/Services/Catalog/CatalogItemDto.cs`
-- [ADD] `POS.Desktop/Services/Catalog/CatalogListCategoriesResponse.cs`
-- [ADD] `POS.Desktop/Services/Catalog/CatalogListItemsResponse.cs`
-- [ADD] `POS.Desktop/Services/Catalog/CatalogLookupResponse.cs`
-- [MODIFY] `POS.Desktop/Shell/PosWebMessageRouter.cs`
+### Group 1 (Current uncommitted changes)
+- [ADD] `POS.Desktop/Services/Auth/IPinVerifier.cs`
+- [ADD] `POS.Desktop/Services/Auth/PinVerifier.cs`
+- [ADD] `POS.Desktop/Services/Auth/LocalEmployeeAuthService.cs`
+- [ADD] `POS.Desktop/Data/LocalEntities/LocalEmployee.cs`
+- [ADD] `POS.Desktop/Data/LocalEntities/LocalEmployeeLocationRole.cs`
+- [ADD] `POS.Desktop/Data/Configurations/Local/LocalEmployeeConfigurations.cs`
+- [MODIFY] `POS.Desktop/Data/PosLocalDbContext.cs`
+- [MODIFY] `POS.Desktop/Services/Auth/IAuthService.cs`
+- [MODIFY] `POS.Desktop/Services/Auth/StubAuthService.cs`
 - [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs`
-- [ADD] `POS.Desktop.Tests/Services/Catalog/CatalogServiceTests.cs`
-- [ADD] `POS.Desktop.Tests/Shell/CatalogBridgeHandlerTests.cs`
-- [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs`
-- [MODIFY] `POS.Desktop/Assets/ui/main_checkout.html`
-- [MODIFY] `POS.Desktop/Data/Configurations/Local/LocalCatalogConfigurations.cs`
-- [ADD] `POS.Desktop/Data/Migrations/Local/*_AddLocalCatalogSearchIndexes.cs`
-- [MODIFY] `POS.Desktop.Tests/Data/LocalCatalogMigrationTests.cs`
-- [ADD] `POS.Desktop.Tests/Assets/MainCheckoutCatalogWiringTests.cs`
+- [ADD] `POS.Desktop/Data/Migrations/Local/20260527121501_AddLocalEmployeeAuthTables.cs`
+- [ADD] `POS.Desktop/Data/Migrations/Local/20260527121501_AddLocalEmployeeAuthTables.Designer.cs`
+- [MODIFY] `POS.Desktop/Data/Migrations/Local/PosLocalDbContextModelSnapshot.cs`
+- [ADD] `POS.Desktop.Tests/Services/Auth/PinVerifierTests.cs`
+- [ADD] `POS.Desktop.Tests/Services/Auth/LocalEmployeeAuthServiceTests.cs`
+
+### Prior Completed Milestones
+- Milestone 4.5 - Data-access conventions & tenant-filter validation (Committed)
+- Milestone 4.4 - Local catalog search & scan bridge integration (Committed)
 
 ## Scope Boundaries & Constraints
-- Milestone 4.5 Group 4 focuses on documenting conventions for Phase 5 and final sign-off of Milestone 4.5.
-- Did NOT make production C# code changes, UI client changes, or migration changes.
-- Did NOT start Phase 5 implementation.
-- Work is left in the working directory uncommitted and unpushed for review.
+- Only implemented Tasks 5.1.1 to 5.1.4.
+- Did NOT create `TerminalSession` yet.
+- Did NOT set `ISessionService` on success yet.
+- Did NOT swap the router to real auth yet (active default is still `StubAuthService`).
+- Did NOT modify `terminal_login.html` or other UI files.
+- Did NOT change central API database schemas.
+- Did NOT commit or push.
 
 ## Important Decisions
+- **DateTime SQLite Translation Fix:** In SQLite, `DateTimeOffset` comparisons cannot be translated in LINQ queries. Properties `StartsOn` and `EndsOn` in `LocalEmployeeLocationRole` were defined as `DateTime?` in the local schema to support native comparison translation to string/numeric SQLite comparisons. Logic queries compare values with `DateTime.UtcNow`.
+- **Manager-PIN Validation:** Refined `IAuthService` contract to include `ValidateManagerPinAsync` to support manager/supervisor verification overrides directly without cashiers logging out.
+- **Explicit Property Schemas:** Kept `LocalEmployee` and `LocalEmployeeLocationRole` independent of `LocalCatalogEntity` to ensure database concerns remain decoupled from catalog concerns.
 
-### Group 1 (Milestone 4.5)
-- **DbContext Lifetime:** Standardized Scoped lifetime for `PosLocalDbContext` within the DI container, tying context instance lifetimes strictly to the logical scope of a single asynchronously executed bridge message.
-- **Router DI Scoping:** Verified and documented `PosWebMessageRouter.RouteAsync`'s use of `IServiceScopeFactory.CreateScope()` to generate isolated scopes for message handling, ensuring proper disposal of database connections.
-- **Service Boundaries:** Business logic remains strictly in C# services (resolved dynamically inside scopes) while handlers in `PosWebMessageRouter` serve solely as thin correlation dispatch wrappers mapping exceptions to structured, safe errors. No database query logic is allowed directly in UI JS files or router handlers.
-- **Global Tenant Filters:** Confirmed global query filters on `PosLocalDbContext` enforce segregation by default, failing closed (zero rows returned) in unprovisioned states when current tenant ID defaults to `0`. Avoid `IgnoreQueryFilters()` except under explicitly reviewed seeding or sync code.
-
-## Bridge Message Types (All Active)
-- `catalog.listCategories` - payload: `{}`, response: `{ categories: [...] }`
-- `catalog.listItems` - payload: `{ categoryId?, searchText?, limit? }`, response: `{ items: [...] }`
-- `catalog.searchItems` - payload: `{ searchText?, limit? }`, response: `{ items: [...] }`
-- `catalog.lookupByIdentifier` - payload: `{ identifierValue }`, response: `{ found, item }`
-
-## Verification Summary (Milestone 4.5 Group 4)
-- `git status --short --untracked-files=all`:
-  - ` M docs/desktop/DATA_ACCESS_CONVENTIONS.md`
-  - ` M docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md`
-- `dotnet build POS.slnx --configuration Debug`: 0 warnings, 0 errors.
-- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: 179/179 passed.
+## Verification Summary (Milestone 5.1 Group 1)
+- `git status --short --untracked-files=all`: Checked and verified only the expected 15 files were changed/created.
+- `dotnet build POS.slnx --configuration Debug`: Succeeded with 0 warnings, 0 errors.
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: 195/195 passed (including 16 new test cases).
 - `dotnet test POS.Tests/POS.Tests.csproj --configuration Debug`: 49/49 passed.
-- `git diff --check`: No whitespace errors.
+- `git diff --check`: No whitespace/formatting errors.
 
-## Existing Test Suite Coverage (179 tests)
-
-**CatalogServiceTests.cs (25 tests):**
-- ListCategories: returns 3 categories; sorted by SortOrder; unprovisioned returns empty
-- ListItems: returns all 3 items; all joined fields populated; category filter; limit respected; unprovisioned returns empty
-- SearchItems: by name, by code, by SKU, by identifier value; blank returns all; no match returns empty; unprovisioned returns empty
-- FindByIdentifier: known barcode; unknown returns null; blank returns null; unprovisioned returns null; whitespace-padded barcode resolves correctly
-- Active-only filtering: blocked item excluded; non-sellable variant excluded
-
-**CatalogBridgeHandlerTests.cs (12 tests):**
-- All 4 handlers registered; listCategories, listItems, searchItems, lookupByIdentifier full coverage; unprovisioned returns empty/found=false; no stack traces in error responses
-
-**LocalCatalogMigrationTests.cs (1 test):**
-- Verify index migration successfully registers and creates SQLite search indexes.
-
-**MainCheckoutCatalogWiringTests.cs (1 test):**
-- Verify main_checkout.html has no static items/categories arrays and uses bridge handlers.
-
-## Prior Milestone Context (4.4 complete)
-- ICatalogService and CatalogService exist.
-- Catalog bridge handlers are active (`catalog.listCategories`, `catalog.listItems`, `catalog.searchItems`, `catalog.lookupByIdentifier`).
-- `main_checkout.html` uses bridge-backed catalog for product grid, category chips, search, and barcode scan.
-- Static `ITEMS` and `CATEGORIES` arrays are removed.
-- `AddLocalCatalogSearchIndexes` migration exists, creating local database indexes for lookups.
-- `POS.Desktop.Tests` baseline passes at 161/161.
-
-## Remaining Next Milestone
-- Phase 5 / Milestone 5.1 - Authentication & login service
-
-## Known Risks & Notes
-- No EF navigation properties on catalog entities - service uses explicit LINQ joins.
-- `BuildItemQuery()` inner-joins on IsDefault variant and PriceListId=1; items without these won't appear.
-- `EF.Functions.Like` is case-insensitive for ASCII in SQLite. Non-ASCII barcode search may not be case-insensitive.
-- Phase 6 live sync will replace bootstrap seed with real central data.
+## Next Group/Tasks
+- **Milestone 5.1 Group 2** (Tasks 5.1.5 to 5.1.7)
+  - Task 5.1.5 - Create `TerminalSession` on success
+  - Task 5.1.6 - Set `ISessionService` on success
+  - Task 5.1.7 - Swap the stub validator in message router

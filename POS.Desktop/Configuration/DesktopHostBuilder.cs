@@ -65,6 +65,8 @@ public static class DesktopHostBuilder
                 // Business Services
                 services.AddSingleton<ISessionService, OperatorSessionService>();
                 services.AddSingleton<IAuthService, StubAuthService>();
+                services.AddSingleton<IPinVerifier, PinVerifier>();
+                services.AddScoped<LocalEmployeeAuthService>();
                 services.AddScoped<ILocalCatalogSeeder, LocalCatalogSeeder>();
                 services.AddScoped<ICatalogService, CatalogService>();
                 services.AddScoped<ITerminalProvisioningStore, EfTerminalProvisioningStore>();

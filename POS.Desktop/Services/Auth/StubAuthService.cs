@@ -29,16 +29,42 @@ public sealed class StubAuthService : IAuthService
     {
         if (string.IsNullOrWhiteSpace(operatorId) || string.IsNullOrWhiteSpace(pin))
         {
-            return Task.FromResult(new AuthResult(false, null));
+            return Task.FromResult(new AuthResult(false, null, "INVALID_CREDENTIALS"));
         }
 
         if (_stubOperators.TryGetValue(operatorId, out var op) && op.Pin == pin)
         {
             _logger.LogInformation("Stub login successful for operator ID: {OperatorId}", operatorId);
-            return Task.FromResult(new AuthResult(true, new StubOperatorDetails(operatorId, op.Name, op.Role)));
+            return Task.FromResult(new AuthResult(true, new OperatorDetails(operatorId, op.Name, op.Role)));
         }
 
         _logger.LogWarning("Stub login failed for operator ID: {OperatorId}", operatorId);
-        return Task.FromResult(new AuthResult(false, null));
+        return Task.FromResult(new AuthResult(false, null, "INVALID_CREDENTIALS"));
+    }
+
+    public Task<AuthResult> ValidateManagerPinAsync(string operatorId, string pin, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(operatorId) || string.IsNullOrWhiteSpace(pin))
+        {
+            return Task.FromResult(new AuthResult(false, null, "INVALID_CREDENTIALS"));
+        }
+
+        if (_stubOperators.TryGetValue(operatorId, out var op) && op.Pin == pin)
+        {
+            bool isManager = string.Equals(op.Role, "Manager", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(op.Role, "Supervisor", StringComparison.OrdinalIgnoreCase);
+
+            if (isManager)
+            {
+                _logger.LogInformation("Stub manager validation successful for operator ID: {OperatorId}", operatorId);
+                return Task.FromResult(new AuthResult(true, new OperatorDetails(operatorId, op.Name, op.Role)));
+            }
+
+            _logger.LogWarning("Stub manager validation failed for operator ID: {OperatorId} - Role is '{Role}' (Not Manager/Supervisor)", operatorId, op.Role);
+            return Task.FromResult(new AuthResult(false, null, "LOCATION_NOT_AUTHORIZED"));
+        }
+
+        _logger.LogWarning("Stub manager validation failed for operator ID: {OperatorId}", operatorId);
+        return Task.FromResult(new AuthResult(false, null, "INVALID_CREDENTIALS"));
     }
 }

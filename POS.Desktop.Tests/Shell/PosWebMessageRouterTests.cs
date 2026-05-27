@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using POS.Desktop.Bridge;
 using POS.Desktop.Services.Session;
+using POS.Desktop.Services.Auth;
 using POS.Desktop.Shell;
 using Xunit;
 
@@ -18,6 +19,7 @@ public class PosWebMessageRouterTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton<ISessionService, OperatorSessionService>();
+        services.AddSingleton<IAuthService, StubAuthService>();
         configureServices?.Invoke(services);
         var provider = services.BuildServiceProvider();
         var scopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
@@ -34,6 +36,7 @@ public class PosWebMessageRouterTests
         Assert.True(router.CanHandle("transport.echo"));
         Assert.True(router.CanHandle("session.get"));
         Assert.True(router.CanHandle("session.clear"));
+        Assert.True(router.CanHandle("auth.validatePin"));
     }
 
     [Fact]
@@ -108,7 +111,8 @@ public class PosWebMessageRouterTests
         Assert.Contains("transport.echo", types);
         Assert.Contains("session.get", types);
         Assert.Contains("session.clear", types);
-        Assert.Equal(3, types.Count);
+        Assert.Contains("auth.validatePin", types);
+        Assert.Equal(4, types.Count);
     }
 
     [Fact]

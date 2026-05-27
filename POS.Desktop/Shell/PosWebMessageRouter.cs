@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using POS.Desktop.Bridge;
 using POS.Desktop.Services.Session;
+using POS.Desktop.Services.Auth;
 
 namespace POS.Desktop.Shell;
 
@@ -36,6 +37,13 @@ public sealed class PosWebMessageRouter
         // Task 3.4.4 - 3.4.6: Session management handlers.
         Register("session.get", sp => (req, ct) => HandleSessionGetAsync(sp.GetRequiredService<ISessionService>(), req, ct));
         Register("session.clear", sp => (req, ct) => HandleSessionClearAsync(sp.GetRequiredService<ISessionService>(), req, ct));
+
+        // Task 3.5.2: Auth validate pin handler
+        Register("auth.validatePin", sp => (req, ct) => HandleAuthValidatePinAsync(
+            sp.GetRequiredService<IAuthService>(),
+            sp.GetRequiredService<ISessionService>(),
+            req,
+            ct));
     }
 
     /// <summary>
@@ -186,5 +194,69 @@ public sealed class PosWebMessageRouter
         );
 
         return Task.FromResult(response);
+    }
+
+    /// <summary>
+    /// Handles the auth.validatePin message, validating credentials against the stub database
+    /// and initializing a session upon success.
+    /// </summary>
+    private async Task<BridgeResponseEnvelope> HandleAuthValidatePinAsync(
+        IAuthService authService,
+        ISessionService sessionService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        if (request.Payload == null)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was missing.");
+        }
+
+        // Deserialize request payload parameters safely
+        var payloadJson = System.Text.Json.JsonSerializer.Serialize(request.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = System.Text.Json.JsonDocument.Parse(payloadJson);
+
+        if (!doc.RootElement.TryGetProperty("operatorId", out var opIdProp) ||
+            !doc.RootElement.TryGetProperty("pin", out var pinProp))
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Required parameters 'operatorId' or 'pin' were missing.");
+        }
+
+        string operatorId = opIdProp.GetString() ?? string.Empty;
+        string pin = pinProp.GetString() ?? string.Empty;
+
+        var result = await authService.ValidatePinAsync(operatorId, pin, cancellationToken);
+        if (result.IsValid && result.Operator != null)
+        {
+            var session = new OperatorSession(
+                OperatorId: result.Operator.OperatorId,
+                DisplayName: result.Operator.DisplayName,
+                Role: result.Operator.Role,
+                LoginTime: DateTimeOffset.UtcNow,
+                TerminalId: "POS-01",
+                SessionId: Guid.NewGuid().ToString()
+            );
+
+            sessionService.StartSession(session);
+
+            return BridgeResponseEnvelope.Success(
+                type: request.Type,
+                requestId: request.RequestId,
+                payload: new
+                {
+                    isValid = true,
+                    @operator = session
+                }
+            );
+        }
+
+        return BridgeResponseEnvelope.Success(
+            type: request.Type,
+            requestId: request.RequestId,
+            payload: new
+            {
+                isValid = false,
+                @operator = (OperatorSession?)null
+            }
+        );
     }
 }

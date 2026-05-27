@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using POS.Shared.Contracts;
 using POS.Desktop.Services.Provisioning;
 using POS.Desktop.Services.Session;
+using POS.Desktop.Services.Auth;
 using POS.Desktop.Shell;
 using System.IO;
 
@@ -61,6 +62,7 @@ public static class DesktopHostBuilder
 
                 // Business Services
                 services.AddSingleton<ISessionService, OperatorSessionService>();
+                services.AddSingleton<IAuthService, StubAuthService>();
 
                 // Register context first as DbContext depends on it
                 services.AddScoped<IProvisionedTerminalContext, NoProvisionedTerminalContext>();

@@ -6,6 +6,7 @@ using POS.Desktop.Data;
 using Microsoft.EntityFrameworkCore;
 using POS.Shared.Contracts;
 using POS.Desktop.Data.Seeding;
+using POS.Desktop.Services.Catalog;
 using POS.Desktop.Services.Provisioning;
 using POS.Desktop.Services.Session;
 using POS.Desktop.Services.Auth;
@@ -65,6 +66,7 @@ public static class DesktopHostBuilder
                 services.AddSingleton<ISessionService, OperatorSessionService>();
                 services.AddSingleton<IAuthService, StubAuthService>();
                 services.AddScoped<ILocalCatalogSeeder, LocalCatalogSeeder>();
+                services.AddScoped<ICatalogService, CatalogService>();
                 services.AddScoped<ITerminalProvisioningStore, EfTerminalProvisioningStore>();
                 services.AddSingleton<TerminalProvisioningStartupLoader>();
 

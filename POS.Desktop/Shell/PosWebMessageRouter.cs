@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using POS.Desktop.Bridge;
+using POS.Desktop.Services.Catalog;
 using POS.Desktop.Services.Session;
 using POS.Desktop.Services.Auth;
 using POS.Desktop.Services.Provisioning;
@@ -53,6 +55,24 @@ public sealed class PosWebMessageRouter
             ct));
         Register("provisioning.getProvisioningStatus", sp => (req, ct) => HandleGetProvisioningStatusAsync(
             sp.GetRequiredService<ITerminalProvisioningStore>(),
+            req,
+            ct));
+
+        // Task 4.4.4: Catalog read handlers
+        Register("catalog.listCategories", sp => (req, ct) => HandleCatalogListCategoriesAsync(
+            sp.GetRequiredService<ICatalogService>(),
+            req,
+            ct));
+        Register("catalog.listItems", sp => (req, ct) => HandleCatalogListItemsAsync(
+            sp.GetRequiredService<ICatalogService>(),
+            req,
+            ct));
+        Register("catalog.searchItems", sp => (req, ct) => HandleCatalogSearchItemsAsync(
+            sp.GetRequiredService<ICatalogService>(),
+            req,
+            ct));
+        Register("catalog.lookupByIdentifier", sp => (req, ct) => HandleCatalogLookupByIdentifierAsync(
+            sp.GetRequiredService<ICatalogService>(),
             req,
             ct));
     }
@@ -364,5 +384,164 @@ public sealed class PosWebMessageRouter
                 updatedAt = isProvisioned ? record.UpdatedAt : null
             }
         );
+    }
+
+    // ----------------------------------------------------------------
+    // Task 4.4.4 — Catalog bridge handlers
+    // ----------------------------------------------------------------
+
+    /// <summary>
+    /// Returns all catalog categories ordered by SortOrder.
+    /// Payload: {} (no parameters required).
+    /// </summary>
+    private async Task<BridgeResponseEnvelope> HandleCatalogListCategoriesAsync(
+        ICatalogService catalogService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        var categories = await catalogService.ListCategoriesAsync(cancellationToken);
+        return BridgeResponseEnvelope.Success(
+            request.Type,
+            request.RequestId,
+            new CatalogListCategoriesResponse { Categories = categories });
+    }
+
+    /// <summary>
+    /// Returns catalog items, optionally filtered by categoryId and/or searchText.
+    /// Payload: { categoryId?: number, searchText?: string, limit?: number }.
+    /// </summary>
+    private async Task<BridgeResponseEnvelope> HandleCatalogListItemsAsync(
+        ICatalogService catalogService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var query = ParseCatalogItemQuery(request);
+            var items = await catalogService.ListItemsAsync(query, cancellationToken);
+            return BridgeResponseEnvelope.Success(
+                request.Type,
+                request.RequestId,
+                new CatalogListItemsResponse { Items = items });
+        }
+        catch (JsonException)
+        {
+            return BridgeResponseEnvelope.Failure(
+                request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was not valid JSON.");
+        }
+    }
+
+    /// <summary>
+    /// Searches catalog items by name, code, SKU, or barcode.
+    /// Payload: { searchText?: string, limit?: number }.
+    /// Empty searchText returns all items up to limit.
+    /// </summary>
+    private async Task<BridgeResponseEnvelope> HandleCatalogSearchItemsAsync(
+        ICatalogService catalogService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            string searchText = string.Empty;
+            int limit = 50;
+
+            if (request.Payload.HasValue)
+            {
+                var payloadJson = JsonSerializer.Serialize(request.Payload.Value, BridgeJsonSerializerOptions.Default);
+                using var doc = JsonDocument.Parse(payloadJson);
+
+                if (doc.RootElement.TryGetProperty("searchText", out var searchProp))
+                    searchText = searchProp.GetString() ?? string.Empty;
+
+                if (doc.RootElement.TryGetProperty("limit", out var limitProp) &&
+                    limitProp.TryGetInt32(out var parsedLimit))
+                    limit = parsedLimit;
+            }
+
+            var items = await catalogService.SearchItemsAsync(searchText, limit, cancellationToken);
+            return BridgeResponseEnvelope.Success(
+                request.Type,
+                request.RequestId,
+                new CatalogListItemsResponse { Items = items });
+        }
+        catch (JsonException)
+        {
+            return BridgeResponseEnvelope.Failure(
+                request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was not valid JSON.");
+        }
+    }
+
+    /// <summary>
+    /// Looks up a single item by barcode or other identifier value.
+    /// Payload: { identifierValue: string }.
+    /// Response: { found: bool, item: CatalogItemDto | null }.
+    /// </summary>
+    private async Task<BridgeResponseEnvelope> HandleCatalogLookupByIdentifierAsync(
+        ICatalogService catalogService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        if (!request.Payload.HasValue)
+        {
+            return BridgeResponseEnvelope.Failure(
+                request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was missing.");
+        }
+
+        try
+        {
+            var payloadJson = JsonSerializer.Serialize(request.Payload.Value, BridgeJsonSerializerOptions.Default);
+            using var doc = JsonDocument.Parse(payloadJson);
+
+            if (!doc.RootElement.TryGetProperty("identifierValue", out var identProp))
+            {
+                return BridgeResponseEnvelope.Failure(
+                    request.Type, request.RequestId, "MALFORMED_REQUEST",
+                    "Required property 'identifierValue' was missing.");
+            }
+
+            var identifierValue = identProp.GetString() ?? string.Empty;
+            var item = await catalogService.FindByIdentifierAsync(identifierValue, cancellationToken);
+
+            return BridgeResponseEnvelope.Success(
+                request.Type,
+                request.RequestId,
+                new CatalogLookupResponse { Found = item is not null, Item = item });
+        }
+        catch (JsonException)
+        {
+            return BridgeResponseEnvelope.Failure(
+                request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was not valid JSON.");
+        }
+    }
+
+    /// <summary>
+    /// Safely parses a <see cref="CatalogItemQuery"/> from the request payload.
+    /// Missing or null payload returns a default query (no filters, limit 50).
+    /// </summary>
+    private static CatalogItemQuery ParseCatalogItemQuery(BridgeRequestEnvelope request)
+    {
+        if (!request.Payload.HasValue)
+            return new CatalogItemQuery();
+
+        var payloadJson = JsonSerializer.Serialize(request.Payload.Value, BridgeJsonSerializerOptions.Default);
+        using var doc = JsonDocument.Parse(payloadJson);
+
+        int? categoryId = null;
+        if (doc.RootElement.TryGetProperty("categoryId", out var catProp) &&
+            catProp.ValueKind == JsonValueKind.Number &&
+            catProp.TryGetInt32(out var cat))
+            categoryId = cat;
+
+        string? searchText = null;
+        if (doc.RootElement.TryGetProperty("searchText", out var searchProp))
+            searchText = searchProp.GetString();
+
+        int limit = 50;
+        if (doc.RootElement.TryGetProperty("limit", out var limitProp) &&
+            limitProp.TryGetInt32(out var lim))
+            limit = lim;
+
+        return new CatalogItemQuery { CategoryId = categoryId, SearchText = searchText, Limit = limit };
     }
 }

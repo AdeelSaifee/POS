@@ -39,6 +39,10 @@ public class PosWebMessageRouterTests
         Assert.True(router.CanHandle("auth.validatePin"));
         Assert.True(router.CanHandle("provisioning.provisionTerminal"));
         Assert.True(router.CanHandle("provisioning.getProvisioningStatus"));
+        Assert.True(router.CanHandle("catalog.listCategories"));
+        Assert.True(router.CanHandle("catalog.listItems"));
+        Assert.True(router.CanHandle("catalog.searchItems"));
+        Assert.True(router.CanHandle("catalog.lookupByIdentifier"));
     }
 
     [Fact]
@@ -116,7 +120,11 @@ public class PosWebMessageRouterTests
         Assert.Contains("auth.validatePin", types);
         Assert.Contains("provisioning.provisionTerminal", types);
         Assert.Contains("provisioning.getProvisioningStatus", types);
-        Assert.Equal(6, types.Count);
+        Assert.Contains("catalog.listCategories", types);
+        Assert.Contains("catalog.listItems", types);
+        Assert.Contains("catalog.searchItems", types);
+        Assert.Contains("catalog.lookupByIdentifier", types);
+        Assert.Equal(10, types.Count);
     }
 
     [Fact]

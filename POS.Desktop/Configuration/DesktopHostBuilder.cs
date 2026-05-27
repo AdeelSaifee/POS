@@ -65,7 +65,8 @@ public static class DesktopHostBuilder
                 services.AddSingleton<IAuthService, StubAuthService>();
 
                 // Register context first as DbContext depends on it
-                services.AddScoped<IProvisionedTerminalContext, NoProvisionedTerminalContext>();
+                var provisioningRecord = ProvisioningConfigLoader.Load(hostContext.Configuration);
+                services.AddSingleton<IProvisionedTerminalContext>(new ProvisionedTerminalContext(provisioningRecord));
 
                 services.AddDbContext<PosLocalDbContext>((serviceProvider, options) =>
                 {

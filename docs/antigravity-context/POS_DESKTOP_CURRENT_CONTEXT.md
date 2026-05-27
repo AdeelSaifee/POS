@@ -1,8 +1,8 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 4 / Milestone 4.1 — Real provisioned-terminal context
-- **Group**: Group 4 (Task 4.1.8 - Task 4.1.10)
+- **Milestone**: Phase 4 / Milestone 4.2 — Provisioning persistence & screen wiring
+- **Group**: Group 1 (Task 4.2.1)
 
 ## Status of Tasks in this Session
 - `[x]` Task 4.1.1 - Design the provisioning record (Completed)
@@ -15,30 +15,38 @@
 - `[x]` Task 4.1.8 - Verify provisioned reads return rows (Completed)
 - `[x]` Task 4.1.9 - Verify unprovisioned reads are empty (Completed)
 - `[x]` Task 4.1.10 - Integration test provisioned vs not (Completed)
+- `[x]` Task 4.2.1 - Define the persistence store (Completed)
 
 ## Files Created/Changed in this Session
-- [NEW] [LocalDatabaseIntegrationTests.cs](file:///A:/Ps/POS/POS.Desktop.Tests/Services/Provisioning/LocalDatabaseIntegrationTests.cs)
+- [NEW] [TerminalProvisioning.cs](file:///A:/Ps/POS/POS.Desktop/Data/LocalEntities/TerminalProvisioning.cs)
+- [NEW] [TerminalProvisioningConfiguration.cs](file:///A:/Ps/POS/POS.Desktop/Data/Configurations/Local/TerminalProvisioningConfiguration.cs)
+- [NEW] [TerminalProvisioningStoreTests.cs](file:///A:/Ps/POS/POS.Desktop.Tests/Services/Provisioning/TerminalProvisioningStoreTests.cs)
+- [NEW] EF Migration `AddTerminalProvisioningTable`
+- [MODIFY] [PosLocalDbContext.cs](file:///A:/Ps/POS/POS.Desktop/Data/PosLocalDbContext.cs)
 - [MODIFY] [POS_DESKTOP_CURRENT_CONTEXT.md](file:///A:/Ps/POS/docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md)
 
 *Note: Antigravity local implementation plan was created outside the repo.*
 
 ## Scope Boundaries & Constraints
-- Work ONLY on Tasks 4.1.8, 4.1.9, and 4.1.10.
-- Do NOT start Milestone 4.2 (Provisioning persistence & screen wiring).
-- Do NOT add database tables or migrations.
+- Work ONLY on Task 4.2.1.
+- Do NOT start Task 4.2.2 (provisionTerminal handler).
+- Do NOT add bridge handlers or wire UI screens.
+- Do NOT add database tables or migrations beyond the minimal `TerminalProvisioning` table.
 
 ## Important Decisions
-- Implemented full SQLite in-memory integration tests verifying query filter logic against the actual `PosLocalDbContext` models and entities.
-- Confirmed that a provisioned context returns matching scoped rows, while unprovisioned and half-provisioned contexts fail closed and return empty results.
+- Stored provisioning state in a local SQLite table `TerminalProvisioning` containing a single-row invariant (Id = 1) enforced at database level with a SQLite CHECK constraint.
+- Added database CHECK constraints to enforce positive-or-null values on `TenantId`, `LocationId`, and `TerminalId` (`Id = 1`, `TenantId IS NULL OR TenantId > 0`, etc.) to prevent half-provisioned or invalid identities.
+- Opted for SQLite over settings/config stores to guarantee consistency with the rest of the desktop's offline database, transactional safety, and lifecycle longevity next to other SQLite tables.
+- Did not apply a query filter to the `TerminalProvisioning` entity, enabling startup loading of the provisioning state before a tenant context is established.
 
 ## Verification Commands & Results
 - `git status --short --untracked-files=all`: Clean status prior to edits.
 - `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: Built successfully.
 - `dotnet build POS.slnx --configuration Debug`: Built successfully.
-- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: All 72 tests passed.
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: All 76 tests passed.
 
 ## Remaining Next Group
-- Milestone 4.2 only: Tasks 4.2.1 - 4.2.7 (Provisioning persistence and screen wiring).
+- Milestone 4.2 Group 2: Tasks 4.2.2 - 4.2.3 (provisionTerminal and getProvisioningStatus handlers).
 
 ## Known Risks & Notes
 - Since persistent storage integration is deferred to Milestone 4.2, configuration is the sole startup source. If config is absent/malformed, the application startup continues cleanly but registers an unprovisioned context that fails closed on local DB filters.

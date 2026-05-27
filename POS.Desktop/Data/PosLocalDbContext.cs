@@ -39,6 +39,8 @@ public class PosLocalDbContext : DbContext
 
     public DbSet<LocalRetentionState> LocalRetentionState => Set<LocalRetentionState>();
 
+    public DbSet<TerminalProvisioning> TerminalProvisioning => Set<TerminalProvisioning>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

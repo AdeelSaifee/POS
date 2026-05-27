@@ -2,42 +2,42 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 4 / Milestone 4.2 — Provisioning persistence & screen wiring
-- **Group**: Group 2 (Tasks 4.2.2 - 4.2.3)
+- **Group**: Group 3 (Tasks 4.2.4 - 4.2.6)
 
 ## Status of Tasks in this Session
-- `[x]` Task 4.2.2 - Add provisionTerminal handler (Completed)
-- `[x]` Task 4.2.3 - Add getProvisioningStatus handler (Completed)
+- `[x]` Task 4.2.4 - Wire provision_terminal.html to bridge (Completed)
+- `[x]` Task 4.2.5 - Replace setTimeout progress with real steps (Completed)
+- `[x]` Task 4.2.6 - Remove terminal_config localStorage (Completed)
 
 ## Files Created/Changed in this Session
-- [NEW] [ITerminalProvisioningStore.cs](file:///A:/Ps/POS/POS.Desktop/Services/Provisioning/ITerminalProvisioningStore.cs)
-- [NEW] [EfTerminalProvisioningStore.cs](file:///A:/Ps/POS/POS.Desktop/Services/Provisioning/EfTerminalProvisioningStore.cs)
-- [NEW] [TerminalProvisioningStoreHandlerTests.cs](file:///A:/Ps/POS/POS.Desktop.Tests/Services/Provisioning/TerminalProvisioningStoreHandlerTests.cs)
-- [MODIFY] [ProvisioningRecord.cs](file:///A:/Ps/POS/POS.Desktop/Services/Provisioning/ProvisioningRecord.cs)
-- [MODIFY] [DesktopHostBuilder.cs](file:///A:/Ps/POS/POS.Desktop/Configuration/DesktopHostBuilder.cs)
-- [MODIFY] [PosWebMessageRouter.cs](file:///A:/Ps/POS/POS.Desktop/Shell/PosWebMessageRouter.cs)
+- [MODIFY] [provision_terminal.html](file:///A:/Ps/POS/POS.Desktop/Assets/ui/provision_terminal.html)
 - [MODIFY] [POS_DESKTOP_CURRENT_CONTEXT.md](file:///A:/Ps/POS/docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md)
 
 ## Scope Boundaries & Constraints
-- Work ONLY on Task 4.2.2 and Task 4.2.3.
-- Do NOT start Task 4.2.4 (wiring HTML screens).
-- Do NOT touch UI screens or remove `terminal_config` localStorage.
-- Do NOT add database tables or migrations beyond the minimal `TerminalProvisioning` table.
+- Work ONLY on Tasks 4.2.4, 4.2.5, and 4.2.6.
+- Do NOT start Task 4.2.7.
+- Do NOT add database tables or migrations.
+- Do NOT touch docs/ui-prototype/screens/* files.
+- Do NOT modify skills-lock.json or .agents/skills/*.
 
 ## Important Decisions
-- Extracted database persistence and validation into a separate service `EfTerminalProvisioningStore` to keep `PosWebMessageRouter` thin and focused on bridge mechanics.
-- Registered the new store service as a scoped dependency to avoid captive dependency on the scoped DbContext.
-- Registered `provisioning.provisionTerminal` and `provisioning.getProvisioningStatus` actions using namespaced conventions.
-- Blocked re-provisioning over the bridge if the database is already fully provisioned with different details, keeping state updates secure.
-- Designed `getProvisioningStatus` to read from the SQLite database and return a fail-closed status if the DB row is missing or contains partial/invalid null fields.
+- Added temporary numeric inputs for Tenant ID, Location ID, and Terminal ID to satisfy the C# bridge validation constraints without disrupting the store/terminal code UI text fields layout.
+- Used `provisioning.getProvisioningStatus` on load to detect if the terminal is already provisioned, showing a dedicated `PROVISIONED` state, populating/disabling inputs, and replacing the action button with a navigation route to the login screen.
+- Replaced artificial timeout-based console logs and progress indicators with realistic logs and direct promise-driven state updates.
+- Completely removed `terminal_config` read/write blocks from `provision_terminal.html`, establishing the SQLite persistent store as the single source of truth for provisioning config.
 
 ## Verification Commands & Results
-- `git status --short --untracked-files=all`: Clean status prior to edits.
+- `git status --short --untracked-files=all`: Checked prior to and post edits.
 - `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: Built successfully.
 - `dotnet build POS.slnx --configuration Debug`: Built successfully.
-- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: All 91 tests passed.
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: All tests passed.
+- `Select-String -Path POS.Desktop/Assets/ui/provision_terminal.html -Pattern "terminal_config"`: Confirmed zero occurrences.
+- `Select-String -Path POS.Desktop/Assets/ui/provision_terminal.html -Pattern "localStorage|sessionStorage|setTimeout"`: Checked occurrences.
+- `Select-String -Path POS.Desktop/Assets/ui/provision_terminal.html -Pattern "provisioning.provisionTerminal|provisioning.getProvisioningStatus|posBridge"`: Confirmed bridge bindings are present.
 
 ## Remaining Next Group
-- Milestone 4.2 Group 3: Tasks 4.2.4 - 4.2.6 (wire `provision_terminal.html` to bridge, remove setTimeout, remove localStorage).
+- Milestone 4.2 Group 4: Tasks 4.2.7 - 4.2.8 only (persist tenant/location/terminal durably and verify provisioning survives restart).
 
 ## Known Risks & Notes
-- Re-provisioning attempts with different details return `REPROVISION_BLOCKED`. Controlled re-provisioning under a guarded path belongs to Task 4.2.9.
+- Redirection from login back to the provisioning screen when unprovisioned is a future task.
+- Unprovisioned reads return empty datasets or fail-closed state as enforced by database-level contexts.

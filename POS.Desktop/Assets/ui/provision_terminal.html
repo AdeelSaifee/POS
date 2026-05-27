@@ -314,6 +314,22 @@
           <input type="text" id="terminal-code" class="field-input" value="POS-01" placeholder="e.g. POS-01"/>
         </div>
 
+        <!-- Temporary numeric ID inputs for bridge integration (Task 4.2.4 requirements) -->
+        <div class="field-group">
+          <label class="field-label" for="tenant-id">Tenant ID (Temporary)</label>
+          <input type="number" id="tenant-id" class="field-input" value="1" min="1" placeholder="Numeric Tenant ID"/>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="location-id">Location ID (Temporary)</label>
+          <input type="number" id="location-id" class="field-input" value="1" min="1" placeholder="Numeric Location ID"/>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="terminal-id">Terminal ID (Temporary)</label>
+          <input type="number" id="terminal-id" class="field-input" value="1" min="1" placeholder="Numeric Terminal ID"/>
+        </div>
+
         <div class="field-group">
           <div class="checkbox-row">
             <input type="checkbox" id="sync-catalog" checked/>
@@ -358,104 +374,221 @@
   </div><!-- end card -->
 
   <script>
-    const LOGS = [
-      { text: "Initializing socket to api.imagyntechnologies.com/v1...", ok: false, pct: 5 },
-      { text: "Connection established. Latency: 14ms.", ok: true, pct: 10 },
-      { text: "Device token [DEV-4A9-8F] authenticated successfully.", ok: true, pct: 15 },
-      { text: "Fetching metadata schema from central server...", ok: false, pct: 20 },
-      { text: "Creating SQLite relational cache on local partition...", ok: false, pct: 25 },
-      { text: "SQLite tables [catalog, shifts, orders, cash_movements, sync_outbox] created.", ok: true, pct: 30 },
-      { text: "Beginning catalog snapshot download...", ok: false, pct: 38 },
-      { text: "Category 'Grocery & Staples' — 432 items downloaded OK", ok: true, pct: 50 },
-      { text: "Category 'Electronics & Hardware' — 120 items downloaded OK", ok: true, pct: 60 },
-      { text: "Category 'Apparel & Clothing' — 310 items downloaded OK", ok: true, pct: 70 },
-      { text: "Category 'Pharmacy & Healthcare' — 388 items downloaded OK", ok: true, pct: 80 },
-      { text: "Tax rules imported: SST 15%, GST 18% — Active", ok: true, pct: 85 },
-      { text: "Optimizing SQLite indexes for barcode query performance...", ok: false, pct: 90 },
-      { text: "Sync outbox queue engine initialized.", ok: false, pct: 95 },
-      { text: "1,250 catalog items cached. Provision complete.", ok: true, pct: 100 },
-    ];
+    function logToConsole(message, isOk = false) {
+      const cons = document.getElementById('console-log');
+      if (!cons) return;
+      const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+      const line = document.createElement('div');
+      line.innerHTML = '<span class="log-ts">[' + ts + ']</span><span class="' + (isOk ? 'log-ok' : 'log-info') + '">' + message + '</span>';
+      cons.appendChild(line);
+      cons.scrollTop = cons.scrollHeight;
+    }
 
-    function startProvisioning() {
-      const storeId  = document.getElementById('store-id').value;
-      const terminal = document.getElementById('terminal-code').value || 'POS-01';
+    async function startProvisioning() {
+      // 1. Get input values
+      const tenantIdVal = document.getElementById('tenant-id').value;
+      const locationIdVal = document.getElementById('location-id').value;
+      const terminalIdVal = document.getElementById('terminal-id').value;
 
-      // Switch panels
+      const storeId = document.getElementById('store-id').value;
+      const terminalCode = document.getElementById('terminal-code').value || 'POS-01';
+
+      // 2. Validate form input
+      const tenantId = parseInt(tenantIdVal, 10);
+      const locationId = parseInt(locationIdVal, 10);
+      const terminalId = parseInt(terminalIdVal, 10);
+
+      if (isNaN(tenantId) || tenantId <= 0 || isNaN(locationId) || locationId <= 0 || isNaN(terminalId) || terminalId <= 0) {
+        alert("Please enter valid positive integers for Tenant ID, Location ID, and Terminal ID.");
+        return;
+      }
+
+      // Switch panels to progress view
       document.getElementById('form-panel').style.display = 'none';
       document.getElementById('progress-panel').style.display = 'flex';
       document.getElementById('progress-panel').style.flexDirection = 'column';
 
       // Update status badge
       setStatus('provisioning');
-      document.getElementById('footer-terminal').textContent = terminal + ' · ' + storeId;
+      document.getElementById('footer-terminal').textContent = terminalCode + ' · ' + storeId;
       setDbStatus('syncing');
 
-      // Save config to localStorage
-      localStorage.setItem('terminal_config', JSON.stringify({
-        storeId, terminalId: terminal,
-        companyName: 'Imagyn Technologies',
-        branch: storeId + ' Branch',
-        version: 'v1.0.0',
-        lastSync: new Date().toISOString()
-      }));
-
-      const cons  = document.getElementById('console-log');
-      const bar   = document.getElementById('bar-fill');
+      const cons = document.getElementById('console-log');
+      if (cons) {
+        cons.innerHTML = ''; // Clear console
+      }
+      const bar = document.getElementById('bar-fill');
       const pctEl = document.getElementById('pct-label');
 
-      LOGS.forEach((log, i) => {
-        setTimeout(() => {
-          const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
-          const line = document.createElement('div');
-          line.innerHTML = '<span class="log-ts">[' + ts + ']</span><span class="' + (log.ok ? 'log-ok' : 'log-info') + '">' + log.text + '</span>';
-          cons.appendChild(line);
-          cons.scrollTop = cons.scrollHeight;
+      // Log: Form validation step success
+      logToConsole("Provisioning input validated successfully.", true);
+      if (bar) bar.style.width = '30%';
+      if (pctEl) pctEl.textContent = '30%';
 
-          bar.style.width = log.pct + '%';
-          pctEl.textContent = log.pct + '%';
+      // 3. Initiate bridge call (provisioning.provisionTerminal)
+      logToConsole("Sending provisioning request to bridge (provisioning.provisionTerminal)...", false);
 
-          if (log.pct === 100) {
-            setStatus('provisioned');
-            setDbStatus('active');
-            setTimeout(() => { window.location.href = 'terminal_login.html'; }, 1100);
+      try {
+        if (!window.posBridge || !window.posBridge.isAvailable()) {
+          throw new Error("Bridge transport is not available.");
+        }
+
+        const result = await window.posBridge.request('provisioning.provisionTerminal', {
+          tenantId: tenantId,
+          locationId: locationId,
+          terminalId: terminalId
+        });
+
+        // 4. Render success result
+        if (result && result.success) {
+          logToConsole("Provisioning completed successfully in local SQLite database.", true);
+
+          if (bar) bar.style.width = '100%';
+          if (pctEl) pctEl.textContent = '100%';
+
+          setStatus('provisioned');
+          setDbStatus('active');
+
+          // Redirect to login screen after a short delay for animation visibility (unrelated animation/transition delay)
+          setTimeout(() => {
+            window.location.href = 'terminal_login.html';
+          }, 1000);
+        } else {
+          throw new Error(result.message || "An unknown error occurred during provisioning.");
+        }
+      } catch (error) {
+        // Render failure result
+        const errMsg = error.message || "Bridge request failed.";
+        const errCode = error.code || "PROVISIONING_FAILED";
+        logToConsole("Provisioning failed: " + errMsg + " (" + errCode + ")", false);
+
+        if (bar) bar.style.width = '0%';
+        if (pctEl) pctEl.textContent = '0%';
+
+        // Reset status text to alert operator
+        const badge = document.getElementById('status-badge');
+        const text  = document.getElementById('status-text');
+        if (badge && text) {
+          badge.className = 'status-badge';
+          badge.style.background = 'rgba(239, 68, 68, 0.12)';
+          badge.style.borderColor = 'rgba(239, 68, 68, 0.28)';
+          badge.style.color = 'var(--red)';
+          text.textContent = 'FAILED';
+        }
+
+        // Add a back button so they can fix their input and retry
+        const backBtn = document.createElement('button');
+        backBtn.className = 'provision-btn';
+        backBtn.style.marginTop = '15px';
+        backBtn.style.background = 'var(--navy)';
+        backBtn.style.color = 'var(--white)';
+        backBtn.style.boxShadow = 'none';
+        backBtn.innerHTML = 'Go Back &amp; Retry';
+        backBtn.onclick = function() {
+          document.getElementById('progress-panel').style.display = 'none';
+          document.getElementById('form-panel').style.display = 'flex';
+          // reset status badge
+          if (badge && text) {
+            badge.style.background = '';
+            badge.style.borderColor = '';
+            badge.style.color = '';
+            text.textContent = 'UNCONFIGURED';
           }
-        }, i * 220);
-      });
+          setDbStatus('inactive');
+        };
+        const progPanel = document.getElementById('progress-panel');
+        if (progPanel) {
+          progPanel.appendChild(backBtn);
+        }
+      }
     }
 
     function setStatus(state) {
       const badge = document.getElementById('status-badge');
       const text  = document.getElementById('status-text');
-      if (state === 'provisioning') {
-        badge.className = 'status-badge';
-        text.textContent = 'PROVISIONING';
-      } else if (state === 'provisioned') {
-        badge.className = 'status-badge provisioned';
-        text.textContent = 'PROVISIONED';
+      if (badge && text) {
+        if (state === 'provisioning') {
+          badge.className = 'status-badge';
+          text.textContent = 'PROVISIONING';
+        } else if (state === 'provisioned') {
+          badge.className = 'status-badge provisioned';
+          text.textContent = 'PROVISIONED';
+        }
       }
     }
 
     function setDbStatus(state) {
       const dot   = document.getElementById('db-dot');
       const label = document.getElementById('db-label');
-      if (state === 'syncing') {
-        dot.className = 'tele-dot pulse';
-        label.style.color = 'var(--amber)';
-        label.textContent = 'Syncing…';
-      } else if (state === 'active') {
-        dot.className = 'tele-dot ok';
-        label.style.color = 'var(--green)';
-        label.textContent = 'Active';
+      if (dot && label) {
+        if (state === 'syncing') {
+          dot.className = 'tele-dot pulse';
+          label.style.color = 'var(--amber)';
+          label.textContent = 'Syncing…';
+        } else if (state === 'active') {
+          dot.className = 'tele-dot ok';
+          label.style.color = 'var(--green)';
+          label.textContent = 'Active';
+        } else if (state === 'inactive') {
+          dot.className = 'tele-dot warn';
+          label.style.color = 'var(--amber)';
+          label.textContent = 'Inactive';
+        }
       }
     }
 
     // ── Init ──
-    document.addEventListener('DOMContentLoaded', () => {
-      // Task 3.1.7: Confirm bridge reachability from any screen
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Confirm bridge reachability from any screen
       window.posBridgeTransport?.logStatus?.("provision_terminal");
       window.posBridgeTransport?.sendPing?.("provision_terminal");
-    });
 
+      // On load, call provisioning.getProvisioningStatus to detect if already provisioned (Task 4.2.4 requirement)
+      if (window.posBridge && window.posBridge.isAvailable()) {
+        try {
+          const status = await window.posBridge.request('provisioning.getProvisioningStatus', null);
+          if (status && status.isProvisioned) {
+            // Show provisioned status
+            setStatus('provisioned');
+            setDbStatus('active');
+
+            // Populate fields if possible
+            if (status.tenantId) document.getElementById('tenant-id').value = status.tenantId;
+            if (status.locationId) document.getElementById('location-id').value = status.locationId;
+            if (status.terminalId) document.getElementById('terminal-id').value = status.terminalId;
+
+            const footer = document.getElementById('footer-terminal');
+            if (footer) {
+              footer.textContent = 'Terminal: ' + status.terminalId + ' · Location: ' + status.locationId + ' · Tenant: ' + status.tenantId;
+            }
+
+            // Disable all input controls
+            document.getElementById('tenant-id').disabled = true;
+            document.getElementById('location-id').disabled = true;
+            document.getElementById('terminal-id').disabled = true;
+            document.getElementById('store-id').disabled = true;
+            document.getElementById('terminal-code').disabled = true;
+            document.getElementById('sync-catalog').disabled = true;
+
+            // Change provision button to navigate to Login screen
+            const btn = document.querySelector('.provision-btn');
+            if (btn) {
+              btn.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/></svg>
+                Go to Login Screen
+              `;
+              btn.onclick = function() {
+                window.location.href = 'terminal_login.html';
+              };
+            }
+          }
+        } catch (error) {
+          if (window.console && typeof window.console.error === "function") {
+            console.error("[Provision] Error getting provisioning status:", error);
+          }
+        }
+      }
+    });
   </script>
 </body>
 </html>

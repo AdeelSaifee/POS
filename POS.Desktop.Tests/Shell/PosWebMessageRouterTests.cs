@@ -366,4 +366,101 @@ public class PosWebMessageRouterTests
             IsDisposed = true;
         }
     }
+
+    [Fact]
+    public async Task RouteAsync_UnsupportedMessage_DoesNotCreateScope()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var provider = services.BuildServiceProvider();
+        var realScopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
+        var spyScopeFactory = new SpyScopeFactory(realScopeFactory);
+        var router = new PosWebMessageRouter(spyScopeFactory, NullLogger<PosWebMessageRouter>.Instance);
+
+        var request = new BridgeRequestEnvelope { Type = "unknown.action", RequestId = "req-1", Version = "v1" };
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.False(response.Ok);
+        Assert.Equal(0, spyScopeFactory.CreateScopeCount);
+    }
+
+    [Fact]
+    public async Task RouteAsync_SupportedMessage_CreatesAndDisposesScope()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var provider = services.BuildServiceProvider();
+        var realScopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
+        var spyScopeFactory = new SpyScopeFactory(realScopeFactory);
+        var router = new PosWebMessageRouter(spyScopeFactory, NullLogger<PosWebMessageRouter>.Instance);
+
+        var request = new BridgeRequestEnvelope { Type = "transport.echo", RequestId = "req-1", Version = "v1" };
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.True(response.Ok);
+        Assert.Equal(1, spyScopeFactory.CreateScopeCount);
+        Assert.Equal(1, spyScopeFactory.DisposeCount);
+    }
+
+    [Fact]
+    public async Task RouteAsync_ConsecutiveMessages_CreateSeparateScopes()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var provider = services.BuildServiceProvider();
+        var realScopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
+        var spyScopeFactory = new SpyScopeFactory(realScopeFactory);
+        var router = new PosWebMessageRouter(spyScopeFactory, NullLogger<PosWebMessageRouter>.Instance);
+
+        var request1 = new BridgeRequestEnvelope { Type = "transport.echo", RequestId = "req-1", Version = "v1" };
+        var request2 = new BridgeRequestEnvelope { Type = "transport.echo", RequestId = "req-2", Version = "v1" };
+
+        // Act
+        await router.RouteAsync(request1, CancellationToken.None);
+        await router.RouteAsync(request2, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(2, spyScopeFactory.CreateScopeCount);
+        Assert.Equal(2, spyScopeFactory.DisposeCount);
+    }
+
+    private sealed class SpyScopeFactory : IServiceScopeFactory, IServiceScope
+    {
+        private readonly IServiceScopeFactory _inner;
+        private IServiceScope? _currentScope;
+
+        public int CreateScopeCount { get; private set; }
+        public int DisposeCount { get; private set; }
+
+        public IServiceProvider ServiceProvider => _currentScope?.ServiceProvider
+            ?? throw new InvalidOperationException("No active scope.");
+
+        public SpyScopeFactory(IServiceScopeFactory inner)
+        {
+            _inner = inner;
+        }
+
+        public IServiceScope CreateScope()
+        {
+            CreateScopeCount++;
+            _currentScope = _inner.CreateScope();
+            return this;
+        }
+
+        public void Dispose()
+        {
+            DisposeCount++;
+            _currentScope?.Dispose();
+            _currentScope = null;
+        }
+    }
 }

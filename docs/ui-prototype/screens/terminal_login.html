@@ -424,12 +424,12 @@
     <script>
         // ── Operators data ──
         const operators = [
-            { id: 'OP001', name: 'Adeel Saifee',  role: 'Sr. Cashier',  color: '#2563EB', initials: 'AS', pin: '1111' },
-            { id: 'OP002', name: 'Ahmed Khan',     role: 'Cashier',       color: '#7C3AED', initials: 'AK', pin: '2222' },
-            { id: 'OP003', name: 'Sara Ahmed',     role: 'Cashier',       color: '#DB2777', initials: 'SA', pin: '3333' },
-            { id: 'OP004', name: 'Bilal Hassan',   role: 'Cashier',       color: '#D97706', initials: 'BH', pin: '4444' },
-            { id: 'MGR01', name: 'Zainab Malik',   role: 'Manager',       color: '#059669', initials: 'ZM', pin: '9999', isManager: true },
-            { id: 'MGR02', name: 'Usman Ali',      role: 'Supervisor',    color: '#64748B', initials: 'UA', pin: '8888', isManager: true },
+            { id: 'OP001', name: 'Adeel Saifee',  role: 'Sr. Cashier',  color: '#2563EB', initials: 'AS' },
+            { id: 'OP002', name: 'Ahmed Khan',     role: 'Cashier',       color: '#7C3AED', initials: 'AK' },
+            { id: 'OP003', name: 'Sara Ahmed',     role: 'Cashier',       color: '#DB2777', initials: 'SA' },
+            { id: 'OP004', name: 'Bilal Hassan',   role: 'Cashier',       color: '#D97706', initials: 'BH' },
+            { id: 'MGR01', name: 'Zainab Malik',   role: 'Manager',       color: '#059669', initials: 'ZM', isManager: true },
+            { id: 'MGR02', name: 'Usman Ali',      role: 'Supervisor',    color: '#64748B', initials: 'UA', isManager: true },
         ];
 
         let selectedOp = null;
@@ -532,26 +532,7 @@
 
             // Validate immediately on 4 digits
             if (pinValue.length === 4) {
-                if (pinValue === selectedOp.pin) {
-                    isAuthenticating = true;
-                    setPinDotsSuccess();
-                    setTimeout(() => {
-                        doLogin();
-                    }, 500);
-                } else {
-                    isErrorState = true;
-                    setPinDotsError();
-                    const dotsContainer = document.getElementById('pin-dots');
-                    dotsContainer.classList.add('shake');
-                    setTimeout(() => {
-                        dotsContainer.classList.remove('shake');
-                        pinValue = '';
-                        updatePinDots();
-                        clearPinDotsError();
-                        isErrorState = false;
-                        updateLoginBtn();
-                    }, 650);
-                }
+                performValidation();
             }
         }
 
@@ -567,7 +548,7 @@
         // ── Update login button state ──
         function updateLoginBtn() {
             const btn = document.getElementById('login-btn');
-            const ready = selectedOp !== null && pinValue.length >= 4 && pinValue === selectedOp.pin;
+            const ready = selectedOp !== null && pinValue.length >= 4 && !isAuthenticating;
             btn.classList.toggle('active', ready);
         }
 
@@ -613,40 +594,78 @@
 
         // ── Login ──
         function doLogin() {
-            if (!selectedOp || pinValue !== selectedOp.pin) return;
+            if (!selectedOp || pinValue.length < 4 || isAuthenticating) return;
+            performValidation();
+        }
+
+        async function performValidation() {
+            if (!selectedOp || pinValue.length < 4 || isAuthenticating) return;
+
+            isAuthenticating = true;
+            updateLoginBtn();
 
             const btn = document.getElementById('login-btn');
+            const originalBtnHTML = btn.innerHTML;
             btn.style.opacity = '0.7';
             btn.style.pointerEvents = 'none';
             btn.innerHTML = '<span style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 0.8s linear infinite"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Authenticating…</span>';
 
-            const operator = {
-                id: selectedOp.id,
-                name: selectedOp.name,
-                role: selectedOp.role,
-                color: selectedOp.color,
-                initials: selectedOp.initials,
-                loginTime: new Date().toISOString()
-            };
-            localStorage.setItem('terminal_operator', JSON.stringify(operator));
+            const currentPin = pinValue;
+            const currentOpName = selectedOp.name;
 
-            const config = JSON.parse(localStorage.getItem('terminal_config') || '{}');
-            if (!config.terminalId) {
-                config.terminalId = 'POS-01';
-                config.branch = 'Main Branch';
-                config.version = 'V1.0';
-                localStorage.setItem('terminal_config', JSON.stringify(config));
+            try {
+                const result = await window.posBridge.request('auth.validatePin', {
+                    operatorId: selectedOp.id,
+                    pin: currentPin
+                });
+
+                if (result && result.isValid) {
+                    setPinDotsSuccess();
+
+                    const config = JSON.parse(localStorage.getItem('terminal_config') || '{}');
+                    if (!config.terminalId) {
+                        config.terminalId = 'POS-01';
+                        config.branch = 'Main Branch';
+                        config.version = 'V1.0';
+                        localStorage.setItem('terminal_config', JSON.stringify(config));
+                    }
+
+                    setTimeout(() => {
+                        const overlay = document.getElementById('login-overlay');
+                        document.getElementById('overlay-msg').textContent = `Welcome, ${currentOpName}`;
+                        overlay.classList.add('show');
+                        setTimeout(() => {
+                            window.location.href = 'shift_open.html';
+                        }, 900);
+                    }, 500);
+                } else {
+                    handleFailure(btn, originalBtnHTML);
+                }
+            } catch (err) {
+                if (window.console && typeof window.console.error === "function") {
+                    console.error("[Login] Authentication error:", err);
+                }
+                handleFailure(btn, originalBtnHTML);
             }
+        }
 
-            // Show overlay
+        function handleFailure(btn, originalBtnHTML) {
+            isErrorState = true;
+            setPinDotsError();
+            const dotsContainer = document.getElementById('pin-dots');
+            dotsContainer.classList.add('shake');
             setTimeout(() => {
-                const overlay = document.getElementById('login-overlay');
-                document.getElementById('overlay-msg').textContent = `Welcome, ${selectedOp.name}`;
-                overlay.classList.add('show');
-                setTimeout(() => {
-                    window.location.href = 'shift_open.html';
-                }, 900);
-            }, 500);
+                dotsContainer.classList.remove('shake');
+                pinValue = '';
+                updatePinDots();
+                clearPinDotsError();
+                btn.style.opacity = '';
+                btn.style.pointerEvents = '';
+                btn.innerHTML = originalBtnHTML;
+                isErrorState = false;
+                isAuthenticating = false;
+                updateLoginBtn();
+            }, 650);
         }
 
         // ── Clock ──
@@ -673,7 +692,7 @@
             else if (e.key === 'Backspace') pinPress('back');
             else if (e.key === 'Escape')    pinPress('clear');
             else if (e.key === 'Enter') {
-                if (selectedOp && pinValue === selectedOp.pin) {
+                if (selectedOp && pinValue.length >= 4) {
                     doLogin();
                 }
             }

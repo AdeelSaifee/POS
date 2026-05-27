@@ -941,64 +941,59 @@
 
 <!-- ══════════════════════════════════════════ -->
 <script>
-// ─── DATA ────────────────────────────────────
-const ITEMS = [
-  { id:"I1001", sku:"MLK-1L",  name:"Milk 1L Tetra",       cat:"dairy",     unit:"L",  price:280,  tax:5,  stock:24, img:"https://lh3.googleusercontent.com/aida-public/AB6AXuBZRQVG3wEhMyo6dgmOF7vOVCr06CwaKn_XUYl0qzAa8n_UGeYqrB739YMiAcrZ206RSfbWSA9pdFSamOj2dNHRI2ePhF3sHrKWcrWDbJ82TuSb1ml0XFTVr4UPBZfP4KnYKuzKhQpBY59No3R4rLwT3Mb_8TstL3E8hPWvlVHVlUv5kblk38ZQLywl5jlxhnMrM_XDkVz8f4TSBfZ1YzKvKJnoFPGeXkcx5oZ_6fZf5AeY9YAHpYsebG59oytkNxqI4BioYIwPJZ-2" },
-  { id:"I1002", sku:"RIC-5KG", name:"Rice 5kg Premium",    cat:"grocery",   unit:"kg", price:1850, tax:0,  stock:15, img:"https://lh3.googleusercontent.com/aida-public/AB6AXuAxaIG3Cbxz-VvBmnqKRybGibWzC8wAa5WVFvC_JHpz1JipfcUBUtv93ZAJDYTdtMohtZln3SsEvbSLCrQ2S7srDGJWgcMFqSRBpBruHsEFSH3_ckwzISwplRrHWAckzX-X7i9fBqmAOOendwkWsWMGpay6m2gZ_TDakkrFcdzDGZAEGM2bE9-do0Y8rbuaON5E8tU6KobrepkbFURyXtEJruUD2uKsWLjfk_8JDLAMod4obZ-cbgpqgKzCeLi_MWdadgV6-rneyWep" },
-  { id:"I1003", sku:"USB-C1M", name:"USB-C Cable 1m",      cat:"electron",  unit:"ea", price:650,  tax:18, stock:41 },
-  { id:"I1004", sku:"THM-DIG", name:"Digital Thermometer", cat:"pharmacy",  unit:"ea", price:1200, tax:0,  stock:12 },
-  { id:"I1005", sku:"NB-PK5",  name:"Notebook Pack ×5",   cat:"stationery",unit:"pk", price:480,  tax:12, stock:58 },
-  { id:"I1006", sku:"MSE-WL",  name:"Wireless Mouse",      cat:"electron",  unit:"ea", price:1450, tax:18, stock:19 },
-  { id:"I1007", sku:"BIS-200", name:"Biscuit 200g",        cat:"grocery",   unit:"g",  price:120,  tax:0,  stock:124 },
-  { id:"I1008", sku:"COL-15L", name:"Coca Cola 1.5L",      cat:"beverage",  unit:"L",  price:220,  tax:12, stock:96, img:"https://lh3.googleusercontent.com/aida-public/AB6AXuBRGgUPCkGA6xBl3B7yfi_gJmBQ21UK4h0wPzlA5JTCjkLo5ZJfjs0DrSLKue_3fJDkqPUhrB-BM-COlbmEaVGeCloi5vaH6BZiOP6KAbRnsX5EZN1rhpbVIKGsmc5V029u8HZDMXkOt_U9o7NESp0FjuIoq24SyqqqiLzXHKepDXTjDBBbgu9WpysuHGwJ0ebyBpU3Le-kYEcm4wrc98oBO38_QW3PWze1S3GLaeYjodx47iDAg8LbN4EKd-pc1gC8rD1ZqIZKqJdb" },
-  { id:"I1009", sku:"SHM-400", name:"Shampoo 400ml",       cat:"personal",  unit:"ml", price:720,  tax:18, stock:33 },
-  { id:"I1010", sku:"PNK-500", name:"Paracetamol 500mg",   cat:"pharmacy",  unit:"pk", price:95,   tax:0,  stock:210 },
-  { id:"I1011", sku:"BAT-AA4", name:"Batteries AA ×4",     cat:"electron",  unit:"pk", price:320,  tax:18, stock:47 },
-  { id:"I1012", sku:"OIL-3L",  name:"Cooking Oil 3L",      cat:"grocery",   unit:"L",  price:1650, tax:0,  stock:8,  img:"https://lh3.googleusercontent.com/aida-public/AB6AXuDctzzJX61Mv2ZyQKBYiGx4Yvb3SFNR1RDEWYQGLJnfStuX0wj3LjMFGnqtVBm8582ZPbtKgzgXMivVFBORs0pf6PuXtAfJEhc475K0apu9EnYU8RH-UupaWlNsrwl9Jt4FykW4Fc3f8XOBJCpbPr2EJ-DYZHnehzY86SrSIC2b6bmza8IUX5F2mM1q50Ju0C9F5lMkV7FRWW_FryPlz-CnmxxwwZkwG2V3XPNVJGdPjWyX3Da_nnCdFWKZ6xxur98AYqUENGbPgxeV" },
-  { id:"I1013", sku:"PEN-BLK", name:"Pen Black",           cat:"stationery",unit:"ea", price:45,   tax:12, stock:280 },
-  { id:"I1014", sku:"SOA-150", name:"Soap Bar 150g",        cat:"personal",  unit:"g",  price:110,  tax:18, stock:156 },
-  { id:"I1015", sku:"TEA-500", name:"Tea Pack 500g",        cat:"grocery",   unit:"g",  price:950,  tax:0,  stock:3,  img:"https://lh3.googleusercontent.com/aida-public/AB6AXuAxdNIH2CgdrOoeGst6-K1si4dcKEPKZL-XqVRsH-UB2CY78EM7goEoPbdcky-k4kiXMFWiy94QEb07MUrFBzHRFG9cYp1sTYWX3AB8m7cw8nV1eO9eIfJJ7iCIpzWsweLyxPKhQHdGNgC0p0JMkkxigDjLqgoG0sEZ4DY6xb9gdPWamQcBUjjnchkfirJwIojH-HliIulMV2-y8wBmwt8_4Rwoi8jak55qt8Afx0wDuIfBnah38tg5dEC9TiIHP4SDXy-1GglO04o0" },
-  { id:"I1016", sku:"WAT-15L", name:"Mineral Water 1.5L",  cat:"beverage",  unit:"L",  price:90,   tax:0,  stock:412 },
-  { id:"I1021", sku:"APP-1KG", name:"Fresh Apple 1kg",     cat:"grocery",   unit:"kg", price:350,  tax:5,  stock:12, img:"https://lh3.googleusercontent.com/aida-public/AB6AXuAczJ85zO0f-rGmEcyC9dDMmW4ZA_ODfy5jLbuvQHmO3cNCkjoI7c2N7CD8x013a1lNAvXQLhroPKxSLifrALi1yN7vXmWBWHBQoBRMZTfDpnnIa5ExYLnFh0H6CFCt5zYRdfPdSosoOsfLAo8ur-wAaTLwcoIaxJ28xrZnCQCc0l_GUvGh88uJ5bwx5FzT4M2nxANc8KxDToQB8e2Hr6OHNB7cd2xhh-vVLexpDs_1B4NNTYtRMb8cE4Zu_cZtocJxrSP7yUFLHBjp" },
-  { id:"I1022", sku:"SGR-1KG", name:"Sugar 1kg",           cat:"grocery",   unit:"kg", price:145,  tax:5,  stock:42, img:"https://lh3.googleusercontent.com/aida-public/AB6AXuBXlSofktgDfQlhpfd0fT6vETwucslvgYxZhKKhY2Wvjygg5BXUECyMkASkKeQq7N0GnoMbb3JrW1PKHSJB-GurfcWjeVk4QwK-3U0Up5aNU0bqKvRW8o7VUZwMx99Es-FIL9thkct6OLBpIZrLOnG-E82eI5bP0cXNNtMxUGD0pebuPnSR4S4Y_ZNztAIjFXtz1PkGvoqv5PXXF4U5WBo9wMas0_aspaPjnXu1lCvFZi2sosgbO0984tnaWYpGuAZUkOSYLcxYTXzm" },
-];
+// --- CATALOG CACHE -----------------------------------------------
+// catalogItems: CatalogItemDto[] currently shown in the product grid.
+// Populated from bridge via catalog.listItems or catalog.searchItems.
+let catalogItems = [];
 
-const CATEGORIES = [
-  { id:"all",        name:"All Items",    icon:"apps" },
-  { id:"grocery",    name:"Grocery",      icon:"shopping_basket" },
-  { id:"dairy",      name:"Dairy",        icon:"egg" },
-  { id:"beverage",   name:"Beverages",    icon:"local_bar" },
-  { id:"personal",   name:"Personal Care",icon:"spa" },
-  { id:"pharmacy",   name:"Pharmacy",     icon:"medication" },
-  { id:"electron",   name:"Electronics",  icon:"devices" },
-  { id:"stationery", name:"Stationery",   icon:"edit" },
-];
+// catalogCategories: CatalogCategoryDto[] for the category chip row.
+// Populated from bridge via catalog.listCategories on page load.
+let catalogCategories = [];
 
+// --- CATEGORY COLORS (fallback palette) --------------------------
+// Maps category code (lowercase) to placeholder image bg/fg colors.
+// Covers seed data codes and common aliases for future categories.
 const CAT_COLORS = {
-  all:        { bg:'#EEF2FF', fg:'#4F46E5' },
-  grocery:    { bg:'#ECFDF5', fg:'#059669' },
-  dairy:      { bg:'#EFF6FF', fg:'#2563EB' },
-  beverage:   { bg:'#FFF7ED', fg:'#EA580C' },
-  personal:   { bg:'#FDF4FF', fg:'#9333EA' },
-  pharmacy:   { bg:'#F0FDFA', fg:'#0D9488' },
-  electron:   { bg:'#F5F3FF', fg:'#7C3AED' },
-  stationery: { bg:'#FFFBEB', fg:'#D97706' },
+  all:         { bg:'#EEF2FF', fg:'#4F46E5' },
+  grocery:     { bg:'#ECFDF5', fg:'#059669' },
+  dairy:       { bg:'#EFF6FF', fg:'#2563EB' },
+  beverage:    { bg:'#FFF7ED', fg:'#EA580C' },
+  beverages:   { bg:'#FFF7ED', fg:'#EA580C' },
+  personal:    { bg:'#FDF4FF', fg:'#9333EA' },
+  pharmacy:    { bg:'#F0FDFA', fg:'#0D9488' },
+  electron:    { bg:'#F5F3FF', fg:'#7C3AED' },
+  electronics: { bg:'#F5F3FF', fg:'#7C3AED' },
+  stationery:  { bg:'#FFFBEB', fg:'#D97706' },
+  snacks:      { bg:'#FEF9C3', fg:'#CA8A04' },
+  food:        { bg:'#ECFDF5', fg:'#059669' },
+  drinks:      { bg:'#FFF7ED', fg:'#EA580C' },
 };
 
-// ─── STATE ───────────────────────────────────
+// --- STATE -------------------------------------------------------
+// activeCategoryId: null = All Items; numeric ID = specific bridge category.
 let currentCart    = [];
-let activeCategory = 'all';
-let searchFilter   = '';
+let activeCategoryId = null;
 let activeDiscount = 0;
 let activeVoidLineItem = null;
 let tempManagerPin = '';
 let qtyOverrideTemp = '';
 let selectedLineId  = null;
 let orderSeq = 42;
+let _searchTimer = null;
 
 // ─── UTILS ───────────────────────────────────
 function fmt(n) { return 'PKR ' + new Intl.NumberFormat('en-PK').format(n); }
 function fmtNum(n) { return new Intl.NumberFormat('en-PK').format(n); }
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
 
 // ─── TOAST ───────────────────────────────────
 function showToast(msg, type='success') {
@@ -1022,7 +1017,60 @@ function updateClock() {
     new Date().toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
 }
 
-// ─── INIT ────────────────────────────────────
+// --- BRIDGE HELPER -----------------------------------------------
+// Rejects immediately when the WebView2 bridge transport is not available.
+// Use instead of calling window.posBridge.request directly.
+function bridgeRequest(type, payload) {
+  if (!window.posBridge || !window.posBridge.isAvailable || !window.posBridge.isAvailable()) {
+    return Promise.reject({ code: 'TRANSPORT_UNAVAILABLE', message: 'Bridge not available.' });
+  }
+  return window.posBridge.request(type, payload);
+}
+
+// Returns a bg/fg color pair for a category placeholder image.
+// Looks up by category code (lowercase), falls back to the 'all' swatch.
+function getCatColor(categoryCode) {
+  if (!categoryCode) return CAT_COLORS.all;
+  return CAT_COLORS[(categoryCode + '').toLowerCase()] || CAT_COLORS.all;
+}
+
+// Fetches categories from bridge and renders the chip row.
+// Shows only the "All Items" chip when bridge is unavailable.
+async function loadCatalogCategories() {
+  try {
+    const resp = await bridgeRequest('catalog.listCategories', {});
+    catalogCategories = (resp && Array.isArray(resp.categories)) ? resp.categories : [];
+  } catch (e) {
+    catalogCategories = [];
+    console.warn('[Catalog] listCategories unavailable:', e && e.code);
+  }
+  renderCategories();
+}
+
+// Fetches product grid items from bridge using the supplied query object.
+// Shows a loading placeholder while the request is in flight.
+async function loadCatalogItems(query) {
+  showGridLoading();
+  try {
+    const resp = await bridgeRequest('catalog.listItems', query || {});
+    catalogItems = (resp && Array.isArray(resp.items)) ? resp.items : [];
+  } catch (e) {
+    catalogItems = [];
+    console.warn('[Catalog] listItems unavailable:', e && e.code);
+  }
+  renderGrid();
+}
+
+// Replaces the product grid with a transient loading indicator.
+function showGridLoading() {
+  document.getElementById('products-grid').innerHTML = `
+    <div style="grid-column:1/-1;padding:48px;text-align:center;">
+      <span class="material-symbols-outlined" style="font-size:48px;color:#CBD5E1;display:block;margin-bottom:8px;">inventory_2</span>
+      <p style="font-size:14px;font-weight:600;color:var(--text-muted);">Loading catalog...</p>
+    </div>`;
+}
+
+// --- INIT --------------------------------------------------------
 window.addEventListener('DOMContentLoaded', async () => {
   updateClock();
   setInterval(updateClock, 1000);
@@ -1068,13 +1116,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Load cart
   const savedCart = sessionStorage.getItem('pos_cart');
   if (savedCart) {
-    currentCart = JSON.parse(savedCart);
+    try {
+      currentCart = JSON.parse(savedCart);
+    } catch (e) {
+      currentCart = [];
+    }
   } else {
-    currentCart = [
-      { id:'I1001', name:'Milk 1L Tetra',    qty:2, price:280,  unit:'L',  cat:'dairy' },
-      { id:'I1002', name:'Rice 5kg Premium', qty:1, price:1850, unit:'kg', cat:'grocery' },
-      { id:'I1008', name:'Coca Cola 1.5L',   qty:2, price:220,  unit:'L',  cat:'beverage' },
-    ];
+    currentCart = [];
     saveCartToSession();
   }
 
@@ -1084,8 +1132,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     try { showAttachedCustomer(JSON.parse(cust)); } catch(e) {}
   }
 
-  renderCategories();
-  renderGrid();
+  // Load catalog from bridge (replaces static ITEMS[] / CATEGORIES[]).
+  // Both calls are independent; each updates its own DOM region asynchronously.
+  loadCatalogCategories();
+  loadCatalogItems({});
+
   renderCart();
 
   document.addEventListener('keydown', e => {
@@ -1099,31 +1150,47 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 function saveCartToSession() { sessionStorage.setItem('pos_cart', JSON.stringify(currentCart)); }
 
-// ─── CATEGORIES ──────────────────────────────
+// --- CATEGORIES --------------------------------------------------
+// Renders the category chip row from catalogCategories (bridge-loaded).
+// Always includes a synthetic "All Items" chip at the front.
 function renderCategories() {
   const row = document.getElementById('categories-row');
   row.innerHTML = '';
-  CATEGORIES.forEach(c => {
+
+  // Synthetic "All Items" chip - always present regardless of bridge data.
+  const allBtn = document.createElement('button');
+  allBtn.className = 'cat-chip' + (activeCategoryId === null ? ' active' : '');
+  allBtn.textContent = 'All Items';
+  allBtn.onclick = () => {
+    activeCategoryId = null;
+    renderCategories();
+    loadCatalogItems({});
+  };
+  row.appendChild(allBtn);
+
+  // Real categories from bridge (CatalogCategoryDto: id, code, name, sortOrder).
+  catalogCategories.forEach(c => {
     const btn = document.createElement('button');
-    btn.className = 'cat-chip' + (activeCategory === c.id ? ' active' : '');
+    btn.className = 'cat-chip' + (activeCategoryId === c.id ? ' active' : '');
     btn.textContent = c.name;
-    btn.onclick = () => { activeCategory = c.id; renderCategories(); renderGrid(); };
+    btn.onclick = () => {
+      activeCategoryId = c.id;
+      renderCategories();
+      loadCatalogItems({ categoryId: c.id });
+    };
     row.appendChild(btn);
   });
 }
 
-// ─── PRODUCT GRID ────────────────────────────
+// --- PRODUCT GRID ------------------------------------------------
+// Renders catalogItems (CatalogItemDto[]) into the product card grid.
+// Stock badge shows "Ready" - real inventory tracking is a future phase.
+// No stock numbers are shown; no external image URLs are used.
 function renderGrid() {
   const grid = document.getElementById('products-grid');
   grid.innerHTML = '';
 
-  const filtered = ITEMS.filter(item => {
-    const inCat    = activeCategory === 'all' || item.cat === activeCategory;
-    const inSearch = !searchFilter || item.name.toLowerCase().includes(searchFilter.toLowerCase()) || item.sku.toLowerCase().includes(searchFilter.toLowerCase());
-    return inCat && inSearch;
-  });
-
-  if (!filtered.length) {
+  if (!catalogItems.length) {
     grid.innerHTML = `<div style="grid-column:1/-1;padding:48px;text-align:center;">
       <span class="material-symbols-outlined" style="font-size:48px;color:#CBD5E1;display:block;margin-bottom:8px;">search_off</span>
       <p style="font-size:14px;font-weight:600;color:var(--text-muted);">No items found</p>
@@ -1131,57 +1198,114 @@ function renderGrid() {
     return;
   }
 
-  filtered.forEach(item => {
-    const cc = CAT_COLORS[item.cat] || CAT_COLORS.all;
-    const inCart = currentCart.find(l => l.id === item.id);
-    const stockBadgeClass = item.stock < 5 ? 'stock-low' : 'stock-ok';
-    const stockText = item.stock < 5 ? `Low: ${item.stock}` : `${item.stock}`;
-
-    const imgContent = item.img
-      ? `<img src="${item.img}" alt="${item.name}" onerror="this.parentElement.innerHTML='<div class=product-img-placeholder style=background:${cc.bg};color:${cc.fg}>${item.name[0]}</div>'" />`
-      : `<div class="product-img-placeholder" style="background:${cc.bg};color:${cc.fg};">${item.name[0]}</div>`;
+  catalogItems.forEach(item => {
+    // CatalogItemDto fields (camelCase from bridge):
+    //   itemId, itemCode, itemName, categoryId, categoryCode, categoryName,
+    //   variantId, variantCode, sku, isSellable, identifierValue,
+    //   unitPrice, isTaxIncluded, taxRuleId, taxCode, taxRate,
+    //   unitOfMeasureId, unitCode, unitName
+    const cc        = getCatColor(item.categoryCode);
+    const variantId = String(item.variantId);
+    const inCart    = currentCart.find(l => l.id === variantId);
+    const catLabel  = item.categoryName || item.categoryCode || '';
 
     const card = document.createElement('div');
     card.className = 'product-card';
-    card.onclick = () => addToCart(item.id);
     card.innerHTML = `
       <div class="product-img-wrap">
-        ${imgContent}
-        <span class="stock-badge ${stockBadgeClass}">${stockText}</span>
-        ${inCart ? `<div style="position:absolute;top:6px;left:6px;background:var(--green);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;">×${inCart.qty}</div>` : ''}
+        <div class="product-img-placeholder" style="background:${cc.bg};color:${cc.fg};">${escapeHtml(item.itemName[0])}</div>
+        <span class="stock-badge stock-ok">Ready</span>
+        ${inCart ? `<div style="position:absolute;top:6px;left:6px;background:var(--green);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;">x${inCart.qty}</div>` : ''}
       </div>
       <div class="product-body">
-        <div class="product-cat">${item.cat}</div>
-        <div class="product-name">${item.name}</div>
-        <div class="product-price">${fmt(item.price)}</div>
+        <div class="product-cat">${escapeHtml(catLabel)}</div>
+        <div class="product-name">${escapeHtml(item.itemName)}</div>
+        <div class="product-price">${fmt(item.unitPrice)}</div>
       </div>
-      <button class="product-add-btn" onclick="addToCart('${item.id}');event.stopPropagation();">
+      <button class="product-add-btn">
         <span class="material-symbols-outlined" style="font-size:16px;">add</span>
         Add to Cart
       </button>
     `;
+    // Use closures to capture item safely in the loop (avoids inline onclick issues).
+    card.onclick = () => addToCart(item);
+    card.querySelector('.product-add-btn').onclick = e => { e.stopPropagation(); addToCart(item); };
     grid.appendChild(card);
   });
 }
 
-function handleSearch() { searchFilter = document.getElementById('catalog-search').value; renderGrid(); }
-
-function simulateBarcodeScan() {
-  const r = ITEMS[Math.floor(Math.random() * ITEMS.length)];
-  document.getElementById('catalog-search').value = r.sku;
-  searchFilter = r.sku;
-  renderGrid();
-  addToCart(r.id);
-  showToast(`Scanned: ${r.sku} — ${r.name}`, 'success');
+// --- SEARCH ------------------------------------------------------
+// Debounced bridge-backed search. Empty input reloads the current category.
+// Uses catalog.searchItems for text queries and catalog.listItems for reset.
+function handleSearch() {
+  const val = (document.getElementById('catalog-search').value || '').trim();
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(async () => {
+    if (!val) {
+      // Empty search: reload items respecting the active category filter.
+      loadCatalogItems(activeCategoryId ? { categoryId: activeCategoryId } : {});
+      return;
+    }
+    showGridLoading();
+    try {
+      const resp = await bridgeRequest('catalog.searchItems', { searchText: val, limit: 50 });
+      catalogItems = (resp && Array.isArray(resp.items)) ? resp.items : [];
+    } catch (e) {
+      catalogItems = [];
+      console.warn('[Catalog] searchItems unavailable:', e && e.code);
+    }
+    renderGrid();
+  }, 280);
 }
 
-// ─── CART ────────────────────────────────────
-function addToCart(itemId) {
-  const item = ITEMS.find(i => i.id === itemId);
+// --- SCAN / CODE LOOKUP ------------------------------------------
+// Reads the current search input and looks up via catalog.lookupByIdentifier.
+// If found, adds the item to the cart and clears the search box.
+// Hardware scanner integration is deferred to Phase 7.4.
+async function simulateBarcodeScan() {
+  const code = (document.getElementById('catalog-search').value || '').trim();
+  if (!code) {
+    showToast('Enter a barcode or item code in the search box, then tap Scan.', 'info');
+    return;
+  }
+  try {
+    const resp = await bridgeRequest('catalog.lookupByIdentifier', { identifierValue: code });
+    if (resp && resp.found && resp.item) {
+      addToCart(resp.item);
+      document.getElementById('catalog-search').value = '';
+      showToast('Scanned: ' + escapeHtml(resp.item.itemName), 'success');
+    } else {
+      showToast('Item not found for: ' + code, 'warning');
+    }
+  } catch (e) {
+    showToast('Scan lookup unavailable. Check connection.', 'error');
+    console.warn('[Catalog] lookupByIdentifier unavailable:', e && e.code);
+  }
+}
+
+// --- CART --------------------------------------------------------
+// addToCart accepts a full CatalogItemDto from the catalog cache or a bridge
+// lookupByIdentifier response. Cart line id = String(variantId) for uniqueness.
+function addToCart(item) {
   if (!item) return;
-  const ex = currentCart.find(l => l.id === itemId);
-  if (ex) { ex.qty++; showToast(`${item.name} qty updated`, 'success'); }
-  else { currentCart.push({ id:item.id, name:item.name, qty:1, price:item.price, unit:item.unit, cat:item.cat }); showToast(`Added: ${item.name}`, 'success'); }
+  const variantId = String(item.variantId);
+  const ex = currentCart.find(l => l.id === variantId);
+  if (ex) {
+    ex.qty++;
+    showToast(escapeHtml(item.itemName) + ' qty updated', 'success');
+  } else {
+    currentCart.push({
+      id:        variantId,
+      itemId:    item.itemId,
+      variantId: item.variantId,
+      name:      item.itemName,
+      qty:       1,
+      price:     item.unitPrice,
+      unit:      item.unitCode,
+      cat:       item.categoryCode || item.categoryName || 'catalog'
+    });
+    showToast('Added: ' + escapeHtml(item.itemName), 'success');
+  }
   saveCartToSession();
   renderCart();
   renderGrid();
@@ -1224,8 +1348,8 @@ function renderCart() {
     row.onclick = () => { selectedLineId = (selectedLineId === line.id ? null : line.id); renderCart(); };
     row.innerHTML = `
       <div class="cart-item-info">
-        <div class="cart-item-name">${line.name}</div>
-        <div class="cart-item-sub">${fmt(line.price)} / ${line.unit}</div>
+        <div class="cart-item-name">${escapeHtml(line.name)}</div>
+        <div class="cart-item-sub">${fmt(line.price)} / ${escapeHtml(line.unit)}</div>
       </div>
       <div class="cart-item-qty">
         <button class="qty-btn" onclick="event.stopPropagation();changeLineQty('${line.id}',-1)">−</button>

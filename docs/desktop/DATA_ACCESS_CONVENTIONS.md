@@ -134,6 +134,53 @@ public async Task<WriteResult> UpdateItemStatusAsync(int itemId, ItemStatus newS
 ## 7. Security and Logging Guidelines
 
 * **No Secrets/Sensitive Data:** Never store or log PINs, cleartext passwords, OAuth tokens, credit card PANs, security keys, or database connection strings.
-* **Safe Diagnostics:** Log only structural metadata such as `requestId`, message `type`, error codes, and record counts.
 * **No Raw Payload Logging:** Never log the full request payload or raw JSON strings containing operator inputs.
+* **Safe Diagnostics:** Log only structural metadata such as `requestId`, message `type`, error codes, and record counts.
 * **Safe Error Message Returns:** Do not return stack traces, internal file paths, or raw DB exception details in response envelopes. Keep messages general and friendly, using code strings (e.g. `VALIDATION_FAILED`) for diagnostics.
+
+---
+
+## 8. Phase 5 Author Checklist
+
+This checklist gates all upcoming Phase 5 flows:
+* **Authentication/Login Service:** Authenticating operators, starting sessions.
+* **Shift Open/Close:** Initiating and ending terminal operational shifts.
+* **Order/Cart Persistence:** Storing in-progress and completed orders.
+* **Payment Persistence:** Tracking tender details, cash drops, change calculations.
+* **Cash Control:** Tracking cash drawer lifecycle (openings, balances).
+* **Z-Report:** Calculating and saving terminal session end summaries.
+
+### Architecture & Scoping Rules
+* [ ] **Thin Bridge Handlers:** Keep WebView2 router handlers strictly as correlation wrappers. Never put direct DB queries, validation logic, or mapping logic in the router handlers.
+* [ ] **C# Service Logic:** All calculations, constraints validation, and state transformations must reside in C# services.
+* [ ] **No Direct JS Database Access:** The WebView2 frontend (HTML/JS) must communicate only through message router envelopes.
+* [ ] **Scoped Services & DbContext Only:** Scoped services receive the scoped DbContext implicitly. Do not inject `PosLocalDbContext` into singleton or transient services.
+* [ ] **Fully Async Execution:** All database pathways (queries, writes) must be asynchronous and carry the `cancellationToken`.
+
+### Tenant Isolation & Fail-Closed Behavior
+* [ ] **Tenant Scoping by Default:** Rely strictly on the configured EF global query filters.
+* [ ] **No IgnoreQueryFilters:** Never use `IgnoreQueryFilters()` in normal application services (restricted only to seeding/sync logic).
+* [ ] **Fail-Closed Unprovisioned State:** When the context is unprovisioned, `CurrentTenantId` must evaluate to `0` (or `InvalidTenantId`), returning empty lists rather than leaking data.
+
+### Performance & Mutations
+* [ ] **AsNoTracking on Reads:** Read-only services must query with `.AsNoTracking()` to maximize SQLite efficiency.
+* [ ] **Validate Before Save:** Write services must validate state in C# before calling `SaveChangesAsync()`.
+* [ ] **Append-Only Transactions:** Session, payment, order, and shift tables must utilize append-only inserts rather than mutable updates.
+
+### Security, Logging & Testing
+* [ ] **No Secrets Logging:** Never log PINs, credit card details, passwords, tokens, or security keys.
+* [ ] **No Raw Payload Logging:** Avoid dumping full JSON request envelopes in debug logs.
+* [ ] **Realistic Testing:** Implement tests utilizing SQLite-backed in-memory databases (reusing `SqliteTestDatabase`). Never use the EF InMemory provider.
+* [ ] **Dual-Path Test Coverage:** Every query/write service must have tests proving behavior under both provisioned (returning data) and unprovisioned (returning empty/fail-closed) contexts.
+
+---
+
+## 9. Milestone 4.5 Sign-off
+
+Milestone 4.5 is officially signed off and complete. Ready to gate all Phase 5 desktop integration flows.
+
+### Verification Evidence:
+1. **Scope Create/Dispose Verified:** Integration tests verify that `PosWebMessageRouter` instantiates a dedicated DI scope per message routed and disposes all resolved services and DB connections upon completion.
+2. **SQLite Test Harness Standardized:** `SqliteTestDatabase` provides a clean, reusable SQLite in-memory test database harness, reducing duplicate setup code across test suites.
+3. **Tenant Query Filters Validated:** Automated query filter tests prove that tenant isolation applies consistently across all 15 local database entities.
+4. **All Tests Pass:** `POS.Desktop.Tests` baseline is at **179/179** passing tests, and `POS.Tests` is at **49/49** passing tests.

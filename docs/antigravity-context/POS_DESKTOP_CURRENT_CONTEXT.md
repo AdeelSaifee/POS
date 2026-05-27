@@ -1,23 +1,24 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 4 / Milestone 4.5 - Data-access conventions & tenant-filter validation
-- **Group**: Group 3 (Tasks 4.5.6 - 4.5.8) - Completed
+- **Milestone**: Phase 4 / Milestone 4.5 - Data-access conventions & tenant-filter validation - Completed
+- **Group**: Group 4 (Tasks 4.5.9 - 4.5.10) - Completed
 
 ## Status of Tasks in this Session
-- `[x]` Task 4.5.6 - Verify scope create/dispose (Verified)
-- `[x]` Task 4.5.7 - Set up SQLite test harness (Verified)
-- `[x]` Task 4.5.8 - Validate filters across entities (Verified)
+- `[x]` Task 4.5.9 - Document conventions for Phase 5 (Completed)
+- `[x]` Task 4.5.10 - Review/sign-off conventions (Completed)
 
 ## Files Created/Changed in this Session
 
-### Group 3 (Current uncommitted changes)
-- [ADD] `POS.Desktop.Tests/Data/TenantQueryFilterTests.cs`
-- [ADD] `POS.Desktop.Tests/TestSupport/SqliteTestDatabase.cs`
-- [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs`
+### Group 4 (Current uncommitted changes)
+- [MODIFY] `docs/desktop/DATA_ACCESS_CONVENTIONS.md`
 - [MODIFY] `docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md`
 
 ### Prior Completed Groups & Milestones
+- Group 3 (Tasks 4.5.6 - 4.5.8) - Committed:
+  - [ADD] `POS.Desktop.Tests/Data/TenantQueryFilterTests.cs`
+  - [ADD] `POS.Desktop.Tests/TestSupport/SqliteTestDatabase.cs`
+  - [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs`
 - Group 2 (Tasks 4.5.4 - 4.5.5) - Committed
 - Group 1 (Tasks 4.5.1 - 4.5.3) - Committed:
   - [ADD] `docs/desktop/DATA_ACCESS_CONVENTIONS.md`
@@ -43,9 +44,9 @@
 - [ADD] `POS.Desktop.Tests/Assets/MainCheckoutCatalogWiringTests.cs`
 
 ## Scope Boundaries & Constraints
-- Milestone 4.5 Group 3 focuses on verifying scope create/dispose, creating a reusable SQLite test database factory, and validating query filters across all 15 local entities.
+- Milestone 4.5 Group 4 focuses on documenting conventions for Phase 5 and final sign-off of Milestone 4.5.
 - Did NOT make production C# code changes, UI client changes, or migration changes.
-- Did NOT start Milestone 4.5 Group 4 (Tasks 4.5.9 - 4.5.10).
+- Did NOT start Phase 5 implementation.
 - Work is left in the working directory uncommitted and unpushed for review.
 
 ## Important Decisions
@@ -62,11 +63,9 @@
 - `catalog.searchItems` - payload: `{ searchText?, limit? }`, response: `{ items: [...] }`
 - `catalog.lookupByIdentifier` - payload: `{ identifierValue }`, response: `{ found, item }`
 
-## Verification Summary (Milestone 4.5 Group 3)
+## Verification Summary (Milestone 4.5 Group 4)
 - `git status --short --untracked-files=all`:
-  - ` M POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs`
-  - `?? POS.Desktop.Tests/Data/TenantQueryFilterTests.cs`
-  - `?? POS.Desktop.Tests/TestSupport/SqliteTestDatabase.cs`
+  - ` M docs/desktop/DATA_ACCESS_CONVENTIONS.md`
   - ` M docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md`
 - `dotnet build POS.slnx --configuration Debug`: 0 warnings, 0 errors.
 - `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: 179/179 passed.
@@ -100,7 +99,7 @@
 - `POS.Desktop.Tests` baseline passes at 161/161.
 
 ## Remaining Next Milestone
-- Phase 4 / Milestone 4.5 Group 4 (Tasks 4.5.9 - 4.5.10)
+- Phase 5 / Milestone 5.1 - Authentication & login service
 
 ## Known Risks & Notes
 - No EF navigation properties on catalog entities - service uses explicit LINQ joins.

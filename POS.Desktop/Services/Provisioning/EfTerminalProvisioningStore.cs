@@ -37,7 +37,7 @@ public sealed class EfTerminalProvisioningStore : ITerminalProvisioningStore
         return new ProvisioningRecord(entity.TenantId, entity.LocationId, entity.TerminalId, entity.UpdatedAt);
     }
 
-    public async Task<ProvisioningResult> ProvisionTerminalAsync(int tenantId, int locationId, int terminalId, CancellationToken cancellationToken)
+    public async Task<ProvisioningResult> ProvisionTerminalAsync(int tenantId, int locationId, int terminalId, bool allowReprovision, CancellationToken cancellationToken)
     {
         // 1. Validation
         if (tenantId <= 0 || locationId <= 0 || terminalId <= 0)
@@ -59,6 +59,7 @@ public sealed class EfTerminalProvisioningStore : ITerminalProvisioningStore
                                      entity.TerminalId.HasValue && entity.TerminalId.Value > 0;
 
             if (isFullyProvisioned &&
+                !allowReprovision &&
                 (entity.TenantId != tenantId ||
                  entity.LocationId != locationId ||
                  entity.TerminalId != terminalId))

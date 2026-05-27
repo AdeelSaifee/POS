@@ -310,7 +310,20 @@ public sealed class PosWebMessageRouter
                 return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "IDs must be valid 32-bit integers.");
             }
 
-            var result = await provisioningStore.ProvisionTerminalAsync(tenantId, locationId, terminalId, cancellationToken);
+            bool allowReprovision = false;
+            if (doc.RootElement.TryGetProperty("allowReprovision", out var allowReprovisionProp))
+            {
+                if (allowReprovisionProp.ValueKind == System.Text.Json.JsonValueKind.True || allowReprovisionProp.ValueKind == System.Text.Json.JsonValueKind.False)
+                {
+                    allowReprovision = allowReprovisionProp.GetBoolean();
+                }
+                else
+                {
+                    return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "'allowReprovision' must be a boolean.");
+                }
+            }
+
+            var result = await provisioningStore.ProvisionTerminalAsync(tenantId, locationId, terminalId, allowReprovision, cancellationToken);
             if (!result.Success)
             {
                 return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, result.ErrorCode ?? "PROVISIONING_FAILED", result.ErrorMessage ?? "Provisioning failed.");

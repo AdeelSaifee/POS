@@ -332,4 +332,207 @@ public sealed class TerminalProvisioningStoreHandlerTests : IDisposable
         Assert.Equal(System.Text.Json.JsonValueKind.Null, root.GetProperty("locationId").ValueKind);
         Assert.Equal(System.Text.Json.JsonValueKind.Null, root.GetProperty("terminalId").ValueKind);
     }
+
+    [Fact]
+    public async Task Reprovision_WithExplicitOverride_UpdatesRowAndContext()
+    {
+        // Arrange
+        var (db, context, store, router) = CreateContext();
+
+        // 1. Provision once
+        var req1 = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "provisioning.provisionTerminal",
+            RequestId = "req-prov-10",
+            Payload = CreatePayloadElement(new { tenantId = 42, locationId = 101, terminalId = 999 })
+        };
+        var res1 = await router.RouteAsync(req1, CancellationToken.None);
+        Assert.True(res1.Ok);
+
+        // 2. Attempt to provision with different values AND allowReprovision = true
+        var req2 = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "provisioning.provisionTerminal",
+            RequestId = "req-prov-11",
+            Payload = CreatePayloadElement(new { tenantId = 99, locationId = 202, terminalId = 888, allowReprovision = true })
+        };
+
+        // Act
+        var res2 = await router.RouteAsync(req2, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(res2);
+        Assert.True(res2.Ok);
+        Assert.Null(res2.Error);
+
+        // Verify row was updated in DB
+        var dbRow = db.TerminalProvisioning.SingleOrDefault(x => x.Id == 1);
+        Assert.NotNull(dbRow);
+        Assert.Equal(99, dbRow.TenantId);
+        Assert.Equal(202, dbRow.LocationId);
+        Assert.Equal(888, dbRow.TerminalId);
+
+        // Verify in-memory context was updated
+        Assert.True(context.IsProvisioned);
+        Assert.Equal(99, context.CurrentTenantId);
+        Assert.Equal(202, context.CurrentLocationId);
+        Assert.Equal(888, context.CurrentTerminalId);
+    }
+
+    [Fact]
+    public async Task Reprovision_WithoutOverride_RemainsBlocked()
+    {
+        // Arrange
+        var (db, context, store, router) = CreateContext();
+
+        // 1. Provision once
+        var req1 = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "provisioning.provisionTerminal",
+            RequestId = "req-prov-12",
+            Payload = CreatePayloadElement(new { tenantId = 42, locationId = 101, terminalId = 999 })
+        };
+        await router.RouteAsync(req1, CancellationToken.None);
+
+        // 2. Attempt to provision with different values (allowReprovision omitted or false)
+        var req2 = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "provisioning.provisionTerminal",
+            RequestId = "req-prov-13",
+            Payload = CreatePayloadElement(new { tenantId = 99, locationId = 202, terminalId = 888, allowReprovision = false })
+        };
+
+        // Act
+        var res2 = await router.RouteAsync(req2, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(res2);
+        Assert.False(res2.Ok);
+        Assert.NotNull(res2.Error);
+        Assert.Equal("REPROVISION_BLOCKED", res2.Error.Code);
+
+        // Ensure database row was not updated
+        var dbRow = db.TerminalProvisioning.Single(x => x.Id == 1);
+        Assert.Equal(42, dbRow.TenantId);
+        Assert.Equal(101, dbRow.LocationId);
+        Assert.Equal(999, dbRow.TerminalId);
+
+        // Ensure context was not updated
+        Assert.Equal(42, context.CurrentTenantId);
+    }
+
+    [Fact]
+    public async Task Reprovision_InvalidOverridePayload_FailsSafely()
+    {
+        // Arrange
+        var (db, context, store, router) = CreateContext();
+
+        // 1. Provision once
+        var req1 = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "provisioning.provisionTerminal",
+            RequestId = "req-prov-14",
+            Payload = CreatePayloadElement(new { tenantId = 42, locationId = 101, terminalId = 999 })
+        };
+        await router.RouteAsync(req1, CancellationToken.None);
+
+        // 2. Attempt to provision with malformed allowReprovision payload
+        var req2 = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "provisioning.provisionTerminal",
+            RequestId = "req-prov-15",
+            Payload = CreatePayloadElement(new { tenantId = 99, locationId = 202, terminalId = 888, allowReprovision = "not-a-boolean" })
+        };
+
+        // Act
+        var res2 = await router.RouteAsync(req2, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(res2);
+        Assert.False(res2.Ok);
+        Assert.NotNull(res2.Error);
+        Assert.Equal("MALFORMED_REQUEST", res2.Error.Code);
+
+        // Ensure database row was not updated
+        var dbRow = db.TerminalProvisioning.Single(x => x.Id == 1);
+        Assert.Equal(42, dbRow.TenantId);
+    }
+
+    [Fact]
+    public async Task ProvisionTerminal_SucceedsWithoutCatalogSeed()
+    {
+        // Arrange
+        // CreateContext ensures db.Database.EnsureCreated() is called, creating tables from the current model.
+        // It does not insert any catalog entities.
+        var (db, context, store, router) = CreateContext();
+
+        // Assert no catalog data exists (currently no catalog tables exist in model, but we verify we only depend on TerminalProvisioning)
+
+        var request = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "provisioning.provisionTerminal",
+            RequestId = "req-prov-16",
+            Payload = CreatePayloadElement(new { tenantId = 42, locationId = 101, terminalId = 999 })
+        };
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.True(response.Ok);
+        Assert.Null(response.Error);
+
+        var dbRow = db.TerminalProvisioning.SingleOrDefault(x => x.Id == 1);
+        Assert.NotNull(dbRow);
+    }
+
+    [Fact]
+    public async Task GetProvisioningStatus_WorksWithoutCatalogSeed()
+    {
+        // Arrange
+        var (db, context, store, router) = CreateContext();
+
+        // 1. Provision first
+        var provisionRequest = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "provisioning.provisionTerminal",
+            RequestId = "req-prov-17",
+            Payload = CreatePayloadElement(new { tenantId = 42, locationId = 101, terminalId = 999 })
+        };
+        await router.RouteAsync(provisionRequest, CancellationToken.None);
+
+        // 2. Fetch status
+        var statusRequest = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "provisioning.getProvisioningStatus",
+            RequestId = "req-status-4"
+        };
+
+        // Act
+        var response = await router.RouteAsync(statusRequest, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.True(response.Ok);
+        Assert.NotNull(response.Payload);
+
+        var payloadJson = System.Text.Json.JsonSerializer.Serialize(response.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = System.Text.Json.JsonDocument.Parse(payloadJson);
+        var root = doc.RootElement;
+
+        Assert.True(root.GetProperty("isProvisioned").GetBoolean());
+        Assert.Equal(42, root.GetProperty("tenantId").GetInt32());
+        Assert.Equal(101, root.GetProperty("locationId").GetInt32());
+        Assert.Equal(999, root.GetProperty("terminalId").GetInt32());
+    }
 }

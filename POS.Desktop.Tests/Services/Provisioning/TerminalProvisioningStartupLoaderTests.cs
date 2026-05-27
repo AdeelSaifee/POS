@@ -358,7 +358,7 @@ public sealed class TerminalProvisioningStartupLoaderTests : IDisposable
             => throw new InvalidOperationException("Simulated SQLite read failure.");
 
         public Task<ProvisioningResult> ProvisionTerminalAsync(
-            int tenantId, int locationId, int terminalId, CancellationToken cancellationToken)
+            int tenantId, int locationId, int terminalId, bool allowReprovision, CancellationToken cancellationToken)
             => throw new InvalidOperationException("Simulated SQLite write failure.");
     }
 }

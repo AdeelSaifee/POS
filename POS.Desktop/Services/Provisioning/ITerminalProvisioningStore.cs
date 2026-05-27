@@ -16,7 +16,7 @@ public interface ITerminalProvisioningStore
     /// <summary>
     /// Persists the terminal provisioning record to the persistent store and updates the in-memory context.
     /// </summary>
-    Task<ProvisioningResult> ProvisionTerminalAsync(int tenantId, int locationId, int terminalId, CancellationToken cancellationToken);
+    Task<ProvisioningResult> ProvisionTerminalAsync(int tenantId, int locationId, int terminalId, bool allowReprovision, CancellationToken cancellationToken);
 }
 
 /// <summary>

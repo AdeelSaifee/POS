@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using POS.Desktop.Bridge;
 using POS.Desktop.Data;
 using POS.Desktop.Data.LocalEntities;
+using POS.Desktop.Data.Seeding;
 using POS.Desktop.Services.Provisioning;
 using POS.Desktop.Shell;
 using POS.Shared.Contracts;
@@ -51,6 +52,9 @@ public sealed class TerminalProvisioningStoreHandlerTests : IDisposable
         // Register in-memory context (default unprovisioned)
         var inMemoryContext = new ProvisionedTerminalContext(ProvisioningRecord.Unprovisioned);
         services.AddSingleton<IProvisionedTerminalContext>(inMemoryContext);
+
+        // Register seeder (required by EfTerminalProvisioningStore constructor)
+        services.AddScoped<ILocalCatalogSeeder, LocalCatalogSeeder>();
 
         // Register store
         services.AddScoped<ITerminalProvisioningStore, EfTerminalProvisioningStore>();

@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using POS.Desktop.Data;
 using POS.Desktop.Data.LocalEntities;
+using POS.Desktop.Data.Seeding;
 using POS.Desktop.Services.Provisioning;
 using POS.Shared.Contracts;
 using Xunit;
@@ -55,8 +56,10 @@ public sealed class TerminalProvisioningStartupLoaderTests : IDisposable
     private TerminalProvisioningStartupLoader CreateLoader(ProvisionedTerminalContext runtimeContext)
     {
         var services = new ServiceCollection();
+        services.AddLogging();
         services.AddDbContext<PosLocalDbContext>(opt => opt.UseSqlite(_connection));
         services.AddSingleton<IProvisionedTerminalContext>(runtimeContext);
+        services.AddScoped<ILocalCatalogSeeder, LocalCatalogSeeder>();
         services.AddScoped<ITerminalProvisioningStore, EfTerminalProvisioningStore>();
 
         var provider = services.BuildServiceProvider();
@@ -208,10 +211,12 @@ public sealed class TerminalProvisioningStartupLoaderTests : IDisposable
                 var connectionString = $"Data Source={tempDbPath}";
 
                 var services = new ServiceCollection();
+                services.AddLogging();
                 services.AddDbContext<PosLocalDbContext>(opt => opt.UseSqlite(connectionString));
 
                 var runtimeContext = new ProvisionedTerminalContext(); // starts unprovisioned
                 services.AddSingleton<IProvisionedTerminalContext>(runtimeContext);
+                services.AddScoped<ILocalCatalogSeeder, LocalCatalogSeeder>();
                 services.AddScoped<ITerminalProvisioningStore, EfTerminalProvisioningStore>();
 
                 var provider = services.BuildServiceProvider();

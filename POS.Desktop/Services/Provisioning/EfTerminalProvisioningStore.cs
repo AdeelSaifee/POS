@@ -2,8 +2,10 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using POS.Desktop.Data;
 using POS.Desktop.Data.LocalEntities;
+using POS.Desktop.Data.Seeding;
 using POS.Shared.Contracts;
 
 namespace POS.Desktop.Services.Provisioning;
@@ -15,13 +17,19 @@ public sealed class EfTerminalProvisioningStore : ITerminalProvisioningStore
 {
     private readonly PosLocalDbContext _dbContext;
     private readonly IProvisionedTerminalContext _provisionedTerminalContext;
+    private readonly ILocalCatalogSeeder _catalogSeeder;
+    private readonly ILogger<EfTerminalProvisioningStore> _logger;
 
     public EfTerminalProvisioningStore(
         PosLocalDbContext dbContext,
-        IProvisionedTerminalContext provisionedTerminalContext)
+        IProvisionedTerminalContext provisionedTerminalContext,
+        ILocalCatalogSeeder catalogSeeder,
+        ILogger<EfTerminalProvisioningStore> logger)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         _provisionedTerminalContext = provisionedTerminalContext ?? throw new ArgumentNullException(nameof(provisionedTerminalContext));
+        _catalogSeeder = catalogSeeder ?? throw new ArgumentNullException(nameof(catalogSeeder));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<ProvisioningRecord> GetProvisioningRecordAsync(CancellationToken cancellationToken)
@@ -95,6 +103,20 @@ public sealed class EfTerminalProvisioningStore : ITerminalProvisioningStore
         if (_provisionedTerminalContext is ProvisionedTerminalContext concreteContext)
         {
             concreteContext.UpdateState(newRecord);
+        }
+
+        // 5. Seed local catalog for the newly provisioned tenant.
+        // The provisioning row is already committed. If seeding fails the caller can retry
+        // with the same IDs — provisioning will update the existing record and seeding will
+        // attempt again. The seeder is idempotent so retries are safe.
+        try
+        {
+            await _catalogSeeder.SeedAsync(tenantId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Catalog seed failed for tenant {TenantId} after provisioning.", tenantId);
+            return new ProvisioningResult(false, "SEED_FAILED", "Catalog seed failed after provisioning. Please retry.");
         }
 
         return new ProvisioningResult(true);

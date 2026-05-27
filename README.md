@@ -17,14 +17,15 @@ The desktop terminal UI is hosted in a WPF shell using Microsoft Edge WebView2, 
 
 ## POS.Desktop UI Integration Status
 
-The repository contains the implementation of the desktop UI integration up to **Milestone 3.4**:
+The repository contains the implementation of the desktop UI integration up to **Milestone 3.5**:
 - **Phase 1 Complete:** Generic Host bootstrap (Dependency Injection), borderless full-screen WebView2 shell, startup SQLite migration, and diagnostics/Evergreen runtime presence guard.
 - **Phase 2 Complete:** Asset ingestion of 7 HTML screens hosted under `https://pos.app/` origin via virtual host mapping (retiring the simulator wrapper `index.html` for in-app views).
 - **Milestone 3.1 Complete:** Two-way asynchronous postMessage transport channel.
 - **Milestone 3.2 Complete:** Standardized v1 message envelope (`version`, `type`, `requestId`, `payload`, `ok`, `error`) with camelCase serialization and JS bridge helper.
 - **Milestone 3.3 Complete:** `PosWebMessageRouter` dispatching bridge requests to registered C# handlers within scoped DI context.
 - **Milestone 3.4 Complete:** In-memory operator session service (`ISessionService`), `session.get` and `session.clear` bridge message handlers, and post-login UI redirection utilizing bridge-backed C# session state.
-- **Next Milestone:** **Milestone 3.5** — Swap remaining browser local state for bridge calls (implementing login PIN proof over the bridge).
+- **Milestone 3.5 Complete:** Login PIN proof now goes through the JS↔C# bridge using `auth.validatePin`; valid stub credentials set `ISessionService`; `terminal_login.html` no longer compares PINs in JS and no longer writes to `localStorage.terminal_operator`.
+- **Next Milestone:** **Phase 4 / Milestone 4.1** — Real provisioned-terminal context.
 
 For detailed phase roadmaps and task lists, see:
 - [DESKTOP_UI_PHASE_MILESTONES.md](DESKTOP_UI_PHASE_MILESTONES.md)
@@ -41,6 +42,9 @@ Communication between the hosted JavaScript UI and the C# WPF shell goes through
   - `transport.echo` (Echo test)
   - `session.get` (Retrieves active operator session details)
   - `session.clear` (Clears operator session on logout/shift close)
+  - `auth.validatePin` (Validates login PIN credentials over the bridge)
+
+The `auth.validatePin` action is currently implemented as a temporary deterministic stub for proving the login flow. It validates operator credentials against a local mock collection in C# and starts the in-memory operator session upon success. Real Employee/database verification is deferred to Phase 5.1 work.
 
 For conventions and schema details, see:
 - [BRIDGE_ENVELOPE_SCHEMA.md](docs/bridge/BRIDGE_ENVELOPE_SCHEMA.md)
@@ -53,10 +57,19 @@ The operator session tracks identity and login state for the active cashier:
 - **Lifetime:** In-memory, process-lifetime only. No SQLite persistence.
 - **Scope:** Single terminal, single active operator. Registered as a Singleton `ISessionService`.
 - **Security:** Contains only safe metadata (`operatorId`, `displayName`, `role`, `loginTime`, `terminalId`, `sessionId`). It **never** stores sensitive credentials like PINs, passwords, payment card tokens, or payment details.
-- **State Control:** Exposes current status through `session.get` and clears state via `session.clear` on shift close/logout. PIN and Employee verification logic are not yet part of the session state. (Removal of `localStorage.terminal_operator` on login is deferred to Milestone 3.5).
-- **Source of Truth:** The C# session service is the single source of truth for operator status.
+- **State Control:** Exposes current status through `session.get` and clears state via `session.clear` on shift close/logout. The C# session is set by `auth.validatePin` upon a valid login. `terminal_login.html` no longer writes the operator identity to `localStorage.terminal_operator`.
+- **Source of Truth:** The C# session service is the single source of truth for operator status. `terminal_config` localStorage usage remains untouched for now and is deferred to Phase 4.2 provisioning cleanup.
 
 For more details, see [OPERATOR_SESSION_MODEL.md](docs/bridge/OPERATOR_SESSION_MODEL.md).
+
+## Login PIN Proof Status
+
+The operator login workflow preserves the existing visual operator grid and 4-digit keypad UX, but delegates the PIN validation decision to C# via `posBridge.request('auth.validatePin', ...)`:
+- In-JS PIN comparison has been removed.
+- Operator PIN values were completely removed from the JavaScript `operators` collection in `terminal_login.html`.
+- A successful login continues to trigger the checkmark overlay animation and navigates to `shift_open.html`.
+- An invalid login still triggers the error shake and red dots UI feedback.
+- This is a stub proof of authentication; integration with real database entities belongs to Phase 5.1.
 
 ## Prerequisites
 
@@ -110,7 +123,7 @@ dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug
 dotnet build POS.slnx --configuration Debug
 ```
 
-API tests use `ApiWebApplicationFactory` with a stubbed JWT handler (`TestAuthenticationHandler`) and a seeded in-memory dataset. Desktop tests cover `PosWebMessageRouter` and `OperatorSessionService` lifecycle contracts.
+API tests use `ApiWebApplicationFactory` with a stubbed JWT handler (`TestAuthenticationHandler`) and a seeded in-memory dataset. Desktop tests cover the `PosWebMessageRouter`, operator session lifecycle, `auth.validatePin` routing, validation outcomes (valid/invalid PIN), and session state retrieval through `session.get`.
 
 ## Key Endpoints
 
@@ -133,4 +146,11 @@ All endpoints (except `/api/health`) require a JWT bearer token whose claims sat
 
 ## Project Status
 
-Central API/read endpoints are in place. The `POS.Desktop` WPF host shell serves local HTML/CSS/JS screens under `https://pos.app/`. The JS↔C# bridge foundation, message router, and in-memory operator session service are fully implemented up to Milestone 3.4. Hardware integration stubs (`POS.Desktop.Hardware`), central push/pull sync synchronization logic, and real offline business flows remain as future work. Milestone 3.5 (bridge-backed login PIN verification) is the next milestone to be implemented.
+Central API/read endpoints are in place. The `POS.Desktop` WPF host shell serves local HTML/CSS/JS screens under `https://pos.app/`. The JS↔C# bridge foundation, message router, in-memory operator session service, and bridge-backed login PIN proof are complete through Milestone 3.5.
+
+Remaining future work:
+- **Phase 4:** Real provisioned terminal context and SQLite local services.
+- **Phase 5:** Real Employee-backed authentication, shift, order, payment, cash control, and Z-report flows.
+- **Phase 6:** Push/pull synchronization.
+- **Phase 7:** Hardware integration.
+- **Phase 8:** Packaging, offline assets, and telemetry hardening.

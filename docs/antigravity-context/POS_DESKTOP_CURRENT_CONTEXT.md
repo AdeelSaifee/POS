@@ -1,8 +1,8 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 5 / Milestone 5.5 - Cash control service - **IN PROGRESS**
-- **Group**: Group 4 (Task 5.5.8 - completed)
+- **Milestone**: Phase 5 / Milestone 5.5 - Cash control service - **COMPLETE**
+- **Group**: Group 5 (Tasks 5.5.9 to 5.5.10 - completed)
 
 ## Status of All Milestone 5.5 Tasks (Current)
 - `[x]` Task 5.5.1 - Define ICashControlService
@@ -13,8 +13,8 @@
 - `[x]` Task 5.5.6 - Compute threshold alerts
 - `[x]` Task 5.5.7 - Add handlers + ledger query
 - `[x]` Task 5.5.8 - Wire cash_control.html + remove pos_safe_drops
-- `[ ]` Task 5.5.9 - Tie movements to active shift
-- `[ ]` Task 5.5.10 - Test drops/injections + alerts
+- `[x]` Task 5.5.9 - Tie movements to active shift
+- `[x]` Task 5.5.10 - Test drops/injections + alerts
 
 ## Status of All Milestone 5.4 Tasks
 - `[x]` Task 5.4.1 - Define IPaymentService (Tender, change, completion contract)
@@ -79,7 +79,13 @@
 - [SYNC] `docs/ui-prototype/screens/cash_control.html` (Synchronized byte-identical copy)
 - [ADD] `POS.Desktop.Tests/Shell/CashControlScreenStaticTests.cs` (Added 18 static tests checking file parity, bridge endpoint invocations, and sessionStorage exclusions)
 
-### Test count: 425 passing (was 407; +18 new CashControl static tests)
+### Group 5 (Tasks 5.5.9 to 5.5.10 - completed)
+- [MODIFY] `POS.Desktop.Tests/Services/CashControl/CashControlServiceTests.cs` (Added 10 tests verifying stale shifts, terminal/location shift isolation, null session ShiftId grace, valid drop details persistence, duplicate idempotency checks, non-Drop types rejection, alert state transition, and configured limits fallback)
+- [MODIFY] `POS.Desktop.Tests/Shell/CashControlBridgeHandlerTests.cs` (Added 6 tests verifying bridge-level rejection of deferred Injection/NoSale/OpeningFloat types, and strict shift/terminal ledger query isolation)
+- [MODIFY] `POS.Desktop.Tests/Shell/CashControlScreenStaticTests.cs` (Added 3 tests verifying Injection tab deferral block, Alert code bindings, and Drop-only movementType constraints)
+
+### Test count: 451 passing (was 425; +26 new cash control integration & static tests)
+### Prior Test count: 425 passing (was 407; +18 new CashControl static tests)
 
 ### Group 5 (Task 5.4.10 - completed)
 - [MODIFY] `POS.Desktop.Tests/Shell/PaymentBridgeHandlerTests.cs` (+3 tests: missing `tenderMethodId` -> MALFORMED_REQUEST; `guestName` mapped to `PaymentCompletionRequest.GuestName`; multiple tenders all mapped with amounts and external references)
@@ -368,6 +374,55 @@ The `openShift()` function in `shift_open.html` transition flow:
 - `dotnet test POS.Desktop.Tests`: **407/407 passed** (388 existing + 19 new Group 3 bridge tests)
 - `dotnet test POS.Tests`: **49/49 passed** (49 central API/core tests)
 
+## Verification Summary (Milestone 5.5 Group 3)
+
+### Design Decisions & Implementation Details
+- **Bridge Endpoints Registered**: Registered and routed `cash.getSummary`, `cash.recordMovement`, `cash.getLedger`, and `cash.getReasonCodes`.
+- **cash.getSummary**: Returns camelCase expected balance, safe drops, cash sales, opening float, alert thresholds, alert message and code.
+- **cash.recordMovement**: Validates amount, reasonCodeId, and idempotencyKey. Decodes movementType string ("Drop" case-insensitive) or numeric (only 4 is valid). Discards/prevents logging or returning `managerPin`. Passes values to `ICashControlService.RecordMovementAsync` and maps the outcome.
+- **cash.getLedger**: Restricts querying to active open shifts and active movements. Joins reason codes, sorting by TerminalSequence descending and OccurredOn descending, capped at 100 rows.
+- **cash.getReasonCodes**: Searches `LocalReasonCodes`. Filters by ReasonCategory == "CashControl" (case-insensitive) if any match; falls back to all active codes if category has 0 matches, returning `usedFallback = true` metadata.
+
+### Builds
+- `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: **0 errors / 0 warnings**
+- `dotnet build POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: **0 errors / 0 warnings**
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests`: **407/407 passed** (388 existing + 19 new Group 3 bridge tests)
+- `dotnet test POS.Tests`: **49/49 passed** (49 central API/core tests)
+
+## Verification Summary (Milestone 5.5 Group 4)
+
+### Design Decisions & Implementation Details
+- **Wired cash_control.html**: Replaced demo session/localStorage fallback source of truth with real `cash.getSummary`, `cash.recordMovement`, `cash.getLedger`, and `cash.getReasonCodes` bridge requests.
+- **Static UI Checks**: Added static tests in `CashControlScreenStaticTests.cs` to check and verify byte-identical SHA-256 parity, sessionStorage exclusions, bridge calls, and preserved switchTab/numKey/submitAction ergonomics.
+
+### Builds
+- `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: **0 errors / 0 warnings**
+- `dotnet build POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: **0 errors / 0 warnings**
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests`: **425/425 passed** (407 existing + 18 static UI checks)
+- `dotnet test POS.Tests`: **49/49 passed**
+
+## Verification Summary (Milestone 5.5 Group 5)
+
+### Design Decisions & Implementation Details
+- **Active Shift Hardening & Consistency**: Verified that cash drawer movements strictly resolve the current terminal and location open shift as source of truth. No ShiftId is accepted from the UI payload. Closed shifts, other terminal shifts, or shifts on other locations are successfully ignored/rejected. Having terminal session `ShiftId` as null while a valid shift exists is gracefully handled and succeeds.
+- **Injection Explicit Deferral**: Proved that `FloatInjection`, `NoSale`, `Payout`, and `Correction` are rejected with `INVALID_MOVEMENT_TYPE` across UI, Bridge, and Service layers. Verified that no C# enum values for FloatInjection were introduced, keeping the domain model completely pristine.
+- **Alert Transitions & Config Fallbacks**: Proved via a state-machine integration test that recording a drop correctly reduces `ExpectedDrawerBalance` and transitions the alert code down from `SAFE_DROP_RECOMMENDED` to `OK`. Verified that policy limit config anomalies fall back safely to default limits (25,000 drawer limit / 20,000 safe drop threshold).
+
+### Builds
+- `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: **0 errors / 0 warnings**
+- `dotnet build POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: **0 errors / 0 warnings**
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests`: **451/451 passed** (425 existing + 10 service tests + 6 bridge tests + 3 static UI tests)
+- `dotnet test POS.Tests`: **49/49 passed** (49 core/API tests)
+
 ## Next Recommended Milestone
-- **Phase 5 / Milestone 5.5 Group 4** (Task 5.5.8 UI wiring)
+- **Phase 5 / Milestone 5.6 - Shift close & Z-report** (IShiftService.CloseShift, expected cash + variance, Z-report reconciliation, lock terminal on close, unit testing variance/reconciliation)
 

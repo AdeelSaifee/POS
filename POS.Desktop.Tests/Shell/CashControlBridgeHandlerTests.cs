@@ -640,6 +640,224 @@ public class CashControlBridgeHandlerTests : IDisposable
         Assert.Equal("OTHER", reasonCodes[0].GetProperty("code").GetString());
     }
 
+    [Fact]
+    public async Task HandleCashRecordMovement_RejectsInjectionString()
+    {
+        var (router, service, _, _) = CreateRouterWithStub();
+        var payload = JsonDocument.Parse("""
+        {
+            "idempotencyKey": "idem-key-inject",
+            "amount": 500,
+            "reasonCodeId": 1,
+            "movementType": "Injection"
+        }
+        """).RootElement;
+
+        var request = new BridgeRequestEnvelope { Type = "cash.recordMovement", RequestId = "req-inject", Version = "v1", Payload = payload };
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        Assert.False(response.Ok);
+        Assert.Equal("INVALID_MOVEMENT_TYPE", response.Error!.Code);
+        Assert.False(service.RecordMovementCalled);
+    }
+
+    [Fact]
+    public async Task HandleCashRecordMovement_RejectsNoSale()
+    {
+        var (router, service, _, _) = CreateRouterWithStub();
+        var payload = JsonDocument.Parse("""
+        {
+            "idempotencyKey": "idem-key-nosale",
+            "amount": 0,
+            "reasonCodeId": 1,
+            "movementType": "NoSale"
+        }
+        """).RootElement;
+
+        var request = new BridgeRequestEnvelope { Type = "cash.recordMovement", RequestId = "req-nosale", Version = "v1", Payload = payload };
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        Assert.False(response.Ok);
+        Assert.Equal("INVALID_MOVEMENT_TYPE", response.Error!.Code);
+        Assert.False(service.RecordMovementCalled);
+    }
+
+    [Fact]
+    public async Task HandleCashRecordMovement_RejectsOpeningFloat()
+    {
+        var (router, service, _, _) = CreateRouterWithStub();
+        var payload = JsonDocument.Parse("""
+        {
+            "idempotencyKey": "idem-key-openfloat",
+            "amount": 1000,
+            "reasonCodeId": 1,
+            "movementType": "OpeningFloat"
+        }
+        """).RootElement;
+
+        var request = new BridgeRequestEnvelope { Type = "cash.recordMovement", RequestId = "req-openfloat", Version = "v1", Payload = payload };
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        Assert.False(response.Ok);
+        Assert.Equal("INVALID_MOVEMENT_TYPE", response.Error!.Code);
+        Assert.False(service.RecordMovementCalled);
+    }
+
+    [Fact]
+    public async Task HandleCashGetLedger_ReturnsOnlyActiveShiftMovements()
+    {
+        var (router, _, db, _) = CreateRouterWithStub();
+        await SetupDatabaseStateAsync(db, openShift: true);
+
+        var activeShift = await db.LocalShifts.FirstAsync();
+
+        // Seed an active shift movement
+        db.LocalCashDrawerMovements.Add(new LocalCashDrawerMovement
+        {
+            Id = Guid.NewGuid(),
+            TenantId = TenantId,
+            LocationId = LocationId,
+            TerminalId = TerminalId,
+            EmployeeId = EmployeeDbId,
+            ShiftId = activeShift.Id,
+            Amount = 150m,
+            TerminalSequence = 1,
+            OccurredOn = DateTimeOffset.UtcNow,
+            ReasonCodeId = 1,
+            IsActive = true,
+            Comment = "Active Shift Drop",
+            CorrelationId = Guid.NewGuid().ToString("N"),
+            IdempotencyKey = "idem-active",
+            CreatedBy = OperatorId,
+            CreatedOn = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        var request = new BridgeRequestEnvelope { Type = "cash.getLedger", RequestId = "req-ledger-active-only", Version = "v1" };
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        Assert.True(response.Ok);
+        var json = JsonSerializer.Serialize(response.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        Assert.True(root.GetProperty("isOpen").GetBoolean());
+        var movements = root.GetProperty("movements");
+        Assert.Equal(1, movements.GetArrayLength());
+        Assert.Equal("Active Shift Drop", movements[0].GetProperty("comment").GetString());
+    }
+
+    [Fact]
+    public async Task HandleCashGetLedger_IgnoresClosedShiftMovements()
+    {
+        var (router, _, db, _) = CreateRouterWithStub();
+        await SetupDatabaseStateAsync(db, openShift: true);
+
+        var activeShift = await db.LocalShifts.FirstAsync();
+
+        // Seed a closed shift and a movement for it
+        var closedShiftId = Guid.NewGuid();
+        db.LocalShifts.Add(new LocalShift
+        {
+            Id = closedShiftId,
+            TenantId = TenantId,
+            LocationId = LocationId,
+            TerminalId = TerminalId,
+            Status = ShiftStatus.Closed,
+            OpenedByEmployeeId = EmployeeDbId,
+            OpeningCashAmount = 1000m,
+            BusinessDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-1)),
+            TerminalSequence = 2,
+            IsActive = true,
+            CreatedBy = OperatorId,
+            CreatedOn = DateTimeOffset.UtcNow.AddDays(-1)
+        });
+
+        db.LocalCashDrawerMovements.AddRange(
+            new LocalCashDrawerMovement
+            {
+                Id = Guid.NewGuid(), TenantId = TenantId, LocationId = LocationId, TerminalId = TerminalId,
+                EmployeeId = EmployeeDbId, ShiftId = activeShift.Id, Amount = 150m, TerminalSequence = 1,
+                OccurredOn = DateTimeOffset.UtcNow, ReasonCodeId = 1, IsActive = true, Comment = "Active Shift Drop",
+                CorrelationId = Guid.NewGuid().ToString("N"), IdempotencyKey = "idem-active-2", CreatedBy = OperatorId, CreatedOn = DateTimeOffset.UtcNow
+            },
+            new LocalCashDrawerMovement
+            {
+                Id = Guid.NewGuid(), TenantId = TenantId, LocationId = LocationId, TerminalId = TerminalId,
+                EmployeeId = EmployeeDbId, ShiftId = closedShiftId, Amount = 250m, TerminalSequence = 2,
+                OccurredOn = DateTimeOffset.UtcNow.AddDays(-1), ReasonCodeId = 1, IsActive = true, Comment = "Closed Shift Drop",
+                CorrelationId = Guid.NewGuid().ToString("N"), IdempotencyKey = "idem-closed", CreatedBy = OperatorId, CreatedOn = DateTimeOffset.UtcNow.AddDays(-1)
+            }
+        );
+        await db.SaveChangesAsync();
+
+        var request = new BridgeRequestEnvelope { Type = "cash.getLedger", RequestId = "req-ledger-ignores-closed", Version = "v1" };
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        Assert.True(response.Ok);
+        var json = JsonSerializer.Serialize(response.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        var movements = root.GetProperty("movements");
+        Assert.Equal(1, movements.GetArrayLength());
+        Assert.Equal("Active Shift Drop", movements[0].GetProperty("comment").GetString());
+    }
+
+    [Fact]
+    public async Task HandleCashGetLedger_IgnoresOtherTerminalMovements()
+    {
+        var (router, _, db, _) = CreateRouterWithStub();
+        await SetupDatabaseStateAsync(db, openShift: true);
+
+        var activeShift = await db.LocalShifts.FirstAsync();
+
+        // Seed a shift on another terminal and a movement for it
+        var otherTerminalShiftId = Guid.NewGuid();
+        db.LocalShifts.Add(new LocalShift
+        {
+            Id = otherTerminalShiftId,
+            TenantId = TenantId,
+            LocationId = LocationId,
+            TerminalId = 888, // different terminal
+            Status = ShiftStatus.Open,
+            OpenedByEmployeeId = EmployeeDbId,
+            OpeningCashAmount = 1000m,
+            BusinessDate = DateOnly.FromDateTime(DateTime.Today),
+            TerminalSequence = 1,
+            IsActive = true,
+            CreatedBy = OperatorId,
+            CreatedOn = DateTimeOffset.UtcNow
+        });
+
+        db.LocalCashDrawerMovements.AddRange(
+            new LocalCashDrawerMovement
+            {
+                Id = Guid.NewGuid(), TenantId = TenantId, LocationId = LocationId, TerminalId = TerminalId,
+                EmployeeId = EmployeeDbId, ShiftId = activeShift.Id, Amount = 150m, TerminalSequence = 1,
+                OccurredOn = DateTimeOffset.UtcNow, ReasonCodeId = 1, IsActive = true, Comment = "Current Terminal Drop",
+                CorrelationId = Guid.NewGuid().ToString("N"), IdempotencyKey = "idem-current-term", CreatedBy = OperatorId, CreatedOn = DateTimeOffset.UtcNow
+            },
+            new LocalCashDrawerMovement
+            {
+                Id = Guid.NewGuid(), TenantId = TenantId, LocationId = LocationId, TerminalId = 888,
+                EmployeeId = EmployeeDbId, ShiftId = otherTerminalShiftId, Amount = 250m, TerminalSequence = 2,
+                OccurredOn = DateTimeOffset.UtcNow, ReasonCodeId = 1, IsActive = true, Comment = "Other Terminal Drop",
+                CorrelationId = Guid.NewGuid().ToString("N"), IdempotencyKey = "idem-other-term", CreatedBy = OperatorId, CreatedOn = DateTimeOffset.UtcNow
+            }
+        );
+        await db.SaveChangesAsync();
+
+        var request = new BridgeRequestEnvelope { Type = "cash.getLedger", RequestId = "req-ledger-ignores-other-term", Version = "v1" };
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        Assert.True(response.Ok);
+        var json = JsonSerializer.Serialize(response.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        var movements = root.GetProperty("movements");
+        Assert.Equal(1, movements.GetArrayLength());
+        Assert.Equal("Current Terminal Drop", movements[0].GetProperty("comment").GetString());
+    }
+
     // ── Stub ──────────────────────────────────────────────────────────────────
 
     private class StubCashControlService : ICashControlService

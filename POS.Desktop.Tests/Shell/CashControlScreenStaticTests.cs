@@ -179,4 +179,28 @@ public class CashControlScreenStaticTests
     {
         Assert.DoesNotContain("console.error('[CashControl] Record movement failed:', err)", AssetHtml);
     }
+
+    [Fact]
+    public void CashControlScreen_InjectionTab_IsDeferredAndDoesNotSubmit()
+    {
+        Assert.Contains("function switchTab", AssetHtml);
+        Assert.Contains("tab === 'inject'", AssetHtml);
+        Assert.Contains("Float Add / Cash In is not available yet.", AssetHtml);
+    }
+
+    [Fact]
+    public void CashControlScreen_AlertCodes_AreBound()
+    {
+        Assert.Contains("OVER_LIMIT", AssetHtml);
+        Assert.Contains("SAFE_DROP_RECOMMENDED", AssetHtml);
+    }
+
+    [Fact]
+    public void CashControlScreen_RecordMovement_UsesDropOnly()
+    {
+        Assert.Contains("movementType: 'Drop'", AssetHtml);
+        Assert.DoesNotContain("movementType: 'Injection'", AssetHtml);
+        Assert.DoesNotContain("movementType: 'Correction'", AssetHtml);
+        Assert.DoesNotContain("movementType: 'Payout'", AssetHtml);
+    }
 }

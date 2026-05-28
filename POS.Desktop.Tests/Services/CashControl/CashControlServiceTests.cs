@@ -1105,4 +1105,416 @@ public class CashControlServiceTests : IDisposable
         Assert.Equal(1200m, summary.ExpectedDrawerBalance);
         Assert.Equal(1, summary.TransactionCount); // Only 1 completed active cash-paid order
     }
+
+    [Fact]
+    public async Task RecordMovementAsync_ShiftClosed_ReturnsNoOpenShift()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(TenantId, LocationId, TerminalId);
+        await SetupDatabaseStateAsync(db, openShift: false);
+
+        // Add a closed shift
+        var closedShift = new LocalShift
+        {
+            Id = Guid.NewGuid(),
+            TenantId = TenantId,
+            LocationId = LocationId,
+            TerminalId = TerminalId,
+            OpenedByEmployeeId = EmployeeDbId,
+            BusinessDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            TerminalSequence = 1,
+            Status = ShiftStatus.Closed,
+            OpeningCashAmount = 1000m,
+            OpenedOn = DateTimeOffset.UtcNow,
+            IsActive = true
+        };
+        db.LocalShifts.Add(closedShift);
+        await db.SaveChangesAsync();
+
+        var sessionService = CreateSessionService();
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(TenantId, LocationId, TerminalId));
+        var fakeAuth = new FakeAuthService();
+        var policy = CreatePolicyOptions();
+        var service = new CashControlService(db, sessionService, provisioningContext, fakeAuth, policy, NullLogger<CashControlService>.Instance);
+
+        var request = new CashControlMovementRequest(
+            MovementType: CashDrawerMovementType.Drop,
+            Amount: 500m,
+            ReasonCodeId: 1,
+            Comment: "Drop with closed shift",
+            IdempotencyKey: Guid.NewGuid().ToString()
+        );
+
+        // Act
+        var result = await service.RecordMovementAsync(request);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Equal("NO_OPEN_SHIFT", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task RecordMovementAsync_ShiftOnOtherTerminal_ReturnsNoOpenShift()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(TenantId, LocationId, TerminalId);
+        await SetupDatabaseStateAsync(db, openShift: false);
+
+        // Add an open shift on a different terminal
+        var otherTerminalShift = new LocalShift
+        {
+            Id = Guid.NewGuid(),
+            TenantId = TenantId,
+            LocationId = LocationId,
+            TerminalId = 888, // different terminal
+            OpenedByEmployeeId = EmployeeDbId,
+            BusinessDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            TerminalSequence = 1,
+            Status = ShiftStatus.Open,
+            OpeningCashAmount = 1000m,
+            OpenedOn = DateTimeOffset.UtcNow,
+            IsActive = true
+        };
+        db.LocalShifts.Add(otherTerminalShift);
+        await db.SaveChangesAsync();
+
+        var sessionService = CreateSessionService();
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(TenantId, LocationId, TerminalId));
+        var fakeAuth = new FakeAuthService();
+        var policy = CreatePolicyOptions();
+        var service = new CashControlService(db, sessionService, provisioningContext, fakeAuth, policy, NullLogger<CashControlService>.Instance);
+
+        var request = new CashControlMovementRequest(
+            MovementType: CashDrawerMovementType.Drop,
+            Amount: 500m,
+            ReasonCodeId: 1,
+            Comment: "Drop with other terminal shift",
+            IdempotencyKey: Guid.NewGuid().ToString()
+        );
+
+        // Act
+        var result = await service.RecordMovementAsync(request);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Equal("NO_OPEN_SHIFT", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task RecordMovementAsync_ShiftOnOtherLocation_ReturnsNoOpenShift()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(TenantId, LocationId, TerminalId);
+        await SetupDatabaseStateAsync(db, openShift: false);
+
+        // Add an open shift on a different location
+        var otherLocationShift = new LocalShift
+        {
+            Id = Guid.NewGuid(),
+            TenantId = TenantId,
+            LocationId = 102, // different location
+            TerminalId = TerminalId,
+            OpenedByEmployeeId = EmployeeDbId,
+            BusinessDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            TerminalSequence = 1,
+            Status = ShiftStatus.Open,
+            OpeningCashAmount = 1000m,
+            OpenedOn = DateTimeOffset.UtcNow,
+            IsActive = true
+        };
+        db.LocalShifts.Add(otherLocationShift);
+        await db.SaveChangesAsync();
+
+        var sessionService = CreateSessionService();
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(TenantId, LocationId, TerminalId));
+        var fakeAuth = new FakeAuthService();
+        var policy = CreatePolicyOptions();
+        var service = new CashControlService(db, sessionService, provisioningContext, fakeAuth, policy, NullLogger<CashControlService>.Instance);
+
+        var request = new CashControlMovementRequest(
+            MovementType: CashDrawerMovementType.Drop,
+            Amount: 500m,
+            ReasonCodeId: 1,
+            Comment: "Drop with other location shift",
+            IdempotencyKey: Guid.NewGuid().ToString()
+        );
+
+        // Act
+        var result = await service.RecordMovementAsync(request);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Equal("NO_OPEN_SHIFT", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task RecordMovementAsync_SessionShiftIdNull_ButOpenShiftExists_Succeeds()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(TenantId, LocationId, TerminalId);
+        await SetupDatabaseStateAsync(db, openSession: false, openShift: false);
+
+        // Seed shift
+        var openShift = new LocalShift
+        {
+            Id = Guid.NewGuid(),
+            TenantId = TenantId,
+            LocationId = LocationId,
+            TerminalId = TerminalId,
+            OpenedByEmployeeId = EmployeeDbId,
+            BusinessDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            TerminalSequence = 1,
+            Status = ShiftStatus.Open,
+            OpeningCashAmount = 1000m,
+            OpenedOn = DateTimeOffset.UtcNow,
+            IsActive = true
+        };
+        db.LocalShifts.Add(openShift);
+
+        // Seed session with ShiftId = null
+        var session = new LocalTerminalSession
+        {
+            Id = 456,
+            TenantId = TenantId,
+            LocationId = LocationId,
+            TerminalId = TerminalId,
+            EmployeeId = EmployeeDbId,
+            EmployeeNumber = OperatorId,
+            DisplayName = "Adeel Cashier",
+            Role = "Cashier",
+            Status = TerminalSessionStatus.Open,
+            LoggedInOn = DateTimeOffset.UtcNow,
+            ShiftId = null // ShiftId is null
+        };
+        db.LocalTerminalSessions.Add(session);
+        await db.SaveChangesAsync();
+
+        var sessionService = CreateSessionService();
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(TenantId, LocationId, TerminalId));
+        var fakeAuth = new FakeAuthService();
+        var policy = CreatePolicyOptions();
+        var service = new CashControlService(db, sessionService, provisioningContext, fakeAuth, policy, NullLogger<CashControlService>.Instance);
+
+        var request = new CashControlMovementRequest(
+            MovementType: CashDrawerMovementType.Drop,
+            Amount: 500m,
+            ReasonCodeId: 1,
+            Comment: "Drop with null session shift ID",
+            IdempotencyKey: "key-null-session-shift"
+        );
+
+        // Act
+        var result = await service.RecordMovementAsync(request);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Equal(openShift.Id, result.ShiftId);
+    }
+
+    [Fact]
+    public async Task RecordMovementAsync_ValidDrop_PersistsActiveShiftIdAndBusinessDate()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(TenantId, LocationId, TerminalId);
+        await SetupDatabaseStateAsync(db);
+        var sessionService = CreateSessionService();
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(TenantId, LocationId, TerminalId));
+        var fakeAuth = new FakeAuthService();
+        var policy = CreatePolicyOptions();
+        var service = new CashControlService(db, sessionService, provisioningContext, fakeAuth, policy, NullLogger<CashControlService>.Instance);
+
+        var activeShift = await db.LocalShifts.FirstAsync();
+
+        var request = new CashControlMovementRequest(
+            MovementType: CashDrawerMovementType.Drop,
+            Amount: 500m,
+            ReasonCodeId: 1,
+            Comment: "Valid Drop Active Shift check",
+            IdempotencyKey: "key-shift-details-check"
+        );
+
+        // Act
+        var result = await service.RecordMovementAsync(request);
+
+        // Assert
+        Assert.True(result.Success);
+        var dbRecord = await db.LocalCashDrawerMovements.FindAsync(result.MovementId!.Value);
+        Assert.NotNull(dbRecord);
+        Assert.Equal(activeShift.Id, dbRecord.ShiftId);
+        Assert.Equal(activeShift.BusinessDate, dbRecord.BusinessDate);
+    }
+
+    [Fact]
+    public async Task RecordMovementAsync_ValidDrop_PersistsProvisionedLocationAndTerminal()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(TenantId, LocationId, TerminalId);
+        await SetupDatabaseStateAsync(db);
+        var sessionService = CreateSessionService();
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(TenantId, LocationId, TerminalId));
+        var fakeAuth = new FakeAuthService();
+        var policy = CreatePolicyOptions();
+        var service = new CashControlService(db, sessionService, provisioningContext, fakeAuth, policy, NullLogger<CashControlService>.Instance);
+
+        var request = new CashControlMovementRequest(
+            MovementType: CashDrawerMovementType.Drop,
+            Amount: 500m,
+            ReasonCodeId: 1,
+            Comment: "Valid Drop Terminal Context check",
+            IdempotencyKey: "key-terminal-context-check"
+        );
+
+        // Act
+        var result = await service.RecordMovementAsync(request);
+
+        // Assert
+        Assert.True(result.Success);
+        var dbRecord = await db.LocalCashDrawerMovements.FindAsync(result.MovementId!.Value);
+        Assert.NotNull(dbRecord);
+        Assert.Equal(LocationId, dbRecord.LocationId);
+        Assert.Equal(TerminalId, dbRecord.TerminalId);
+    }
+
+    [Fact]
+    public async Task RecordMovementAsync_DuplicateIdempotencyRetry_RemainsShiftSafe()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(TenantId, LocationId, TerminalId);
+        await SetupDatabaseStateAsync(db);
+        var sessionService = CreateSessionService();
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(TenantId, LocationId, TerminalId));
+        var fakeAuth = new FakeAuthService();
+        var policy = CreatePolicyOptions();
+        var service = new CashControlService(db, sessionService, provisioningContext, fakeAuth, policy, NullLogger<CashControlService>.Instance);
+
+        var activeShift = await db.LocalShifts.FirstAsync();
+
+        var request = new CashControlMovementRequest(
+            MovementType: CashDrawerMovementType.Drop,
+            Amount: 500m,
+            ReasonCodeId: 1,
+            Comment: "Idempotency retry shift check",
+            IdempotencyKey: "key-idempotency-shift-check"
+        );
+
+        // Act & Assert
+        var result1 = await service.RecordMovementAsync(request);
+        Assert.True(result1.Success);
+        Assert.Equal(activeShift.Id, result1.ShiftId);
+
+        var result2 = await service.RecordMovementAsync(request);
+        Assert.True(result2.Success);
+        Assert.Equal(result1.MovementId, result2.MovementId);
+        Assert.Equal(activeShift.Id, result2.ShiftId);
+    }
+
+    [Theory]
+    [InlineData(CashDrawerMovementType.Correction)]
+    [InlineData(CashDrawerMovementType.Payout)]
+    [InlineData(CashDrawerMovementType.NoSale)]
+    [InlineData(CashDrawerMovementType.OpeningFloat)]
+    [InlineData(CashDrawerMovementType.SaleCashIn)]
+    [InlineData(CashDrawerMovementType.RefundCashOut)]
+    public async Task RecordMovementAsync_NonDropTypes_AreRejected(CashDrawerMovementType nonDropType)
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(TenantId, LocationId, TerminalId);
+        await SetupDatabaseStateAsync(db);
+        var sessionService = CreateSessionService();
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(TenantId, LocationId, TerminalId));
+        var fakeAuth = new FakeAuthService();
+        var policy = CreatePolicyOptions();
+        var service = new CashControlService(db, sessionService, provisioningContext, fakeAuth, policy, NullLogger<CashControlService>.Instance);
+
+        var request = new CashControlMovementRequest(
+            MovementType: nonDropType,
+            Amount: 500m,
+            ReasonCodeId: 1,
+            Comment: $"Drop with {nonDropType}",
+            IdempotencyKey: Guid.NewGuid().ToString()
+        );
+
+        // Act
+        var result = await service.RecordMovementAsync(request);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Equal("INVALID_MOVEMENT_TYPE", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task GetDrawerSummaryAsync_StateTransitionAfterSafeDrop()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(TenantId, LocationId, TerminalId);
+        await SetupDatabaseStateAsync(db, openingFloat: 22000m); // Balance starts at 22,000
+        var sessionService = CreateSessionService();
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(TenantId, LocationId, TerminalId));
+        var fakeAuth = new FakeAuthService();
+        var policy = CreatePolicyOptions(limit: 25000m, threshold: 20000m);
+        var service = new CashControlService(db, sessionService, provisioningContext, fakeAuth, policy, NullLogger<CashControlService>.Instance);
+
+        var activeShift = await db.LocalShifts.FirstAsync();
+
+        // Seed Cash tender method so that summary resolves cash payments
+        var tenderCash = new LocalTenderMethod
+        {
+            Id = 1,
+            TenantId = TenantId,
+            Code = "CASH",
+            Name = "Cash",
+            TenderType = "Cash",
+            AllowsChange = true
+        };
+        db.LocalTenderMethods.Add(tenderCash);
+        await db.SaveChangesAsync();
+
+        // 1. Verify initial summary shows SAFE_DROP_RECOMMENDED
+        var summary1 = await service.GetDrawerSummaryAsync();
+        Assert.Equal(22000m, summary1.ExpectedDrawerBalance);
+        Assert.Equal("SAFE_DROP_RECOMMENDED", summary1.AlertCode);
+        Assert.True(summary1.IsSafeDropRecommended);
+        Assert.False(summary1.IsOverLimit);
+
+        // 2. Perform a safe drop of 5,000
+        var request = new CashControlMovementRequest(
+            MovementType: CashDrawerMovementType.Drop,
+            Amount: 5000m,
+            ReasonCodeId: 1,
+            Comment: "Drop 5000 to move below threshold",
+            IdempotencyKey: "key-transition-drop"
+        );
+        var dropResult = await service.RecordMovementAsync(request);
+        Assert.True(dropResult.Success);
+
+        // 3. Verify second summary expected balance is 17,000 and alert code is OK
+        var summary2 = await service.GetDrawerSummaryAsync();
+        Assert.Equal(17000m, summary2.ExpectedDrawerBalance); // 22000 - 5000
+        Assert.Equal("OK", summary2.AlertCode);
+        Assert.False(summary2.IsSafeDropRecommended);
+        Assert.False(summary2.IsOverLimit);
+    }
+
+    [Fact]
+    public async Task GetDrawerSummaryAsync_FallsBackToDefaultLimits_WhenConfiguredLimitsInvalid()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(TenantId, LocationId, TerminalId);
+        await SetupDatabaseStateAsync(db, openingFloat: 22000m); // Balance 22,000 (exceeds default threshold 20,000)
+        var sessionService = CreateSessionService();
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(TenantId, LocationId, TerminalId));
+        var fakeAuth = new FakeAuthService();
+        var policy = CreatePolicyOptions(limit: 0m, threshold: -100m); // Invalid limits
+        var service = new CashControlService(db, sessionService, provisioningContext, fakeAuth, policy, NullLogger<CashControlService>.Instance);
+
+        // Act
+        var summary = await service.GetDrawerSummaryAsync();
+
+        // Assert
+        Assert.Equal(25000m, summary.CashDrawerLimit); // Falls back to default 25,000
+        Assert.Equal(20000m, summary.SafeDropThreshold); // Falls back to default 20,000
+        Assert.Equal("SAFE_DROP_RECOMMENDED", summary.AlertCode); // Exceeds default threshold
+        Assert.True(summary.IsSafeDropRecommended);
+        Assert.False(summary.IsOverLimit);
+    }
 }

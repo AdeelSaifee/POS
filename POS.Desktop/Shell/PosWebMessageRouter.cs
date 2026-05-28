@@ -13,6 +13,7 @@ using POS.Desktop.Services.Provisioning;
 using POS.Desktop.Services.Shifts;
 using POS.Desktop.Services.Orders;
 using POS.Desktop.Services.Payments;
+using POS.Desktop.Services.CashControl;
 using POS.Desktop.Data;
 using POS.Shared.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -136,6 +137,19 @@ public sealed class PosWebMessageRouter
             sp.GetRequiredService<PosLocalDbContext>(), req, ct));
         Register("payment.complete", sp => (req, ct) => HandlePaymentCompleteAsync(
             sp.GetRequiredService<IPaymentService>(), req, ct));
+
+        // Task 5.5.7: Cash control handlers
+        Register("cash.getSummary", sp => (req, ct) => HandleCashGetSummaryAsync(
+            sp.GetRequiredService<ICashControlService>(), req, ct));
+        Register("cash.recordMovement", sp => (req, ct) => HandleCashRecordMovementAsync(
+            sp.GetRequiredService<ICashControlService>(), req, ct));
+        Register("cash.getLedger", sp => (req, ct) => HandleCashGetLedgerAsync(
+            sp.GetRequiredService<PosLocalDbContext>(),
+            sp.GetRequiredService<IProvisionedTerminalContext>(),
+            req,
+            ct));
+        Register("cash.getReasonCodes", sp => (req, ct) => HandleCashGetReasonCodesAsync(
+            sp.GetRequiredService<PosLocalDbContext>(), req, ct));
     }
 
     /// <summary>
@@ -1080,6 +1094,363 @@ public sealed class PosWebMessageRouter
         catch (JsonException)
         {
             return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was not valid JSON.");
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandleCashGetSummaryAsync(
+        ICashControlService cashControlService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var summary = await cashControlService.GetDrawerSummaryAsync(cancellationToken);
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, new
+            {
+                isOpen = summary.IsOpen,
+                shiftId = summary.ShiftId?.ToString(),
+                businessDate = summary.BusinessDate?.ToString("yyyy-MM-dd"),
+                openingFloat = summary.OpeningFloat,
+                cashSales = summary.CashSales,
+                safeDrops = summary.SafeDrops,
+                floatInjections = summary.FloatInjections,
+                expectedDrawerBalance = summary.ExpectedDrawerBalance,
+                transactionCount = summary.TransactionCount,
+                lastMovementAt = summary.LastMovementAt,
+                alertCode = summary.AlertCode,
+                alertMessage = summary.AlertMessage,
+                isSafeDropRecommended = summary.IsSafeDropRecommended,
+                isOverLimit = summary.IsOverLimit,
+                cashDrawerLimit = summary.CashDrawerLimit,
+                safeDropThreshold = summary.SafeDropThreshold
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get cash drawer summary.");
+            return BridgeResponseEnvelope.Failure(
+                request.Type, request.RequestId, "SUMMARY_FAILED", "Failed to load drawer summary.");
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandleCashRecordMovementAsync(
+        ICashControlService cashControlService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        if (!request.Payload.HasValue || request.Payload.Value.ValueKind != JsonValueKind.Object)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was missing or invalid.");
+        }
+
+        try
+        {
+            var payload = request.Payload.Value;
+
+            // Validate idempotencyKey
+            if (!payload.TryGetProperty("idempotencyKey", out var idKeyProp) ||
+                idKeyProp.ValueKind != JsonValueKind.String ||
+                string.IsNullOrWhiteSpace(idKeyProp.GetString()))
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'idempotencyKey' is required.");
+            }
+            string idempotencyKey = idKeyProp.GetString()!;
+
+            // Validate amount
+            if (!payload.TryGetProperty("amount", out var amountProp) || amountProp.ValueKind == JsonValueKind.Null)
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'amount' is required.");
+            }
+            decimal amount;
+            if (amountProp.ValueKind == JsonValueKind.Number)
+            {
+                if (!amountProp.TryGetDecimal(out amount))
+                {
+                    return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'amount' must be a valid number.");
+                }
+            }
+            else if (amountProp.ValueKind == JsonValueKind.String)
+            {
+                if (!decimal.TryParse(amountProp.GetString(), out amount))
+                {
+                    return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'amount' must be a valid number.");
+                }
+            }
+            else
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'amount' must be a valid number.");
+            }
+
+            // Validate reasonCodeId
+            if (!payload.TryGetProperty("reasonCodeId", out var reasonProp) || reasonProp.ValueKind == JsonValueKind.Null)
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'reasonCodeId' is required.");
+            }
+            int reasonCodeId;
+            if (reasonProp.ValueKind == JsonValueKind.Number)
+            {
+                if (!reasonProp.TryGetInt32(out reasonCodeId))
+                {
+                    return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'reasonCodeId' must be a valid integer.");
+                }
+            }
+            else if (reasonProp.ValueKind == JsonValueKind.String)
+            {
+                if (!int.TryParse(reasonProp.GetString(), out reasonCodeId))
+                {
+                    return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'reasonCodeId' must be a valid integer.");
+                }
+            }
+            else
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'reasonCodeId' must be a valid integer.");
+            }
+
+            // Parse movementType
+            if (!payload.TryGetProperty("movementType", out var movTypeProp))
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'movementType' is required.");
+            }
+
+            POS.Shared.Enums.CashDrawerMovementType movementType;
+            if (movTypeProp.ValueKind == JsonValueKind.String)
+            {
+                var movTypeStr = movTypeProp.GetString();
+                if (string.Equals(movTypeStr, "Drop", StringComparison.OrdinalIgnoreCase))
+                {
+                    movementType = POS.Shared.Enums.CashDrawerMovementType.Drop;
+                }
+                else if (string.Equals(movTypeStr, "Payout", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(movTypeStr, "Correction", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(movTypeStr, "Injection", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(movTypeStr, "OpeningFloat", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(movTypeStr, "SaleCashIn", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(movTypeStr, "RefundCashOut", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(movTypeStr, "NoSale", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "INVALID_MOVEMENT_TYPE", "Only Drop operations are allowed.");
+                }
+                else
+                {
+                    return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "INVALID_MOVEMENT_TYPE", "Unsupported movement type.");
+                }
+            }
+            else if (movTypeProp.ValueKind == JsonValueKind.Number)
+            {
+                if (movTypeProp.TryGetInt32(out var numericVal))
+                {
+                    if (numericVal == 4)
+                    {
+                        movementType = POS.Shared.Enums.CashDrawerMovementType.Drop;
+                    }
+                    else
+                    {
+                        return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "INVALID_MOVEMENT_TYPE", "Unsupported movement type.");
+                    }
+                }
+                else
+                {
+                    return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "INVALID_MOVEMENT_TYPE", "Unsupported movement type.");
+                }
+            }
+            else
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "INVALID_MOVEMENT_TYPE", "Unsupported movement type.");
+            }
+
+            // Optional comments & manager operator/pin details
+            string? comment = null;
+            if (payload.TryGetProperty("comment", out var commentProp) && commentProp.ValueKind == JsonValueKind.String)
+            {
+                comment = commentProp.GetString();
+            }
+
+            string? managerOperatorId = null;
+            if (payload.TryGetProperty("managerOperatorId", out var manOpProp) && manOpProp.ValueKind == JsonValueKind.String)
+            {
+                managerOperatorId = manOpProp.GetString();
+            }
+
+            string? managerPin = null;
+            if (payload.TryGetProperty("managerPin", out var manPinProp) && manPinProp.ValueKind == JsonValueKind.String)
+            {
+                managerPin = manPinProp.GetString();
+            }
+
+            var movementRequest = new CashControlMovementRequest(
+                MovementType: movementType,
+                Amount: amount,
+                ReasonCodeId: reasonCodeId,
+                Comment: comment,
+                IdempotencyKey: idempotencyKey,
+                ManagerOperatorId: managerOperatorId,
+                ManagerPin: managerPin
+            );
+
+            var result = await cashControlService.RecordMovementAsync(movementRequest, cancellationToken);
+            if (!result.Success)
+            {
+                string code = result.ErrorCode ?? "RECORD_MOVEMENT_FAILED";
+                string message = result.ErrorMessage ?? "The movement could not be recorded.";
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, code, message);
+            }
+
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, new
+            {
+                success = true,
+                movementId = result.MovementId?.ToString(),
+                movementType = result.MovementType?.ToString(),
+                amount = result.Amount,
+                reasonCodeId = result.ReasonCodeId,
+                shiftId = result.ShiftId?.ToString(),
+                businessDate = result.BusinessDate?.ToString("yyyy-MM-dd"),
+                terminalSequence = result.TerminalSequence,
+                occurredOn = result.OccurredOn
+            });
+        }
+        catch (JsonException)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was not valid JSON.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to record cash drawer movement.");
+            return BridgeResponseEnvelope.Failure(
+                request.Type, request.RequestId, "RECORD_MOVEMENT_FAILED", "Failed to record movement.");
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandleCashGetLedgerAsync(
+        PosLocalDbContext db,
+        IProvisionedTerminalContext provisioningContext,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!provisioningContext.IsProvisioned)
+            {
+                return BridgeResponseEnvelope.Success(request.Type, request.RequestId, new
+                {
+                    isOpen = false,
+                    movements = Array.Empty<object>()
+                });
+            }
+
+            var activeShift = await db.LocalShifts
+                .FirstOrDefaultAsync(s => s.LocationId == provisioningContext.CurrentLocationId &&
+                                          s.TerminalId == provisioningContext.CurrentTerminalId &&
+                                          s.Status == POS.Shared.Enums.ShiftStatus.Open,
+                                     cancellationToken);
+
+            if (activeShift == null)
+            {
+                return BridgeResponseEnvelope.Success(request.Type, request.RequestId, new
+                {
+                    isOpen = false,
+                    movements = Array.Empty<object>()
+                });
+            }
+
+            var movementsQuery = from m in db.LocalCashDrawerMovements
+                                 where m.ShiftId == activeShift.Id && m.IsActive
+                                 join r in db.LocalReasonCodes on m.ReasonCodeId equals r.Id into reasonJoin
+                                 from r in reasonJoin.DefaultIfEmpty()
+                                 select new
+                                 {
+                                     Movement = m,
+                                     ReasonCode = r
+                                 };
+
+            var movementsList = await movementsQuery
+                .OrderByDescending(x => x.Movement.TerminalSequence)
+                .Take(100)
+                .ToListAsync(cancellationToken);
+
+            var sortedMovements = movementsList
+                .OrderByDescending(x => x.Movement.TerminalSequence)
+                .ThenByDescending(x => x.Movement.OccurredOn)
+                .Select(x => new
+                {
+                    movementId = x.Movement.Id.ToString(),
+                    movementType = x.Movement.MovementType.ToString(),
+                    amount = x.Movement.Amount,
+                    reasonCodeId = x.Movement.ReasonCodeId,
+                    reasonCode = x.ReasonCode?.Code,
+                    reasonName = x.ReasonCode?.Name,
+                    comment = x.Movement.Comment,
+                    authorizedByEmployeeId = x.Movement.AuthorizedByEmployeeId,
+                    businessDate = x.Movement.BusinessDate.ToString("yyyy-MM-dd"),
+                    terminalSequence = x.Movement.TerminalSequence,
+                    occurredOn = x.Movement.OccurredOn
+                })
+                .ToList();
+
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, new
+            {
+                isOpen = true,
+                shiftId = activeShift.Id.ToString(),
+                businessDate = activeShift.BusinessDate.ToString("yyyy-MM-dd"),
+                movements = sortedMovements
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get cash control ledger.");
+            return BridgeResponseEnvelope.Failure(
+                request.Type, request.RequestId, "LEDGER_FAILED", "Failed to load ledger movements.");
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandleCashGetReasonCodesAsync(
+        PosLocalDbContext db,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var allReasonCodes = await db.LocalReasonCodes
+                .ToListAsync(cancellationToken);
+
+            var cashControlCodes = allReasonCodes
+                .Where(r => string.Equals(r.ReasonCategory, "CashControl", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(r => r.SortOrder)
+                .ThenBy(r => r.Name)
+                .ToList();
+
+            bool usedFallback = false;
+            var targetList = cashControlCodes;
+
+            if (cashControlCodes.Count == 0)
+            {
+                usedFallback = true;
+                targetList = allReasonCodes
+                    .OrderBy(r => r.SortOrder)
+                    .ThenBy(r => r.Name)
+                    .ToList();
+            }
+
+            var reasonCodesPayload = targetList.Select(r => new
+            {
+                id = r.Id,
+                code = r.Code,
+                name = r.Name,
+                reasonCategory = r.ReasonCategory,
+                requiresManagerApproval = r.RequiresManagerApproval
+            }).ToList();
+
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, new
+            {
+                reasonCodes = reasonCodesPayload,
+                usedFallback = usedFallback,
+                reasonCategoryFilter = "CashControl"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get cash control reason codes.");
+            return BridgeResponseEnvelope.Failure(
+                request.Type, request.RequestId, "REASON_CODES_FAILED", "Failed to load reason codes.");
         }
     }
 }

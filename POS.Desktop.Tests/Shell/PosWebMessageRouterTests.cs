@@ -55,6 +55,10 @@ public class PosWebMessageRouterTests
         Assert.True(router.CanHandle("order.removeDiscount"));
         Assert.True(router.CanHandle("payment.getTenderMethods"));
         Assert.True(router.CanHandle("payment.complete"));
+        Assert.True(router.CanHandle("cash.getSummary"));
+        Assert.True(router.CanHandle("cash.recordMovement"));
+        Assert.True(router.CanHandle("cash.getLedger"));
+        Assert.True(router.CanHandle("cash.getReasonCodes"));
     }
 
     [Fact]
@@ -148,7 +152,11 @@ public class PosWebMessageRouterTests
         Assert.Contains("order.removeDiscount", types);
         Assert.Contains("payment.getTenderMethods", types);
         Assert.Contains("payment.complete", types);
-        Assert.Equal(22, types.Count);
+        Assert.Contains("cash.getSummary", types);
+        Assert.Contains("cash.recordMovement", types);
+        Assert.Contains("cash.getLedger", types);
+        Assert.Contains("cash.getReasonCodes", types);
+        Assert.Equal(26, types.Count);
     }
 
     [Fact]

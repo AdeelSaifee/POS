@@ -2,7 +2,7 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 5 / Milestone 5.5 - Cash control service - **IN PROGRESS**
-- **Group**: Group 2 (Tasks 5.5.4 to 5.5.6 - completed)
+- **Group**: Group 3 (Task 5.5.7 - completed)
 
 ## Status of All Milestone 5.5 Tasks (Current)
 - `[x]` Task 5.5.1 - Define ICashControlService
@@ -11,7 +11,7 @@
 - `[x]` Task 5.5.4 - Enforce manager PIN
 - `[x]` Task 5.5.5 - Compute drawer balance
 - `[x]` Task 5.5.6 - Compute threshold alerts
-- `[ ]` Task 5.5.7 - Add handlers + ledger query
+- `[x]` Task 5.5.7 - Add handlers + ledger query
 - `[ ]` Task 5.5.8 - Wire cash_control.html + remove pos_safe_drops
 - `[ ]` Task 5.5.9 - Tie movements to active shift
 - `[ ]` Task 5.5.10 - Test drops/injections + alerts
@@ -69,7 +69,12 @@
 - [MODIFY] `POS.Desktop/Services/CashControl/CashControlService.cs` (Implemented manager PIN verification, early idempotency check flow, GetDrawerSummaryAsync live balance calculation using local in-memory sums to resolve SQLite decimal aggregator limits, and ShiftOpenPolicyOptions limit/threshold alerts)
 - [MODIFY] `POS.Desktop.Tests/Services/CashControl/CashControlServiceTests.cs` (Added unit tests for manager PIN enforcement, duplicate idempotency checks, empty drawer summaries, and alert state transitions)
 
-### Test count: 388 passing (was 377; +11 new cash control tests)
+### Group 3 (Task 5.5.7 - completed)
+- [MODIFY] `POS.Desktop/Shell/PosWebMessageRouter.cs` (Registered and implemented handlers for cash.getSummary, cash.recordMovement, cash.getLedger, and cash.getReasonCodes)
+- [ADD] `POS.Desktop.Tests/Shell/CashControlBridgeHandlerTests.cs` (Comprehensive 18-test suite verifying bridge routing, success and malformed payload mapping, string/numeric movementType parsing, and fallback categories)
+- [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs` (Updated CanHandle registrations list and count assertions to exactly 26)
+
+### Test count: 407 passing (was 388; +19 new bridge handler tests)
 
 ### Group 5 (Task 5.4.10 - completed)
 - [MODIFY] `POS.Desktop.Tests/Shell/PaymentBridgeHandlerTests.cs` (+3 tests: missing `tenderMethodId` -> MALFORMED_REQUEST; `guestName` mapped to `PaymentCompletionRequest.GuestName`; multiple tenders all mapped with amounts and external references)
@@ -340,6 +345,24 @@ The `openShift()` function in `shift_open.html` transition flow:
 - `dotnet test POS.Desktop.Tests`: **388/388 passed** (377 existing + 11 new Group 2 tests)
 - `dotnet test POS.Tests`: **49/49 passed** (49 central API/core tests)
 
+## Verification Summary (Milestone 5.5 Group 3)
+
+### Design Decisions & Implementation Details
+- **Bridge Endpoints Registered**: Registered and routed `cash.getSummary`, `cash.recordMovement`, `cash.getLedger`, and `cash.getReasonCodes`.
+- **cash.getSummary**: Returns camelCase expected balance, safe drops, cash sales, opening float, alert thresholds, alert message and code.
+- **cash.recordMovement**: Validates amount, reasonCodeId, and idempotencyKey. Decodes movementType string ("Drop" case-insensitive) or numeric (only 4 is valid). Discards/prevents logging or returning `managerPin`. Passes values to `ICashControlService.RecordMovementAsync` and maps the outcome.
+- **cash.getLedger**: Restricts querying to active open shifts and active movements. Joins reason codes, sorting by TerminalSequence descending and OccurredOn descending, capped at 100 rows.
+- **cash.getReasonCodes**: Searches `LocalReasonCodes`. Filters by ReasonCategory == "CashControl" (case-insensitive) if any match; falls back to all active codes if category has 0 matches, returning `usedFallback = true` metadata.
+
+### Builds
+- `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: **0 errors / 0 warnings**
+- `dotnet build POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: **0 errors / 0 warnings**
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests`: **407/407 passed** (388 existing + 19 new Group 3 bridge tests)
+- `dotnet test POS.Tests`: **49/49 passed** (49 central API/core tests)
+
 ## Next Recommended Milestone
-- **Phase 5 / Milestone 5.5 Group 3** (Task 5.5.7 Bridge Handlers + Ledger Query)
+- **Phase 5 / Milestone 5.5 Group 4** (Task 5.5.8 UI wiring)
 

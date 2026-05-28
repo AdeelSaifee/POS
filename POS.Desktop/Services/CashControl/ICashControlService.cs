@@ -13,7 +13,9 @@ public sealed record CashControlMovementRequest(
     decimal Amount,
     int ReasonCodeId,
     string? Comment,
-    string IdempotencyKey);
+    string IdempotencyKey,
+    string? ManagerOperatorId = null,
+    string? ManagerPin = null);
 
 /// <summary>
 /// Result of a cash control operation.
@@ -32,6 +34,27 @@ public sealed record CashControlMovementResult(
     DateTimeOffset? OccurredOn = null);
 
 /// <summary>
+/// Detailed summary of the cash drawer status, sales, drops, and alert states.
+/// </summary>
+public sealed record CashDrawerSummaryResult(
+    bool IsOpen,
+    Guid? ShiftId,
+    DateOnly? BusinessDate,
+    decimal OpeningFloat,
+    decimal CashSales,
+    decimal SafeDrops,
+    decimal FloatInjections,
+    decimal ExpectedDrawerBalance,
+    int TransactionCount,
+    DateTimeOffset? LastMovementAt,
+    string AlertCode,
+    string? AlertMessage,
+    bool IsSafeDropRecommended,
+    bool IsOverLimit,
+    decimal CashDrawerLimit,
+    decimal SafeDropThreshold);
+
+/// <summary>
 /// Defines the contract for local cash drawer movement operations.
 /// </summary>
 public interface ICashControlService
@@ -42,4 +65,9 @@ public interface ICashControlService
     Task<CashControlMovementResult> RecordMovementAsync(
         CashControlMovementRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Computes and returns the live summary and balance details for the current open cash drawer.
+    /// </summary>
+    Task<CashDrawerSummaryResult> GetDrawerSummaryAsync(CancellationToken cancellationToken = default);
 }

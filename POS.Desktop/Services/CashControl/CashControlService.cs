@@ -4,33 +4,43 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using POS.Desktop.Data;
 using POS.Desktop.Data.LocalEntities;
+using POS.Desktop.Services.Auth;
 using POS.Desktop.Services.Session;
+using POS.Desktop.Services.Shifts;
 using POS.Shared.Contracts;
 using POS.Shared.Enums;
 
 namespace POS.Desktop.Services.CashControl;
 
 /// <summary>
-/// Service implementing local cash control movement validations and SQLite atomic persistence.
+/// Service implementing local cash control movement validations, manager PIN enforcement,
+/// live drawer balance calculations, and SQLite atomic persistence.
 /// </summary>
 public sealed class CashControlService : ICashControlService
 {
     private readonly PosLocalDbContext _db;
     private readonly ISessionService _sessionService;
     private readonly IProvisionedTerminalContext _provisionedTerminalContext;
+    private readonly IAuthService _authService;
+    private readonly IOptions<ShiftOpenPolicyOptions> _policyOptions;
     private readonly ILogger<CashControlService> _logger;
 
     public CashControlService(
         PosLocalDbContext db,
         ISessionService sessionService,
         IProvisionedTerminalContext provisionedTerminalContext,
+        IAuthService authService,
+        IOptions<ShiftOpenPolicyOptions> policyOptions,
         ILogger<CashControlService> logger)
     {
         _db = db ?? throw new ArgumentNullException(nameof(db));
         _sessionService = sessionService ?? throw new ArgumentNullException(nameof(sessionService));
         _provisionedTerminalContext = provisionedTerminalContext ?? throw new ArgumentNullException(nameof(provisionedTerminalContext));
+        _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+        _policyOptions = policyOptions ?? throw new ArgumentNullException(nameof(policyOptions));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -181,11 +191,11 @@ public sealed class CashControlService : ICashControlService
                 ErrorMessage: "A valid reason code is required.");
         }
 
-        // 12. Validate LocalReasonCode exists
-        var reasonCodeExists = await _db.LocalReasonCodes
-            .AnyAsync(r => r.Id == request.ReasonCodeId && r.TenantId == currentTenantId, cancellationToken);
+        // 12. Load and validate LocalReasonCode exists
+        var reasonCode = await _db.LocalReasonCodes
+            .FirstOrDefaultAsync(r => r.Id == request.ReasonCodeId && r.TenantId == currentTenantId, cancellationToken);
 
-        if (!reasonCodeExists)
+        if (reasonCode == null)
         {
             _logger.LogWarning("Cash control failed: Reason code '{ReasonCodeId}' does not exist.", request.ReasonCodeId);
             return new CashControlMovementResult(
@@ -194,7 +204,7 @@ public sealed class CashControlService : ICashControlService
                 ErrorMessage: "The specified reason code is invalid or does not exist.");
         }
 
-        // 13. Early Idempotency Check
+        // 13. Early Idempotency Check (Does NOT evaluate manager PIN credentials on retry)
         var existingMovement = await _db.LocalCashDrawerMovements
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.TenantId == currentTenantId && m.IdempotencyKey == request.IdempotencyKey, cancellationToken);
@@ -216,7 +226,48 @@ public sealed class CashControlService : ICashControlService
             }
         }
 
-        // 14. Persistence with isolated SQLite Transaction
+        // 14. Manager PIN Enforcement
+        int? authorizedByEmployeeId = null;
+        if (reasonCode.RequiresManagerApproval)
+        {
+            if (string.IsNullOrWhiteSpace(request.ManagerOperatorId) || string.IsNullOrWhiteSpace(request.ManagerPin))
+            {
+                _logger.LogWarning("Cash control failed: Manager approval is required but operator ID or PIN is missing.");
+                return new CashControlMovementResult(
+                    Success: false,
+                    ErrorCode: "MANAGER_AUTH_REQUIRED",
+                    ErrorMessage: "Manager operator ID and PIN are required for this drop reason code.");
+            }
+
+            // Call IAuthService to validate the manager credentials (does not log raw PIN)
+            var authResult = await _authService.ValidateManagerPinAsync(request.ManagerOperatorId, request.ManagerPin, cancellationToken);
+            if (!authResult.IsValid)
+            {
+                _logger.LogWarning("Cash control failed: Manager verification failed for Operator '{ManagerOperatorId}'", request.ManagerOperatorId);
+                return new CashControlMovementResult(
+                    Success: false,
+                    ErrorCode: "MANAGER_AUTH_FAILED",
+                    ErrorMessage: "Manager PIN verification failed.");
+            }
+
+            // Resolve manager from the SQLite database
+            var managerEmployee = await _db.LocalEmployees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.EmployeeNumber == authResult.Operator!.OperatorId && e.TenantId == currentTenantId, cancellationToken);
+
+            if (managerEmployee == null)
+            {
+                _logger.LogWarning("Cash control failed: Verified manager operator '{ManagerOperatorId}' not resolved in employees table.", request.ManagerOperatorId);
+                return new CashControlMovementResult(
+                    Success: false,
+                    ErrorCode: "MANAGER_NOT_FOUND",
+                    ErrorMessage: "Verified manager account could not be resolved in the database.");
+            }
+
+            authorizedByEmployeeId = managerEmployee.Id;
+        }
+
+        // 15. Persistence with isolated SQLite Transaction
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
@@ -239,7 +290,7 @@ public sealed class CashControlService : ICashControlService
                 TerminalId = currentTerminalId,
                 ShiftId = activeShift.Id,
                 EmployeeId = employee.Id,
-                AuthorizedByEmployeeId = null, // Deferred to Task 5.5.4 (Group 2)
+                AuthorizedByEmployeeId = authorizedByEmployeeId,
                 ReasonCodeId = request.ReasonCodeId,
                 BusinessDate = activeShift.BusinessDate,
                 TerminalSequence = nextSequence,
@@ -290,6 +341,175 @@ public sealed class CashControlService : ICashControlService
 
             throw;
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<CashDrawerSummaryResult> GetDrawerSummaryAsync(CancellationToken cancellationToken = default)
+    {
+        // 1. Confirm terminal is provisioned
+        if (!_provisionedTerminalContext.IsProvisioned)
+        {
+            _logger.LogWarning("GetDrawerSummary failed: Terminal is not provisioned.");
+            return BuildClosedSummary();
+        }
+
+        int currentTenantId = _provisionedTerminalContext.CurrentTenantId;
+        int currentLocationId = _provisionedTerminalContext.CurrentLocationId;
+        int currentTerminalId = _provisionedTerminalContext.CurrentTerminalId;
+
+        // 2. Fetch active open LocalShift
+        var activeShift = await _db.LocalShifts
+            .FirstOrDefaultAsync(s => s.LocationId == currentLocationId && s.TerminalId == currentTerminalId && s.Status == ShiftStatus.Open, cancellationToken);
+
+        if (activeShift == null)
+        {
+            return BuildClosedSummary();
+        }
+
+        // 3. Resolve Cash Tender Method IDs fully case-insensitively in memory
+        var allTenderMethods = await _db.LocalTenderMethods
+            .Where(t => t.TenantId == currentTenantId)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var cashTenderMethodIds = allTenderMethods
+            .Where(t =>
+                string.Equals(t.TenderType, "Cash", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(t.Code, "CASH", StringComparison.OrdinalIgnoreCase) ||
+                t.AllowsChange)
+            .Select(t => t.Id)
+            .ToList();
+
+        // 4. Load all active Paid cash payments for the active shift
+        var cashPayments = await _db.LocalPayments
+            .Where(p => p.ShiftId == activeShift.Id &&
+                        p.Status == PaymentStatus.Paid &&
+                        p.IsActive &&
+                        cashTenderMethodIds.Contains(p.TenderMethodId))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var paymentOrderIds = cashPayments.Select(p => p.OrderId).Distinct().ToList();
+
+        // 5. Load only completed active orders in this shift that have cash payments
+        var completedActiveCashPaidOrders = new List<LocalOrder>();
+        if (paymentOrderIds.Count > 0)
+        {
+            completedActiveCashPaidOrders = await _db.LocalOrders
+                .Where(o => o.ShiftId == activeShift.Id &&
+                            o.Status == OrderStatus.Completed &&
+                            o.IsActive &&
+                            paymentOrderIds.Contains(o.Id))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+        }
+
+        var completedActiveOrderIds = completedActiveCashPaidOrders.Select(o => o.Id).ToHashSet();
+
+        // Cash payments linked only to completed active orders
+        var validCashPayments = cashPayments
+            .Where(p => completedActiveOrderIds.Contains(p.OrderId))
+            .ToList();
+
+        var totalCashTendered = validCashPayments.Sum(p => p.Amount);
+        var totalChangeGiven = completedActiveCashPaidOrders.Sum(o => o.ChangeAmount);
+        var cashSales = totalCashTendered - totalChangeGiven;
+
+        // 6. Safe Drops Sum
+        var safeDropAmounts = await _db.LocalCashDrawerMovements
+            .Where(m => m.ShiftId == activeShift.Id && m.MovementType == CashDrawerMovementType.Drop && m.IsActive)
+            .Select(m => m.Amount)
+            .ToListAsync(cancellationToken);
+        var safeDrops = safeDropAmounts.Sum();
+
+        // 7. Balance computation
+        var openingFloat = activeShift.OpeningCashAmount;
+        var floatInjections = 0m; // Always 0 in Group 2
+        var expectedBalance = openingFloat + cashSales - safeDrops;
+
+        // 8. Transaction Count (completed active cash-paid orders + safe drops)
+        var cashSalesCount = completedActiveCashPaidOrders.Count;
+        var safeDropsCount = await _db.LocalCashDrawerMovements
+            .CountAsync(m => m.ShiftId == activeShift.Id && m.MovementType == CashDrawerMovementType.Drop && m.IsActive, cancellationToken);
+        var transactionCount = cashSalesCount + safeDropsCount;
+
+        // 9. Last Movement Timestamp
+        var movementTimes = await _db.LocalCashDrawerMovements
+            .Where(m => m.ShiftId == activeShift.Id && m.MovementType == CashDrawerMovementType.Drop && m.IsActive)
+            .Select(m => m.OccurredOn)
+            .ToListAsync(cancellationToken);
+        var lastMovementOccurredOn = movementTimes.Count > 0 ? (DateTimeOffset?)movementTimes.Max() : null;
+
+        // 10. Config Alert Check using ShiftOpenPolicyOptions
+        var policy = _policyOptions.Value;
+        var limit = policy.CashDrawerLimit > 0 ? policy.CashDrawerLimit : ShiftOpenPolicyOptions.DefaultCashDrawerLimit;
+        var threshold = policy.AutoSafeDropThreshold > 0 ? policy.AutoSafeDropThreshold : ShiftOpenPolicyOptions.DefaultAutoSafeDropThreshold;
+
+        string alertCode;
+        string alertMessage;
+        bool isSafeDropRecommended = false;
+        bool isOverLimit = false;
+
+        if (expectedBalance >= limit)
+        {
+            alertCode = "OVER_LIMIT";
+            alertMessage = "Drawer limit exceeded. Safe drop required immediately.";
+            isSafeDropRecommended = true;
+            isOverLimit = true;
+        }
+        else if (expectedBalance >= threshold)
+        {
+            alertCode = "SAFE_DROP_RECOMMENDED";
+            alertMessage = "Safe drop recommended.";
+            isSafeDropRecommended = true;
+            isOverLimit = false;
+        }
+        else
+        {
+            alertCode = "OK";
+            alertMessage = "Cash drawer status is normal.";
+            isSafeDropRecommended = false;
+            isOverLimit = false;
+        }
+
+        return new CashDrawerSummaryResult(
+            IsOpen: true,
+            ShiftId: activeShift.Id,
+            BusinessDate: activeShift.BusinessDate,
+            OpeningFloat: openingFloat,
+            CashSales: cashSales,
+            SafeDrops: safeDrops,
+            FloatInjections: floatInjections,
+            ExpectedDrawerBalance: expectedBalance,
+            TransactionCount: transactionCount,
+            LastMovementAt: lastMovementOccurredOn,
+            AlertCode: alertCode,
+            AlertMessage: alertMessage,
+            IsSafeDropRecommended: isSafeDropRecommended,
+            IsOverLimit: isOverLimit,
+            CashDrawerLimit: limit,
+            SafeDropThreshold: threshold);
+    }
+
+    private static CashDrawerSummaryResult BuildClosedSummary()
+    {
+        return new CashDrawerSummaryResult(
+            IsOpen: false,
+            ShiftId: null,
+            BusinessDate: null,
+            OpeningFloat: 0m,
+            CashSales: 0m,
+            SafeDrops: 0m,
+            FloatInjections: 0m,
+            ExpectedDrawerBalance: 0m,
+            TransactionCount: 0,
+            LastMovementAt: null,
+            AlertCode: "CLOSED",
+            AlertMessage: "No shift is currently open.",
+            IsSafeDropRecommended: false,
+            IsOverLimit: false,
+            CashDrawerLimit: 0m,
+            SafeDropThreshold: 0m);
     }
 
     private static bool IsPayloadMatch(LocalCashDrawerMovement existing, CashControlMovementRequest request, Guid shiftId, int employeeId)

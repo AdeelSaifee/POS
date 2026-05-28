@@ -1,8 +1,21 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 5 / Milestone 5.5 - Cash control service - **COMPLETE**
-- **Group**: Group 5 (Tasks 5.5.9 to 5.5.10 - completed)
+- **Milestone**: Phase 6 / Milestone 6.1 - POS.Api sync ingest endpoint - **Group 1 COMPLETE**
+- **Group**: Group 1 (Tasks 6.1.1 & 6.1.2 - completed)
+
+## Status of All Milestone 6.1 Tasks (Group 1 COMPLETE)
+- `[x]` Task 6.1.1 - Design the ingest contract (Shared contract records in POS.Shared)
+- `[x]` Task 6.1.2 - Create the Sync structures (API sync service scaffolding in POS.Api)
+- `[ ]` Task 6.1.3 - Add the ingest endpoint
+- `[ ]` Task 6.1.4 - Apply the PosDevice policy
+- `[ ]` Task 6.1.5 - Implement idempotent persist + dedupe
+- `[ ]` Task 6.1.6 - Ack via SyncIngestAck
+- `[ ]` Task 6.1.7 - Reject unauthorized callers
+- `[ ]` Task 6.1.8 - Handle duplicate event IDs
+- `[ ]` Task 6.1.9 - Add an API integration test
+- `[ ]` Task 6.1.10 - Document the endpoint contract
+
 
 ## Status of All Milestone 5.5 Tasks (Current)
 - `[x]` Task 5.5.1 - Define ICashControlService
@@ -53,6 +66,15 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.1 - Group 1 (Tasks 6.1.1 & 6.1.2 - completed)
+- [ADD] `POS.Shared/Contracts/Sync/SyncIngestEvent.cs` (DTO record representing individual POS outbox event in the sync contract)
+- [ADD] `POS.Shared/Contracts/Sync/SyncIngestRequest.cs` (DTO record representing the bulk batch chunk request containing POS outbox events)
+- [ADD] `POS.Shared/Contracts/Sync/SyncIngestEventAck.cs` (DTO record representing single event process acknowledgement status)
+- [ADD] `POS.Shared/Contracts/Sync/SyncIngestResponse.cs` (DTO record representing overall central sync response including event-level acks)
+- [ADD] `POS.Api/Application/Sync/SyncIngestIdentity.cs` (Record representing authenticated claims-derived device context identity)
+- [ADD] `POS.Api/Application/Sync/ISyncIngestService.cs` (Application service abstraction interface for central sync chunk ingestion)
+- [ADD] `POS.Api/Application/Sync/SyncIngestService.cs` (Scaffolded service implementation throwing clear NotImplementedException for deferred persistence)
 
 ### Group 1 (Tasks 5.5.1 to 5.5.3 - completed)
 - [ADD] `POS.Desktop/Services/CashControl/ICashControlService.cs` (Defines core RecordMovementAsync generic contract and request/result records)

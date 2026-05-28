@@ -10,6 +10,7 @@ using POS.Desktop.Services.Catalog;
 using POS.Desktop.Services.Provisioning;
 using POS.Desktop.Services.Session;
 using POS.Desktop.Services.Auth;
+using POS.Desktop.Services.Shifts;
 using POS.Desktop.Shell;
 using System.IO;
 
@@ -70,6 +71,7 @@ public static class DesktopHostBuilder
                 services.AddScoped<ICatalogService, CatalogService>();
                 services.AddScoped<ITerminalProvisioningStore, EfTerminalProvisioningStore>();
                 services.AddSingleton<TerminalProvisioningStartupLoader>();
+                services.AddScoped<IShiftService, ShiftService>();
 
                 // Register context first as DbContext depends on it.
                 // ProvisioningConfigLoader seeds the context with the appsettings.json value (normally

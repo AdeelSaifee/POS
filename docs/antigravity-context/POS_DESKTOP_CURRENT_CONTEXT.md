@@ -1,67 +1,53 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 5 / Milestone 5.1 - Authentication & login service
-- **Group**: Group 4 (Task 5.1.10) - Completed
+- **Milestone**: Phase 5 / Milestone 5.2 - Shift open service
+- **Group**: Group 1 (Tasks 5.2.1, 5.2.2, 5.2.3) - Completed
 
 ## Status of Tasks in this Session
-- `[x]` Task 5.1.10 - Unit test valid/invalid paths
+- `[x]` Task 5.2.1 - Define IShiftService.OpenShift
+- `[x]` Task 5.2.2 - Implement OpenShift
+- `[x]` Task 5.2.3 - Add openShift bridge handler
 
 ## Files Created/Changed in this Session
 
-### Group 4 (Current uncommitted changes)
-- [ADD] `POS.Desktop.Tests/Configuration/DesktopHostBuilderTests.cs`
-- [MODIFY] `POS.Desktop.Tests/Services/Auth/AuthValidatePinTests.cs`
-- [MODIFY] `POS.Desktop.Tests/Services/Auth/LocalEmployeeAuthServiceTests.cs`
+### Group 1 (Current uncommitted changes)
+- [ADD] `POS.Desktop/Services/Shifts/IShiftService.cs`
+- [ADD] `POS.Desktop/Services/Shifts/ShiftOpenResult.cs`
+- [ADD] `POS.Desktop/Services/Shifts/ShiftService.cs`
+- [ADD] `POS.Desktop/Data/LocalEntities/LocalShift.cs`
+- [ADD] `POS.Desktop/Data/Configurations/Local/LocalShiftConfiguration.cs`
+- [ADD] `POS.Desktop/Data/Migrations/Local/20260528025043_AddLocalShiftsTable.cs`
+- [ADD] `POS.Desktop/Data/Migrations/Local/20260528025043_AddLocalShiftsTable.Designer.cs`
+- [MODIFY] `POS.Desktop/Data/Migrations/Local/PosLocalDbContextModelSnapshot.cs`
+- [MODIFY] `POS.Desktop/Data/PosLocalDbContext.cs`
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs`
+- [MODIFY] `POS.Desktop/Shell/PosWebMessageRouter.cs`
+- [ADD] `POS.Desktop.Tests/Services/Shifts/ShiftServiceTests.cs`
+- [ADD] `POS.Desktop.Tests/Shell/ShiftBridgeHandlerTests.cs`
+- [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs`
 
 ### Prior Completed Groups & Milestones
-- Group 3 (Tasks 5.1.8 - 5.1.9) - Committed & Pushed (HEAD: `acc7c5ae`):
-  - [ADD] `POS.Desktop.Tests/TestSupport/TestLogger.cs`
+- Milestone 5.1 - Authentication & login service (Committed & Pushed - HEAD: `acc7c5ae` + Group 4 changes uncommitted)
+  - [ADD] `POS.Desktop.Tests/Configuration/DesktopHostBuilderTests.cs`
   - [MODIFY] `POS.Desktop.Tests/Services/Auth/AuthValidatePinTests.cs`
   - [MODIFY] `POS.Desktop.Tests/Services/Auth/LocalEmployeeAuthServiceTests.cs`
-- Group 2 (Tasks 5.1.5 - 5.1.7) - Committed & Pushed (HEAD: `ab7c8086`):
-  - [ADD] `POS.Desktop/Data/LocalEntities/LocalTerminalSession.cs`
-  - [ADD] `POS.Desktop/Data/Configurations/Local/LocalTerminalSessionConfiguration.cs`
-  - [MODIFY] `POS.Desktop/Data/PosLocalDbContext.cs`
-  - [MODIFY] `POS.Desktop/Services/Auth/IAuthService.cs`
-  - [MODIFY] `POS.Desktop/Services/Auth/LocalEmployeeAuthService.cs`
-  - [MODIFY] `POS.Desktop/Shell/PosWebMessageRouter.cs`
-  - [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs`
-  - [ADD] `POS.Desktop/Data/Migrations/Local/20260528010853_AddLocalTerminalSessionsTable.cs`
-  - [ADD] `POS.Desktop/Data/Migrations/Local/20260528010853_AddLocalTerminalSessionsTable.Designer.cs`
-  - [MODIFY] `POS.Desktop/Data/Migrations/Local/PosLocalDbContextModelSnapshot.cs`
-  - [MODIFY] `POS.Desktop.Tests/Services/Auth/AuthValidatePinTests.cs`
-  - [MODIFY] `POS.Desktop.Tests/Services/Auth/LocalEmployeeAuthServiceTests.cs`
-- Group 1 (Tasks 5.1.1 - 5.1.4) - Committed & Pushed:
-  - [ADD] `POS.Desktop/Services/Auth/IPinVerifier.cs`
-  - [ADD] `POS.Desktop/Services/Auth/PinVerifier.cs`
-  - [ADD] `POS.Desktop/Services/Auth/LocalEmployeeAuthService.cs`
-  - [ADD] `POS.Desktop/Data/LocalEntities/LocalEmployee.cs`
-  - [ADD] `POS.Desktop/Data/LocalEntities/LocalEmployeeLocationRole.cs`
-  - [ADD] `POS.Desktop/Data/Configurations/Local/LocalEmployeeConfigurations.cs`
-  - [MODIFY] `POS.Desktop/Data/PosLocalDbContext.cs`
-  - [MODIFY] `POS.Desktop/Services/Auth/IAuthService.cs`
-  - [MODIFY] `POS.Desktop/Services/Auth/StubAuthService.cs`
-  - [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs`
-  - [ADD] `POS.Desktop/Data/Migrations/Local/20260527121501_AddLocalEmployeeAuthTables.cs`
-  - [ADD] `POS.Desktop/Data/Migrations/Local/20260527121501_AddLocalEmployeeAuthTables.Designer.cs`
-  - [MODIFY] `POS.Desktop/Data/Migrations/Local/PosLocalDbContextModelSnapshot.cs`
-  - [ADD] `POS.Desktop.Tests/Services/Auth/PinVerifierTests.cs`
-  - [ADD] `POS.Desktop.Tests/Services/Auth/LocalEmployeeAuthServiceTests.cs`
 - Milestone 4.5 - Data-access conventions & tenant-filter validation (Committed)
 - Milestone 4.4 - Local catalog search & scan bridge integration (Committed)
 
 ## Scope Boundaries & Constraints
-- Lockout states: Lockout is documented as currently not model-backed and fails closed as a generic invalid auth outcome.
-- Do NOT modify `terminal_login.html` or other UI files.
-- Do NOT change central API database schemas/migrations.
-- Do NOT start Milestone 5.2.
+- Do NOT modify any UI files in this group (`shift_open.html`, sessionStorage).
+- Do NOT modify POS.Api or central API migrations.
 - Do NOT commit or push.
+- Keep double-open prevention at the service level only (no full screen gate yet).
+- Reject openingFloat <= 0.
 
 ## Important Decisions
-- **DateTime SQLite Translation Fix:** In SQLite, `DateTimeOffset` comparisons cannot be translated in LINQ queries. Properties `StartsOn` and `EndsOn` in `LocalEmployeeLocationRole` were defined as `DateTime?` in the local schema to support native comparison translation. Logic queries compare values with `DateTime.UtcNow`.
-- **Manager-PIN Validation:** Refined `IAuthService` contract to include `ValidateManagerPinAsync` to support manager/supervisor verification overrides directly without cashiers logging out.
-- **Explicit Property Schemas:** Kept `LocalEmployee` and `LocalEmployeeLocationRole` independent of `LocalCatalogEntity` to ensure database concerns remain decoupled from catalog concerns.
+- **SessionId to EmployeeId Resolution:** In memory, `OperatorSession` does not contain `EmployeeId` (only `OperatorId`). We safely parse `CurrentSession.SessionId` to an integer (representing the SQLite DB session PK) and query `LocalTerminalSessions` to resolve `EmployeeId` securely, preventing any session injection.
+- **Strict Location & Terminal Boundaries:** Verified that active session parameters in SQLite align exactly with the current `IProvisionedTerminalContext` tenant, location, and terminal identifiers before permitting a shift to open.
+- **Idempotency & Correlation IDs:** Generated unique non-empty string GUIDs for `IdempotencyKey` and `CorrelationId` to ensure local offline operation auditability.
+- **Consistent Float Validation:** Enforced strictly positive opening cash floats (`OpeningCashAmount > 0` DB constraint and `openingFloat <= 0` service rejection).
+
 
 ## Auth Coverage Matrix
 | Path Type | Description | Test Case / Verification | Status |
@@ -91,13 +77,13 @@
 | | 17. StubAuthService is no longer default IAuthService | `CreateHostBuilder_RegistersLocalEmployeeAuthService_AsIAuthService` | Covered |
 | | 18. No credentials/raw payloads leaked in logs | `ValidatePinAsync_DoesNotLogSensitiveData_OnSuccessAndFailure` / `Router_DoesNotLogSensitiveDataOrRawPayloads` | Covered |
 
-## Verification Summary (Milestone 5.1 Group 4)
+## Verification Summary (Milestone 5.2 Group 1)
 - `git status --short --untracked-files=all`: Checked and verified only expected files are changed/created.
 - `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: Built successfully (0 errors, 0 warnings).
 - `dotnet build POS.slnx --configuration Debug`: Built successfully (0 errors, 0 warnings).
-- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: 217/217 passed.
-- `dotnet test POS.Tests/POS.Tests.csproj --configuration Debug`: 49/49 passed.
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: Passed successfully (234/234 passed).
+- `dotnet test POS.Tests/POS.Tests.csproj --configuration Debug`: Passed successfully (49/49 passed).
 - `git diff --check`: Verified zero formatting or whitespace issues.
 
-## Next Milestone
-- Phase 5 / Milestone 5.2 - Shift open service
+## Next Recommended Group
+- **Group 2**: Tasks 5.2.4 to 5.2.5, wire `shift_open.html` to bridge and remove `pos_shift_*` sessionStorage.

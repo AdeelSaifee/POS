@@ -124,7 +124,8 @@ public class PosWebMessageRouterTests
         Assert.Contains("catalog.listItems", types);
         Assert.Contains("catalog.searchItems", types);
         Assert.Contains("catalog.lookupByIdentifier", types);
-        Assert.Equal(10, types.Count);
+        Assert.Contains("shift.open", types);
+        Assert.Equal(11, types.Count);
     }
 
     [Fact]

@@ -65,6 +65,8 @@ public class PosLocalDbContext : DbContext
 
     public DbSet<LocalTerminalSession> LocalTerminalSessions => Set<LocalTerminalSession>();
 
+    public DbSet<LocalShift> LocalShifts => Set<LocalShift>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -123,6 +125,9 @@ public class PosLocalDbContext : DbContext
             .HasQueryFilter(x => x.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<LocalTerminalSession>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalShift>()
             .HasQueryFilter(x => x.TenantId == CurrentTenantId);
     }
 }

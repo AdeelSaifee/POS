@@ -10,6 +10,7 @@ using POS.Desktop.Services.Catalog;
 using POS.Desktop.Services.Session;
 using POS.Desktop.Services.Auth;
 using POS.Desktop.Services.Provisioning;
+using POS.Desktop.Services.Shifts;
 using POS.Shared.Contracts;
 
 namespace POS.Desktop.Shell;
@@ -75,6 +76,12 @@ public sealed class PosWebMessageRouter
             ct));
         Register("catalog.lookupByIdentifier", sp => (req, ct) => HandleCatalogLookupByIdentifierAsync(
             sp.GetRequiredService<ICatalogService>(),
+            req,
+            ct));
+
+        // Task 5.2.3: Shift open bridge handler.
+        Register("shift.open", sp => (req, ct) => HandleShiftOpenAsync(
+            sp.GetRequiredService<IShiftService>(),
             req,
             ct));
     }
@@ -561,5 +568,83 @@ public sealed class PosWebMessageRouter
             limit = lim;
 
         return new CatalogItemQuery { CategoryId = categoryId, SearchText = searchText, Limit = limit };
+    }
+
+    /// <summary>
+    /// Handles the shift.open message, validating float and invoking the shift service.
+    /// </summary>
+    private async Task<BridgeResponseEnvelope> HandleShiftOpenAsync(
+        IShiftService shiftService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        if (request.Payload == null)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was missing.");
+        }
+
+        decimal openingFloat = 0;
+        try
+        {
+            var payloadJson = System.Text.Json.JsonSerializer.Serialize(request.Payload, BridgeJsonSerializerOptions.Default);
+            using var doc = System.Text.Json.JsonDocument.Parse(payloadJson);
+
+            if (!doc.RootElement.TryGetProperty("openingFloat", out var floatProp))
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Required parameter 'openingFloat' was missing.");
+            }
+
+            if (floatProp.ValueKind == System.Text.Json.JsonValueKind.Number)
+            {
+                if (!floatProp.TryGetDecimal(out openingFloat))
+                {
+                    return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'openingFloat' must be a valid number.");
+                }
+            }
+            else if (floatProp.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                var strVal = floatProp.GetString();
+                if (!decimal.TryParse(strVal, out openingFloat))
+                {
+                    return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'openingFloat' must be a valid number.");
+                }
+            }
+            else
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'openingFloat' must be numeric.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to parse shift.open payload.");
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Failed to parse request payload.");
+        }
+
+        var result = await shiftService.OpenShiftAsync(openingFloat, cancellationToken);
+
+        if (result.IsSuccess && result.Shift != null)
+        {
+            return BridgeResponseEnvelope.Success(
+                type: request.Type,
+                requestId: request.RequestId,
+                payload: new
+                {
+                    shiftId = result.Shift.Id.ToString(),
+                    businessDate = result.Shift.BusinessDate.ToString("yyyy-MM-dd"),
+                    openingFloat = result.Shift.OpeningCashAmount,
+                    status = result.Shift.Status.ToString()
+                }
+            );
+        }
+
+        string errorCode = result.ErrorCode ?? "SHIFT_OPEN_FAILED";
+        string errorMessage = result.ErrorMessage ?? "The shift could not be opened.";
+
+        return BridgeResponseEnvelope.Failure(
+            type: request.Type,
+            requestId: request.RequestId,
+            code: errorCode,
+            message: errorMessage
+        );
     }
 }

@@ -1,14 +1,14 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 6 / Milestone 6.1 - POS.Api sync ingest endpoint - **Group 1 COMPLETE**
-- **Group**: Group 1 (Tasks 6.1.1 & 6.1.2 - completed)
+- **Milestone**: Phase 6 / Milestone 6.1 - POS.Api sync ingest endpoint - **Group 2 COMPLETE**
+- **Group**: Group 2 (Tasks 6.1.3 & 6.1.4 - completed)
 
-## Status of All Milestone 6.1 Tasks (Group 1 COMPLETE)
+## Status of All Milestone 6.1 Tasks (Group 2 COMPLETE)
 - `[x]` Task 6.1.1 - Design the ingest contract (Shared contract records in POS.Shared)
 - `[x]` Task 6.1.2 - Create the Sync structures (API sync service scaffolding in POS.Api)
-- `[ ]` Task 6.1.3 - Add the ingest endpoint
-- `[ ]` Task 6.1.4 - Apply the PosDevice policy
+- `[x]` Task 6.1.3 - Add the ingest endpoint (POST api/sync/ingest implemented in SyncController)
+- `[x]` Task 6.1.4 - Apply the PosDevice policy (PosDevice authorization mapping enforced)
 - `[ ]` Task 6.1.5 - Implement idempotent persist + dedupe
 - `[ ]` Task 6.1.6 - Ack via SyncIngestAck
 - `[ ]` Task 6.1.7 - Reject unauthorized callers
@@ -66,6 +66,10 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.1 - Group 2 (Tasks 6.1.3 & 6.1.4 - completed)
+- [ADD] `POS.Api/Controllers/SyncController.cs` (Ingest controller with POST api/sync/ingest protected by PosDevice policy, claims validation and 501 fallback mapping)
+- [MODIFY] `POS.Api/Program.cs` (Registered `ISyncIngestService` scoped service in API container and imported sync namespace)
 
 ### Phase 6 / Milestone 6.1 - Group 1 (Tasks 6.1.1 & 6.1.2 - completed)
 - [ADD] `POS.Shared/Contracts/Sync/SyncIngestEvent.cs` (DTO record representing individual POS outbox event in the sync contract)
@@ -445,6 +449,23 @@ The `openShift()` function in `shift_open.html` transition flow:
 - `dotnet test POS.Desktop.Tests`: **451/451 passed** (425 existing + 10 service tests + 6 bridge tests + 3 static UI tests)
 - `dotnet test POS.Tests`: **49/49 passed** (49 core/API tests)
 
+## Verification Summary (Milestone 6.1 Group 2)
+
+### Design Decisions & Implementation Details
+- **Sync Ingest Endpoint Route:** Implemented in `SyncController.cs` under the endpoint `POST /api/sync/ingest`.
+- **PosDevice Policy Protection:** Configured `[Authorize(Policy = "PosDevice")]` at the controller level to restrict access strictly to authenticated device clients.
+- **Claims-derived identity:** Extracted `tenant_id`, `location_id`, and `terminal_id` from JWT Claims. We added strict validation to reject missing, non-numeric, zero, or negative IDs with `403 Forbidden` (using `Forbid()`).
+- **Body identity cross-check:** Cross-checked request body properties (`TenantId`, `LocationId`, `TerminalId`) against the claims-derived identity, returning a descriptive `400 BadRequest` problem response in case of mismatch.
+- **Service Ingestion Call:** Safely routed consistent requests to `ISyncIngestService.IngestAsync(...)`.
+- **NotImplementedException Mapping:** Handled the current service-level `NotImplementedException` gracefully at the controller layer, returning a clean `501 Not Implemented` response detailing that persistence is deferred. No silent success or faked records occur.
+- **Deferred Operations:** Idempotent database writes, deduplication logic, central orders/payments event transformation, and integration tests are deferred to later groups.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Tests/POS.Tests.csproj --configuration Debug`: **49/49 passed** (0 warnings/errors)
+
 ## Next Recommended Milestone
-- **Phase 5 / Milestone 5.6 - Shift close & Z-report** (IShiftService.CloseShift, expected cash + variance, Z-report reconciliation, lock terminal on close, unit testing variance/reconciliation)
+- **Phase 6 / Milestone 6.1 - Group 3** (Tasks 6.1.5 persistence, 6.1.6 ack database tracking, 6.1.8 duplicate replay recovery logic)
 

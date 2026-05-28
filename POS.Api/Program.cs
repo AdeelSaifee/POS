@@ -6,6 +6,7 @@ using POS.Api.Auth;
 using POS.Api.Application.Categories;
 using POS.Api.Application.Health;
 using POS.Api.Application.Locations;
+using POS.Api.Application.Sync;
 using POS.Api.Application.Tenant;
 using POS.Api.Application.UnitsOfMeasure;
 using POS.Api.Configuration;
@@ -23,6 +24,7 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<ICategoryReadService, CategoryReadService>();
 builder.Services.AddScoped<IHealthStatusService, HealthStatusService>();
 builder.Services.AddScoped<ILocationReadService, LocationReadService>();
+builder.Services.AddScoped<ISyncIngestService, SyncIngestService>();
 builder.Services.AddScoped<ITenantProfileReadService, TenantProfileReadService>();
 builder.Services.AddScoped<IUnitOfMeasureReadService, UnitOfMeasureReadService>();
 

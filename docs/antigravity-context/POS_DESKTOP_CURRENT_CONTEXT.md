@@ -1,8 +1,20 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 5 / Milestone 5.3 - Order / cart service
-- **Group**: Group 5 (Task 5.3.10 - completed)
+- **Milestone**: Phase 5 / Milestone 5.4 - Payment & completion service
+- **Group**: Group 1 (Tasks 5.4.1 to 5.4.4 - completed)
+
+## Status of All Milestone 5.4 Tasks (Current)
+- `[x]` Task 5.4.1 - Define IPaymentService (Tender, change, completion contract)
+- `[x]` Task 5.4.2 - Record Payment per TenderMethod (Persist tenders cash/card/wallet/split)
+- `[x]` Task 5.4.3 - Compute cash change (Change = tendered - due, MoneyRounder-policy)
+- `[x]` Task 5.4.4 - Commit order append-only (Atomic order/lines/payments save with SQLite transaction)
+- `[ ]` Task 5.4.5 - Enqueue SyncOutbox event
+- `[ ]` Task 5.4.6 - Enqueue PrintQueue receipt
+- `[ ]` Task 5.4.7 - Render receipt from data
+- `[ ]` Task 5.4.8 - Ensure idempotent completion
+- `[ ]` Task 5.4.9 - Wire payment_screen.html
+- `[ ]` Task 5.4.10 - Unit test tender/change/completion
 
 ## Status of All Milestone 5.3 Tasks
 - `[x]` Task 5.3.1 - Define IOrderService
@@ -29,6 +41,26 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Group 1 (Tasks 5.4.1 to 5.4.4 - completed)
+- [ADD] `POS.Desktop/Services/Payments/IPaymentService.cs` (Defines core tender, change, completion contract)
+- [ADD] `POS.Desktop/Services/Payments/PaymentTenderRequest.cs` (Tender item in request)
+- [ADD] `POS.Desktop/Services/Payments/PaymentCompletionRequest.cs` (Payload required to complete order)
+- [ADD] `POS.Desktop/Services/Payments/PaymentCompletionResult.cs` (Result containing status, change, receipt)
+- [ADD] `POS.Desktop/Services/Payments/PaymentValidationException.cs` (Custom payment validation exception)
+- [ADD] `POS.Desktop/Services/Payments/PaymentService.cs` (Validates session/shift/tenders and commits atomically)
+- [ADD] `POS.Desktop/Data/LocalEntities/LocalOrder.cs` (Local order SQLite db entity)
+- [ADD] `POS.Desktop/Data/LocalEntities/LocalOrderLine.cs` (Local order line SQLite db entity)
+- [ADD] `POS.Desktop/Data/LocalEntities/LocalPayment.cs` (Local payment SQLite db entity)
+- [ADD] `POS.Desktop/Data/Configurations/Local/LocalOrderConfiguration.cs` (Local order EF mapping & database check constraints)
+- [ADD] `POS.Desktop/Data/Configurations/Local/LocalOrderLineConfiguration.cs` (Local order line EF mapping & check constraints)
+- [ADD] `POS.Desktop/Data/Configurations/Local/LocalPaymentConfiguration.cs` (Local payment EF mapping & check constraints)
+- [ADD] `POS.Desktop/Data/Migrations/Local/20260528094204_AddLocalOrderPaymentTables.cs` (EF Core SQLite schema migration)
+- [ADD] `POS.Desktop/Data/Migrations/Local/20260528094204_AddLocalOrderPaymentTables.Designer.cs` (EF migration designer)
+- [MODIFY] `POS.Desktop/Data/PosLocalDbContext.cs` (Added DbSet registers and global query filters for new entities)
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs` (Registered IPaymentService in dependency container)
+- [ADD] `POS.Desktop.Tests/Services/Payments/PaymentServiceTests.cs` (Self-contained test suite covering cash/card/wallet/split payments, change calculations, error conditions, SQLite transaction rollback, and cart clearing)
+- [MODIFY] `docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md` (Updated context file to record Milestone 5.4 Group 1 status)
 
 ### Group 5 (Task 5.3.10 - completed)
 - [MODIFY] `POS.Desktop.Tests/Services/Orders/OrderServiceTests.cs` (Added mixed rates exclusive tax with discount, tax included item with fixed discount, zero/null tax rate items, percentage discount consistent rounding, and equations verification tests)
@@ -189,15 +221,17 @@ No changes were required to this flow.
     - `netAmount = taxableBase`
 - **Proportional Discount Distribution:** Cart-level discounts are distributed proportionally across cart lines before tax based on each line's share of the total gross subtotal. To ensure the sum of line discounts exactly equals the cart-level discount, the last line absorbs any rounding remainder.
 - **Deferred Temporary Hold Behavior:** The `holdActiveOrder` function saves the current cart state snapshot to `sessionStorage` under the key `pos_held_order` as a temporary deferred feature. After holding, it calls the `order.clearCart` bridge endpoint to clear the active C# cart. Note that `pos_held_order` is not the active cart source of truth, and the full hold/resume flow will be revisited later.
+- **SQLite Atomic Transactions:** Uses DbContext Transaction to save order, order lines, and payments as an atomic unit, ensuring no partial records can ever be committed.
+- **Tender overpayment rules**: Prevents non-cash overpayment change drift. Correctly rejects non-cash overpayment unless cash is present to absorb change.
 
-## Verification Summary (Milestone 5.3 Group 5)
+## Verification Summary (Milestone 5.4 Group 1)
 
 ### Builds
 - `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: **0 errors / 0 warnings**
 - `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
 
 ### Tests
-- `dotnet test POS.Desktop.Tests`: **305/305 passed** (all 298 existing + 7 new thorough verification tests passed successfully)
+- `dotnet test POS.Desktop.Tests`: **316/316 passed** (all 305 existing + 11 new comprehensive integration and transaction tests passed successfully)
 - `dotnet test POS.Tests`: **49/49 passed** (all 49 central API/core tests passed successfully)
 
 ### Git hygiene
@@ -245,8 +279,11 @@ Runtime smoke test through the WebView2 host requires launching the desktop appl
 | Raw exception text shown to cashier | ✗ Not present |
 
 ### Deferred items
-- `payment_screen.html` and payment/completion flow remain strictly deferred to Milestone 5.4.
+- `SyncOutbox` event enqueueing is deferred to Group 2 / Task 5.4.5.
+- `PrintQueue` receipt job enqueueing is deferred to Group 2 / Task 5.4.6.
+- Receipt template rendering from committed order data is deferred to Group 2 / Task 5.4.7.
+- payment_screen.html UI bridge routing and integration is deferred to Group 4 / Task 5.4.9.
 - `pos_shift_float` / `pos_shift_open` references in `cash_control.html` and `shift_close.html` are demo metric artifacts inside `updateMetrics()` / `loadMetrics()` / `executeShiftClose()` - NOT access gates. Deferred to Milestones 5.5 and 5.6.
 
-## Next Recommended Milestone
-- **Phase 5 / Milestone 5.4 - Payment & completion service**
+## Next Recommended Group
+- **Milestone 5.4 Group 2 (Tasks 5.4.5 to 5.4.7 - outbox event, print queue, receipt render)**

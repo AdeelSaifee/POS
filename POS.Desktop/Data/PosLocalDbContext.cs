@@ -67,6 +67,12 @@ public class PosLocalDbContext : DbContext
 
     public DbSet<LocalShift> LocalShifts => Set<LocalShift>();
 
+    public DbSet<LocalOrder> LocalOrders => Set<LocalOrder>();
+
+    public DbSet<LocalOrderLine> LocalOrderLines => Set<LocalOrderLine>();
+
+    public DbSet<LocalPayment> LocalPayments => Set<LocalPayment>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -128,6 +134,15 @@ public class PosLocalDbContext : DbContext
             .HasQueryFilter(x => x.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<LocalShift>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalOrder>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalOrderLine>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalPayment>()
             .HasQueryFilter(x => x.TenantId == CurrentTenantId);
     }
 }

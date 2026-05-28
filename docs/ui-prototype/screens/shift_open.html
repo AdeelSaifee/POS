@@ -543,21 +543,81 @@ function setFloat(val) {
   event.target.classList.add('active');
 }
 
-function openShift() {
+let isSubmitting = false;
+
+async function openShift() {
+  if (isSubmitting) return;
+
   const raw = (floatInput.value || '').replace(/[^0-9]/g,'');
   const floatVal = parseInt(raw) || 0;
   if (floatVal <= 0) { showToast('Enter a valid opening float amount.','error'); return; }
 
-  sessionStorage.setItem('pos_shift_open','true');
-  sessionStorage.setItem('pos_shift_float', String(floatVal));
-  if (!sessionStorage.getItem('pos_cart')) sessionStorage.setItem('pos_cart','[]');
+  if (!window.posBridge || !window.posBridge.isAvailable || !window.posBridge.isAvailable()) {
+    showToast('The point of sale service is not reachable.', 'error');
+    return;
+  }
 
-  const overlay = document.getElementById('success-overlay');
-  overlay.classList.add('open');
-  setTimeout(() => {
-    document.getElementById('progress-bar').style.width = '100%';
-  }, 50);
-  setTimeout(() => { window.location.href = 'main_checkout.html'; }, 1600);
+  const btn = document.getElementById('open-shift-btn');
+  const originalHTML = btn ? btn.innerHTML : 'Open Shift';
+  isSubmitting = true;
+
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+    btn.innerHTML = '<span style="display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 0.8s linear infinite"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Opening...</span>';
+  }
+
+  try {
+    await window.posBridge.request('shift.open', { openingFloat: floatVal });
+
+    const overlay = document.getElementById('success-overlay');
+    if (overlay) {
+      overlay.classList.add('open');
+    }
+    setTimeout(() => {
+      const progressBar = document.getElementById('progress-bar');
+      if (progressBar) {
+        progressBar.style.width = '100%';
+      }
+    }, 50);
+    setTimeout(() => { window.location.href = 'main_checkout.html'; }, 1600);
+  } catch (error) {
+    isSubmitting = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      btn.innerHTML = originalHTML;
+    }
+
+    let friendlyMessage = 'Shift could not be opened. Please try again.';
+    if (error && error.code) {
+      switch (error.code) {
+        case 'SHIFT_ALREADY_OPEN':
+          friendlyMessage = 'A shift is already open on this terminal.';
+          break;
+        case 'TERMINAL_UNPROVISIONED':
+          friendlyMessage = 'This terminal is not provisioned yet.';
+          break;
+        case 'NO_ACTIVE_SESSION':
+        case 'INVALID_SESSION_ID':
+        case 'SESSION_NOT_FOUND':
+        case 'SESSION_CLOSED':
+        case 'SESSION_MISMATCH':
+          friendlyMessage = 'Please log in again before opening a shift.';
+          break;
+        case 'INVALID_OPENING_FLOAT':
+          friendlyMessage = 'Enter a valid opening float amount.';
+          break;
+        default:
+          friendlyMessage = 'Shift could not be opened. Please try again.';
+          break;
+      }
+    }
+    showToast(friendlyMessage, 'error');
+    console.error('[Shift Open] Bridge call failed:', error);
+  }
 }
 
 async function doLogout() {

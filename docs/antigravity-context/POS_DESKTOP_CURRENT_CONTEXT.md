@@ -2,45 +2,44 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 5 / Milestone 5.2 - Shift open service
-- **Group**: Group 1 (Tasks 5.2.1, 5.2.2, 5.2.3) - Completed
+- **Group**: Group 2 (Tasks 5.2.4, 5.2.5) - Completed
 
 ## Status of Tasks in this Session
-- `[x]` Task 5.2.1 - Define IShiftService.OpenShift
-- `[x]` Task 5.2.2 - Implement OpenShift
-- `[x]` Task 5.2.3 - Add openShift bridge handler
+- `[x]` Task 5.2.4 - Wire shift_open.html to shift.open bridge endpoint
+- `[x]` Task 5.2.5 - Remove pos_shift_* sessionStorage and pos_cart initialization
 
 ## Files Created/Changed in this Session
 
-### Group 1 (Current uncommitted changes)
-- [ADD] `POS.Desktop/Services/Shifts/IShiftService.cs`
-- [ADD] `POS.Desktop/Services/Shifts/ShiftOpenResult.cs`
-- [ADD] `POS.Desktop/Services/Shifts/ShiftService.cs`
-- [ADD] `POS.Desktop/Data/LocalEntities/LocalShift.cs`
-- [ADD] `POS.Desktop/Data/Configurations/Local/LocalShiftConfiguration.cs`
-- [ADD] `POS.Desktop/Data/Migrations/Local/20260528025043_AddLocalShiftsTable.cs`
-- [ADD] `POS.Desktop/Data/Migrations/Local/20260528025043_AddLocalShiftsTable.Designer.cs`
-- [MODIFY] `POS.Desktop/Data/Migrations/Local/PosLocalDbContextModelSnapshot.cs`
-- [MODIFY] `POS.Desktop/Data/PosLocalDbContext.cs`
-- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs`
-- [MODIFY] `POS.Desktop/Shell/PosWebMessageRouter.cs`
-- [ADD] `POS.Desktop.Tests/Services/Shifts/ShiftServiceTests.cs`
-- [ADD] `POS.Desktop.Tests/Shell/ShiftBridgeHandlerTests.cs`
-- [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs`
+### Group 2 (Current uncommitted changes)
+- [MODIFY] `POS.Desktop/Assets/ui/shift_open.html`
+- [MODIFY] `docs/ui-prototype/screens/shift_open.html`
 
 ### Prior Completed Groups & Milestones
+- Group 1 (Tasks 5.2.1 - 5.2.3) - Completed:
+  - [ADD] `POS.Desktop/Services/Shifts/IShiftService.cs`
+  - [ADD] `POS.Desktop/Services/Shifts/ShiftOpenResult.cs`
+  - [ADD] `POS.Desktop/Services/Shifts/ShiftService.cs`
+  - [ADD] `POS.Desktop/Data/LocalEntities/LocalShift.cs`
+  - [ADD] `POS.Desktop/Data/Configurations/Local/LocalShiftConfiguration.cs`
+  - [ADD] `POS.Desktop/Data/Migrations/Local/20260528025043_AddLocalShiftsTable.cs`
+  - [ADD] `POS.Desktop/Data/Migrations/Local/20260528025043_AddLocalShiftsTable.Designer.cs`
+  - [MODIFY] `POS.Desktop/Data/Migrations/Local/PosLocalDbContextModelSnapshot.cs`
+  - [MODIFY] `POS.Desktop/Data/PosLocalDbContext.cs`
+  - [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs`
+  - [MODIFY] `POS.Desktop/Shell/PosWebMessageRouter.cs`
+  - [ADD] `POS.Desktop.Tests/Services/Shifts/ShiftServiceTests.cs`
+  - [ADD] `POS.Desktop.Tests/Shell/ShiftBridgeHandlerTests.cs`
+  - [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs`
 - Milestone 5.1 - Authentication & login service (Committed & Pushed - HEAD: `acc7c5ae` + Group 4 changes uncommitted)
-  - [ADD] `POS.Desktop.Tests/Configuration/DesktopHostBuilderTests.cs`
-  - [MODIFY] `POS.Desktop.Tests/Services/Auth/AuthValidatePinTests.cs`
-  - [MODIFY] `POS.Desktop.Tests/Services/Auth/LocalEmployeeAuthServiceTests.cs`
 - Milestone 4.5 - Data-access conventions & tenant-filter validation (Committed)
 - Milestone 4.4 - Local catalog search & scan bridge integration (Committed)
 
 ## Scope Boundaries & Constraints
-- Do NOT modify any UI files in this group (`shift_open.html`, sessionStorage).
+- Do NOT modify backend C# service logic.
 - Do NOT modify POS.Api or central API migrations.
 - Do NOT commit or push.
 - Keep double-open prevention at the service level only (no full screen gate yet).
-- Reject openingFloat <= 0.
+- Disable/guard Open Shift button during bridge request.
 
 ## Important Decisions
 - **SessionId to EmployeeId Resolution:** In memory, `OperatorSession` does not contain `EmployeeId` (only `OperatorId`). We safely parse `CurrentSession.SessionId` to an integer (representing the SQLite DB session PK) and query `LocalTerminalSessions` to resolve `EmployeeId` securely, preventing any session injection.
@@ -86,4 +85,4 @@
 - `git diff --check`: Verified zero formatting or whitespace issues.
 
 ## Next Recommended Group
-- **Group 2**: Tasks 5.2.4 to 5.2.5, wire `shift_open.html` to bridge and remove `pos_shift_*` sessionStorage.
+- **Group 3**: Tasks 5.2.6 to 5.2.7, define double-open prevention logic and implementing the app-wide "shift open" screen-guard gate.

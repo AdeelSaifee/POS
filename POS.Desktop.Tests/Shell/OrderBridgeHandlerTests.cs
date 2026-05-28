@@ -292,6 +292,23 @@ public class OrderBridgeHandlerTests
         Assert.Equal("Cannot remove discount.", response.Error.Message);
     }
 
+    [Fact]
+    public async Task GenericException_MapsToHandlerError_WithoutRawDetails()
+    {
+        var (router, service) = CreateRouterWithStub();
+        service.ExceptionToThrow = new InvalidOperationException("Fatal database failure raw stack trace detail.");
+
+        var request = new BridgeRequestEnvelope { Type = "order.getCart", RequestId = "req-fatal", Version = "v1" };
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        Assert.False(response.Ok);
+        Assert.NotNull(response.Error);
+        Assert.Equal("HANDLER_ERROR", response.Error.Code);
+        Assert.Equal("The requested action could not be completed.", response.Error.Message);
+        // Ensure no raw exception details or stack traces are leaked
+        Assert.DoesNotContain("Fatal database failure", response.Error.Message);
+    }
+
 
     private class StubOrderService : IOrderService
     {
@@ -307,7 +324,7 @@ public class OrderBridgeHandlerTests
         public decimal LastDiscountValue { get; set; }
         public bool RemoveDiscountCalled { get; set; }
 
-        public OrderValidationException? ExceptionToThrow { get; set; }
+        public Exception? ExceptionToThrow { get; set; }
         public CartStateDto CartStateToReturn { get; set; } = new();
 
         public Task<CartStateDto> GetCartStateAsync(CancellationToken cancellationToken = default)

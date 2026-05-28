@@ -2,7 +2,7 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 5 / Milestone 5.3 - Order / cart service
-- **Group**: Group 4 (Tasks 5.3.8 and 5.3.9 - completed)
+- **Group**: Group 5 (Task 5.3.10 - completed)
 
 ## Status of All Milestone 5.3 Tasks
 - `[x]` Task 5.3.1 - Define IOrderService
@@ -14,7 +14,7 @@
 - `[x]` Task 5.3.7 - Centralize money rounding
 - `[x]` Task 5.3.8 - Add cart bridge handlers
 - `[x]` Task 5.3.9 - Wire main_checkout cart + remove pos_cart
-- `[ ]` Task 5.3.10 - Unit test cart math + tax
+- `[x]` Task 5.3.10 - Unit test cart math + tax / final cart math, bridge, UI, and regression verification
 
 ## Status of All Milestone 5.2 Tasks
 - `[x]` Task 5.2.1 - LocalShift entity + EF migration
@@ -29,6 +29,11 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Group 5 (Task 5.3.10 - completed)
+- [MODIFY] `POS.Desktop.Tests/Services/Orders/OrderServiceTests.cs` (Added mixed rates exclusive tax with discount, tax included item with fixed discount, zero/null tax rate items, percentage discount consistent rounding, and equations verification tests)
+- [MODIFY] `POS.Desktop.Tests/Shell/OrderBridgeHandlerTests.cs` (Added generic non-validation exceptions safe mapping verification test)
+- [MODIFY] `docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md` (Updated context to reflect final milestone verification state)
 
 ### Group 4 (Tasks 5.3.8 and 5.3.9 - completed)
 - [ADD] `POS.Desktop.Tests/Shell/OrderBridgeHandlerTests.cs`
@@ -185,26 +190,26 @@ No changes were required to this flow.
 - **Proportional Discount Distribution:** Cart-level discounts are distributed proportionally across cart lines before tax based on each line's share of the total gross subtotal. To ensure the sum of line discounts exactly equals the cart-level discount, the last line absorbs any rounding remainder.
 - **Deferred Temporary Hold Behavior:** The `holdActiveOrder` function saves the current cart state snapshot to `sessionStorage` under the key `pos_held_order` as a temporary deferred feature. After holding, it calls the `order.clearCart` bridge endpoint to clear the active C# cart. Note that `pos_held_order` is not the active cart source of truth, and the full hold/resume flow will be revisited later.
 
-## Verification Summary (Milestone 5.3 Group 4)
+## Verification Summary (Milestone 5.3 Group 5)
 
 ### Builds
 - `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: **0 errors / 0 warnings**
 - `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
 
 ### Tests
-- `dotnet test POS.Desktop.Tests`: **295/295 passed**
-- `dotnet test POS.Tests`: **49/49 passed**
+- `dotnet test POS.Desktop.Tests`: **305/305 passed** (all 298 existing + 7 new thorough verification tests passed successfully)
+- `dotnet test POS.Tests`: **49/49 passed** (all 49 central API/core tests passed successfully)
 
 ### Git hygiene
 - `git diff --check`: Zero whitespace/layout errors
-- `git status`: Only context update + new/modified Group 3 files before commit
+- `git status`: Only context update + new/modified test files before commit (no untracked files or payment screen edits)
 
 ### SHA-256 sync check (all 5 milestone screens)
 | File | Assets hash | Result |
 |---|---|---|
 | `shift_open.html` | `84F0198FA66D...` | IDENTICAL |
-| `main_checkout.html` | `A831FA77E0D6...` | IDENTICAL (fixed) |
-| `payment_screen.html` | `61B638BB1561...` | IDENTICAL |
+| `main_checkout.html` | `A831FA77E0D6...` | IDENTICAL (authoritative main_checkout copies SHA-256 matches perfectly: `A831FA77E0D6...`) |
+| `payment_screen.html` | `61B638BB1561...` | IDENTICAL (strictly unedited/deferred) |
 | `cash_control.html` | `D1ED98B1271D...` | IDENTICAL |
 | `shift_close.html` | `49E73F7062E5...` | IDENTICAL |
 | **All files synchronized** | | **True** |
@@ -239,8 +244,9 @@ Runtime smoke test through the WebView2 host requires launching the desktop appl
 | `localStorage` / `sessionStorage` used for gating | ✗ Not present |
 | Raw exception text shown to cashier | ✗ Not present |
 
-### Deferred items (not bugs for 5.2)
+### Deferred items
+- `payment_screen.html` and payment/completion flow remain strictly deferred to Milestone 5.4.
 - `pos_shift_float` / `pos_shift_open` references in `cash_control.html` and `shift_close.html` are demo metric artifacts inside `updateMetrics()` / `loadMetrics()` / `executeShiftClose()` - NOT access gates. Deferred to Milestones 5.5 and 5.6.
 
-## Next Recommended Group
-- **Group 5 - Task 5.3.10 only - final cart math, bridge, UI, and regression verification.**
+## Next Recommended Milestone
+- **Phase 5 / Milestone 5.4 - Payment & completion service**

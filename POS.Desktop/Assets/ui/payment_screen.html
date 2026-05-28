@@ -565,7 +565,7 @@
                   <span style="color:var(--green);font-weight:600;">Connected</span>
                 </div>
               </div>
-              <button onclick="simulateCardPay()" class="pay-method-btn card-btn">
+              <button onclick="approveCardStub(event)" class="pay-method-btn card-btn">
                 <span class="material-symbols-outlined" style="font-size:18px;">wifi_tethering</span>
                 Trigger Pinpad Payment
               </button>
@@ -585,8 +585,8 @@
                 </div>
               </div>
               <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;">Customer Phone</label>
-              <input type="text" id="wallet-phone" value="" placeholder="+92 3XX XXXXXXX" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;margin-bottom:12px;" />
-              <button onclick="simulateWalletPay()" class="pay-method-btn wallet-btn">
+              <input type="text" id="wallet-phone" value="" placeholder="+92 3XX XXXXXXX" oninput="resetIdempotencyKey()" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;margin-bottom:12px;" />
+              <button onclick="approveWalletStub()" class="pay-method-btn wallet-btn">
                 <span class="material-symbols-outlined" style="font-size:18px;">send_to_mobile</span>
                 Push Payment Request
               </button>
@@ -694,7 +694,10 @@
 let dueAmount  = 0;
 let cashInputVal = 0;
 let activeTender = 'cash';
-let cart = [];
+let tenderMethods = [];
+let currentIdempotencyKey = null;
+let currentCardRef = null;
+let currentWalletRef = null;
 
 // ─── UTILS ──────────────────────────────────────
 function fmt(n)    { return 'PKR ' + new Intl.NumberFormat('en-PK').format(Math.round(n)); }
@@ -712,6 +715,49 @@ function toast(msg, type='success') {
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
 }
 const showToast = toast;
+
+// ─── BRIDGE ─────────────────────────────────────
+function bridgeRequest(type, payload) {
+  if (!window.posBridge || !window.posBridge.isAvailable || !window.posBridge.isAvailable()) {
+    return Promise.reject({ code: 'TRANSPORT_UNAVAILABLE', message: 'Bridge not available.' });
+  }
+  return window.posBridge.request(type, payload);
+}
+
+// ─── IDEMPOTENCY & ATTEMPT REFS ─────────────────
+function _genSuffix() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase();
+  }
+  return Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+function getOrCreateIdempotencyKey() {
+  if (!currentIdempotencyKey) {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      currentIdempotencyKey = crypto.randomUUID();
+    } else {
+      currentIdempotencyKey = Date.now().toString(36) + Math.random().toString(36).substring(2);
+    }
+  }
+  return currentIdempotencyKey;
+}
+
+function getOrCreateCardRef() {
+  if (!currentCardRef) currentCardRef = 'TXN-CARD-' + _genSuffix();
+  return currentCardRef;
+}
+
+function getOrCreateWalletRef() {
+  if (!currentWalletRef) currentWalletRef = 'TXN-WALLET-' + _genSuffix();
+  return currentWalletRef;
+}
+
+function resetIdempotencyKey() {
+  currentIdempotencyKey = null;
+  currentCardRef = null;
+  currentWalletRef = null;
+}
 
 // ─── INIT ───────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
@@ -752,27 +798,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   const heroCashierEl = document.getElementById('hero-cashier');
   if (heroCashierEl) heroCashierEl.textContent = 'Cashier: ' + opName.split(' ')[0];
 
-  // Config
-  try {
-    const cfg = JSON.parse(localStorage.getItem('terminal_config') || '{}');
-    if (cfg.terminalId) document.getElementById('tb-terminal').textContent = cfg.terminalId;
-  } catch(e) {}
-
   // Order number
   const seq = Math.floor(Math.random() * 9000) + 1000;
   document.getElementById('order-num').textContent = '#' + seq;
 
-  // Load cart
-  const saved = sessionStorage.getItem('pos_cart');
-  cart = saved ? JSON.parse(saved) : [
-    { id:'I1001', name:'Milk 1L Tetra',    qty:2, price:280,  unit:'L',  cat:'dairy' },
-    { id:'I1002', name:'Rice 5kg Premium', qty:1, price:1850, unit:'kg', cat:'grocery' },
-    { id:'I1008', name:'Coca Cola 1.5L',   qty:2, price:220,  unit:'L',  cat:'beverage' },
-  ];
-
-  renderOrderSummary();
-  renderQuickAmounts();
-  updateChangeDisplay(0, dueAmount);
+  // Load tender methods then cart from bridge
+  await loadTenderMethods();
+  await loadCartFromBridge();
 
   // Task 3.1.7: Confirm bridge reachability from any screen
   window.posBridgeTransport?.logStatus?.("payment_screen");
@@ -823,27 +855,69 @@ async function doLogout() {
   window.location.href = 'terminal_login.html';
 }
 
+// ─── TENDER METHODS ──────────────────────────────
+async function loadTenderMethods() {
+  try {
+    const payload = await bridgeRequest('payment.getTenderMethods', null);
+    if (payload && Array.isArray(payload.methods)) {
+      tenderMethods = payload.methods;
+    }
+  } catch (e) {
+    console.error('[Payment] Failed to load tender methods:', e);
+    showToast('Failed to load payment methods.', 'error');
+  }
+}
+
+function findTenderByCode(code) {
+  return tenderMethods.find(t => t.code === code.toUpperCase()) || null;
+}
+
+function getCashTenderMethod() {
+  return findTenderByCode('CASH') || tenderMethods.find(t => t.allowsChange) || null;
+}
+
+function getCardTenderMethod() {
+  return findTenderByCode('CARD') || tenderMethods.find(t => t.requiresExternalReference) || null;
+}
+
+function getWalletTenderMethod() {
+  return findTenderByCode('WALLET') || getCardTenderMethod();
+}
+
+// ─── CART FROM BRIDGE ────────────────────────────
+async function loadCartFromBridge() {
+  try {
+    const cartState = await bridgeRequest('order.getCart', null);
+    renderOrderSummaryFromState(cartState);
+    renderQuickAmounts();
+    updateChangeDisplay(0, dueAmount);
+  } catch (e) {
+    console.error('[Cart] Failed to load cart:', e);
+    showToast('Failed to load cart.', 'error');
+  }
+}
+
 // ─── ORDER SUMMARY ──────────────────────────────
-function renderOrderSummary() {
+function renderOrderSummaryFromState(state) {
   const list = document.getElementById('order-lines-list');
   list.innerHTML = '';
 
-  let sub = 0;
-  cart.forEach(l => {
-    sub += l.qty * l.price;
+  const lines = (state && state.lines) ? state.lines : [];
+  lines.forEach(l => {
     const row = document.createElement('div');
     row.className = 'order-line';
     row.innerHTML = `
       <div class="order-line-name">${l.name}</div>
-      <span class="order-line-qty">×${l.qty}</span>
-      <span class="order-line-total">${fmtN(l.qty * l.price)}</span>
+      <span class="order-line-qty">×${l.quantity}</span>
+      <span class="order-line-total">${fmtN(l.grossAmount)}</span>
     `;
     list.appendChild(row);
   });
 
-  const disc  = 0;
-  const tax   = Math.round((sub - disc) * 0.05);
-  const grand = sub - disc + tax;
+  const sub   = (state && state.subtotalAmount)  || 0;
+  const disc  = (state && state.discountAmount)  || 0;
+  const tax   = (state && state.taxAmount)       || 0;
+  const grand = (state && state.totalAmount)     || 0;
   dueAmount   = grand;
 
   document.getElementById('pay-subtotal').textContent = fmt(sub);
@@ -853,9 +927,7 @@ function renderOrderSummary() {
   document.getElementById('hero-due').textContent     = fmt(grand);
   document.getElementById('ch-due').textContent       = fmt(grand);
 
-  // Split view update
   document.getElementById('split-due').textContent = fmt(grand);
-  // Card charge update
   const cd = document.getElementById('card-charge-display');
   if (cd) cd.textContent = fmt(grand);
 }
@@ -863,6 +935,7 @@ function renderOrderSummary() {
 // ─── TENDER TABS ────────────────────────────────
 function selectTender(t) {
   activeTender = t;
+  resetIdempotencyKey();
   ['cash','card','wallet','split'].forEach(id => {
     const tab  = document.getElementById('tab-' + id);
     const view = document.getElementById('view-' + id);
@@ -878,6 +951,7 @@ function numPress(k) {
   if (k === 'clear') { rawInput = ''; }
   else if (k === 'back') { rawInput = rawInput.slice(0, -1); }
   else { if (rawInput.length >= 9) return; rawInput += k; }
+  resetIdempotencyKey();
   cashInputVal = parseFloat(rawInput) || 0;
   document.getElementById('cash-input').value = rawInput ? fmtN(cashInputVal) : '';
   updateChangeDisplay(cashInputVal, dueAmount);
@@ -885,6 +959,7 @@ function numPress(k) {
 }
 
 function setExact() {
+  resetIdempotencyKey();
   cashInputVal = dueAmount;
   rawInput = String(Math.round(dueAmount));
   document.getElementById('cash-input').value = fmtN(dueAmount);
@@ -911,6 +986,7 @@ function renderQuickAmounts() {
     btn.className = 'qa-btn';
     btn.textContent = fmtN(amt);
     btn.onclick = () => {
+      resetIdempotencyKey();
       cashInputVal = amt;
       rawInput = String(amt);
       document.getElementById('cash-input').value = fmtN(amt);
@@ -941,6 +1017,7 @@ function updateChangeDisplay(tendered, due) {
 }
 
 function calcSplit() {
+  resetIdempotencyKey();
   const cash = parseFloat(document.getElementById('split-cash').value) || 0;
   const card = parseFloat(document.getElementById('split-card').value) || 0;
   const paid = cash + card;
@@ -967,91 +1044,92 @@ function checkReady() {
   btn.style.cursor = ready ? 'pointer' : 'not-allowed';
 }
 
-// ─── PAYMENT SIMULATION ─────────────────────────
-function simulateCardPay() {
-  const btn = event.target.closest('button');
-  btn.textContent = ''; btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;animation:spin .7s linear infinite;">sync</span> Processing…';
-  setTimeout(() => {
+// ─── CARD / WALLET STUBS ────────────────────────
+function approveCardStub(ev) {
+  const btn = (ev && ev.target) ? ev.target.closest('button') : null;
+  if (btn) {
     btn.innerHTML = '<span class="material-symbols-outlined fill" style="font-size:18px;color:white;">check_circle</span> Approved ✓';
     btn.style.background = 'var(--green)';
-    const cb = document.getElementById('complete-btn');
-    cb.disabled = false; cb.className = 'ready'; cb.style.cursor = 'pointer';
-    updateChangeDisplay(dueAmount, dueAmount);
-    toast('Card payment approved.', 'success');
-  }, 1800);
+  }
+  const cb = document.getElementById('complete-btn');
+  cb.disabled = false; cb.className = 'ready'; cb.style.cursor = 'pointer';
+  updateChangeDisplay(dueAmount, dueAmount);
+  showToast('Card payment approved.', 'success');
 }
 
-function simulateWalletPay() {
-  toast('Payment request sent. Awaiting confirmation…', 'info');
-  setTimeout(() => {
-    const cb = document.getElementById('complete-btn');
-    cb.disabled = false; cb.className = 'ready'; cb.style.cursor = 'pointer';
-    updateChangeDisplay(dueAmount, dueAmount);
-    toast('Wallet payment confirmed.', 'success');
-  }, 2200);
+function approveWalletStub() {
+  if (!getWalletTenderMethod()) {
+    showToast('No payment method available for wallet. Contact administrator.', 'error');
+    return;
+  }
+  const cb = document.getElementById('complete-btn');
+  cb.disabled = false; cb.className = 'ready'; cb.style.cursor = 'pointer';
+  updateChangeDisplay(dueAmount, dueAmount);
+  showToast('Wallet payment confirmed.', 'success');
 }
 
 // ─── COMPLETE ────────────────────────────────────
 async function completeTransaction() {
-  const rcpt = await buildReceipt();
-  document.getElementById('receipt-text').textContent = rcpt;
-  document.getElementById('receipt-modal').style.display = 'flex';
-  sessionStorage.setItem('pos_cart', JSON.stringify([]));
-  sessionStorage.setItem('pos_last_receipt', rcpt);
-  const badge = document.getElementById('status-badge');
-  badge.textContent = 'PAID ✓';
-  badge.style.background = 'rgba(16,185,129,.2)';
-  badge.style.color = 'var(--green)';
-  badge.style.borderColor = 'rgba(16,185,129,.4)';
-}
+  const btn = document.getElementById('complete-btn');
+  btn.disabled = true;
+  btn.className = '';
 
-async function buildReceipt() {
-  let opName = 'Operator';
-  const session = await getCurrentSessionOrNull();
-  if (session) {
-    opName = session.displayName;
+  try {
+    const tenders = [];
+    let guestPhone = null;
+
+    if (activeTender === 'cash') {
+      const m = getCashTenderMethod();
+      if (!m) throw { message: 'Cash payment method not configured.' };
+      tenders.push({ tenderMethodId: m.id, amount: cashInputVal });
+    } else if (activeTender === 'card') {
+      const m = getCardTenderMethod();
+      if (!m) throw { message: 'Card payment method not configured.' };
+      tenders.push({ tenderMethodId: m.id, amount: dueAmount, externalPaymentReference: getOrCreateCardRef() });
+    } else if (activeTender === 'wallet') {
+      const m = getWalletTenderMethod();
+      if (!m) throw { message: 'No payment method available for wallet.' };
+      const phone = document.getElementById('wallet-phone').value.trim() || null;
+      if (phone) guestPhone = phone;
+      tenders.push({ tenderMethodId: m.id, amount: dueAmount, externalPaymentReference: getOrCreateWalletRef() });
+    } else if (activeTender === 'split') {
+      const cashAmt = parseFloat(document.getElementById('split-cash').value) || 0;
+      const cardAmt = parseFloat(document.getElementById('split-card').value) || 0;
+      if (cashAmt > 0) {
+        const m = getCashTenderMethod();
+        if (!m) throw { message: 'Cash payment method not configured.' };
+        tenders.push({ tenderMethodId: m.id, amount: cashAmt });
+      }
+      if (cardAmt > 0) {
+        const m = getCardTenderMethod();
+        if (!m) throw { message: 'Card payment method not configured.' };
+        tenders.push({ tenderMethodId: m.id, amount: cardAmt, externalPaymentReference: getOrCreateCardRef() });
+      }
+    }
+
+    const completionPayload = { tenders, idempotencyKey: getOrCreateIdempotencyKey() };
+    if (guestPhone) completionPayload.guestPhone = guestPhone;
+
+    const payload = await bridgeRequest('payment.complete', completionPayload);
+
+    resetIdempotencyKey();
+
+    const receiptText = (payload && payload.receiptText) ? payload.receiptText : '(No receipt available)';
+    document.getElementById('receipt-text').textContent = receiptText;
+    document.getElementById('receipt-modal').style.display = 'flex';
+
+    const badge = document.getElementById('status-badge');
+    badge.textContent = 'PAID ✓';
+    badge.style.background = 'rgba(16,185,129,.2)';
+    badge.style.color = 'var(--green)';
+    badge.style.borderColor = 'rgba(16,185,129,.4)';
+
+  } catch (e) {
+    const msg = (e && e.message) ? e.message : 'Payment could not be completed.';
+    showToast(msg, 'error');
+    btn.disabled = false;
+    btn.className = 'ready';
   }
-
-  const now   = new Date();
-  const dstr  = now.toLocaleDateString('en-PK');
-  const tstr  = now.toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit' });
-  const seq   = document.getElementById('order-num').textContent;
-  const line  = '─'.repeat(38);
-  let items = '';
-  let sub = 0;
-  cart.forEach(l => {
-    sub += l.qty * l.price;
-    const total = fmtN(l.qty * l.price);
-    const name  = l.name.length > 20 ? l.name.slice(0,18) + '…' : l.name;
-    items += `${(name).padEnd(24)}${String(l.qty + ' × ' + fmtN(l.price)).padStart(8)}  ${total.padStart(6)}\n`;
-  });
-  const tax   = Math.round(sub * 0.05);
-  const grand = sub + tax;
-  const change = Math.max(0, cashInputVal - grand);
-  const tendered = activeTender === 'cash' ? cashInputVal : grand;
-  return `        IMAGYN POS
-        Imagyn Technologies
-        Tariq Road, Karachi
-${line}
-Date: ${dstr}        Time: ${tstr}
-Order: ${seq}       Terminal: POS-01
-Cashier: ${opName.split(' ')[0]}
-${line}
-ITEM                    QTY × PRICE   TOTAL
-${line}
-${items}${line}
-Subtotal:                          ${fmtN(sub).padStart(8)}
-Tax (5% GST):                      ${fmtN(tax).padStart(8)}
-${line}
-TOTAL DUE:                      ${fmtN(grand).padStart(8)}
-Cash Tendered:                  ${fmtN(tendered).padStart(8)}
-Change Due:                      ${fmtN(change).padStart(8)}
-${line}
-Payment: ${activeTender.toUpperCase().padEnd(20)}  FBR: pending sync
-${line}
-   Thank you for shopping with us!
-   Please retain this receipt.
-`;
 }
 
 function printReceipt() { toast('Sending to receipt printer…', 'info'); }

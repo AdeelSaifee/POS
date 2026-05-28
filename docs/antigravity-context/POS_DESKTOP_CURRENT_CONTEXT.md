@@ -2,7 +2,7 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 5 / Milestone 5.4 - Payment & completion service
-- **Group**: Group 3 (Task 5.4.8 - completed)
+- **Group**: Group 4 (Task 5.4.9 - completed)
 
 ## Status of All Milestone 5.4 Tasks (Current)
 - `[x]` Task 5.4.1 - Define IPaymentService (Tender, change, completion contract)
@@ -13,7 +13,7 @@
 - `[x]` Task 5.4.6 - Enqueue PrintQueue receipt (Pending receipt print job inside same order transaction)
 - `[x]` Task 5.4.7 - Render receipt from data (Fully data-driven plain text receipt rendering service)
 - `[x]` Task 5.4.8 - Ensure idempotent completion
-- `[ ]` Task 5.4.9 - Wire payment_screen.html
+- `[x]` Task 5.4.9 - Wire payment_screen.html
 - `[ ]` Task 5.4.10 - Unit test tender/change/completion
 
 ## Status of All Milestone 5.3 Tasks
@@ -41,6 +41,19 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Group 4 (Task 5.4.9 - completed, post-review fixes applied)
+- [MODIFY] `POS.Desktop/Shell/PosWebMessageRouter.cs` (Added `payment.getTenderMethods` and `payment.complete` bridge handlers; added `using POS.Desktop.Data`, `using POS.Desktop.Services.Payments`, `using Microsoft.EntityFrameworkCore`)
+- [MODIFY] `POS.Desktop/Assets/ui/payment_screen.html` (Removed `sessionStorage` cart + demo fallback; removed `localStorage` terminal config read; removed `simulateCardPay`/`simulateWalletPay` with setTimeout; added `bridgeRequest()` helper; robust tender resolution via `getCashTenderMethod()`/`getCardTenderMethod()`/`getWalletTenderMethod()` with property-based fallbacks; stable per-attempt external refs via `getOrCreateCardRef()`/`getOrCreateWalletRef()` (`TXN-CARD-…`/`TXN-WALLET-…`); idempotency reset on every cash key, CLEAR, back, setExact, quick-amount select, split input change, wallet phone change, tender tab change; wallet phone sent as `guestPhone` in `payment.complete`; `approveWalletStub` guards against missing wallet method; `renderOrderSummaryFromState()` drives totals from backend; `buildReceipt()` removed)
+- [SYNC] `docs/ui-prototype/screens/payment_screen.html` (Byte-identical copy — SHA-256 verified)
+- [ADD] `POS.Desktop.Tests/Shell/PaymentBridgeHandlerTests.cs` (15 tests: endpoint registration, tender method DB query + sort, payload validation, success path, idempotency key mapping, external reference mapping, wallet guestPhone mapping, stable card ref mapping, service failure propagation, exception safe handling)
+- [ADD] `POS.Desktop.Tests/Shell/PaymentScreenStaticTests.cs` (24 static HTML tests: forbidden patterns, required bridge calls, stub functions, robust resolution helpers, stable ref helpers, wallet fallback body check, idempotency reset breadth, SHA-256 parity)
+- [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs` (Added assertions for `payment.getTenderMethods` and `payment.complete`; updated registered type count from 20 to 22)
+
+### Fix 4 confirmed — no code change needed
+`LocalTenderMethod` has `HasQueryFilter(x => x.TenantId == CurrentTenantId)` in `PosLocalDbContext`. No `IsActive` field exists; all tenant-filtered rows are active. Current handler is correct.
+
+### Test count: 362 passing (was 325)
 
 ### Group 3 (Task 5.4.8 - completed)
 - [ADD] `POS.Desktop/Data/Migrations/Local/20260528104909_AddLocalOrderIdempotencyKeyIndex.cs` (EF Core SQLite local database schema migration adding unique index)
@@ -131,8 +144,8 @@
 ## Scope Boundaries & Constraints
 - Do NOT use localStorage or sessionStorage for operational screen gating.
 - Preserve original element class/ID names in HTML/JS. No UI/CSS redesign.
-- Do NOT modify payment_screen.html in this group.
-- Do NOT wire WebView2 bridge routing for checkout endpoints in this group.
+- Do NOT implement real pinpad/hardware integration.
+- Do NOT implement printer wiring.
 - Do NOT modify POS.Api or central API migrations.
 - Do NOT commit or push.
 - Keep all new receipt/outbox/print behavior inside local desktop layer.

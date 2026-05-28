@@ -12,7 +12,10 @@ using POS.Desktop.Services.Auth;
 using POS.Desktop.Services.Provisioning;
 using POS.Desktop.Services.Shifts;
 using POS.Desktop.Services.Orders;
+using POS.Desktop.Services.Payments;
+using POS.Desktop.Data;
 using POS.Shared.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace POS.Desktop.Shell;
 
@@ -127,6 +130,12 @@ public sealed class PosWebMessageRouter
             sp.GetRequiredService<IOrderService>(),
             req,
             ct));
+
+        // Task 5.4.9: Payment bridge handlers
+        Register("payment.getTenderMethods", sp => (req, ct) => HandlePaymentGetTenderMethodsAsync(
+            sp.GetRequiredService<PosLocalDbContext>(), req, ct));
+        Register("payment.complete", sp => (req, ct) => HandlePaymentCompleteAsync(
+            sp.GetRequiredService<IPaymentService>(), req, ct));
     }
 
     /// <summary>
@@ -959,6 +968,118 @@ public sealed class PosWebMessageRouter
                 request.RequestId,
                 ex.ErrorCode,
                 ex.SafeMessage);
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandlePaymentGetTenderMethodsAsync(
+        PosLocalDbContext db,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var methods = await db.LocalTenderMethods
+                .OrderBy(t => t.SortOrder)
+                .ThenBy(t => t.Name)
+                .Select(t => new
+                {
+                    id = t.Id,
+                    code = t.Code,
+                    name = t.Name,
+                    tenderType = t.TenderType,
+                    allowsChange = t.AllowsChange,
+                    requiresExternalReference = t.RequiresExternalReference,
+                    sortOrder = t.SortOrder
+                })
+                .ToListAsync(cancellationToken);
+
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, new { methods });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to query tender methods.");
+            return BridgeResponseEnvelope.Failure(
+                request.Type, request.RequestId, "QUERY_FAILED", "Failed to load payment methods.");
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandlePaymentCompleteAsync(
+        IPaymentService paymentService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        if (!request.Payload.HasValue || request.Payload.Value.ValueKind != JsonValueKind.Object)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was missing or invalid.");
+        }
+
+        try
+        {
+            var payload = request.Payload.Value;
+
+            if (!payload.TryGetProperty("tenders", out var tendersProp) || tendersProp.ValueKind != JsonValueKind.Array)
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'tenders' is required and must be an array.");
+            }
+
+            var tenders = new List<PaymentTenderRequest>();
+            foreach (var t in tendersProp.EnumerateArray())
+            {
+                if (!t.TryGetProperty("tenderMethodId", out var tmIdProp) || !tmIdProp.TryGetInt32(out var tenderMethodId))
+                {
+                    return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Each tender must have an integer 'tenderMethodId'.");
+                }
+                if (!t.TryGetProperty("amount", out var amtProp) || !amtProp.TryGetDecimal(out var amount))
+                {
+                    return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Each tender must have a numeric 'amount'.");
+                }
+                string? extRef = null;
+                if (t.TryGetProperty("externalPaymentReference", out var extRefProp))
+                    extRef = extRefProp.GetString();
+                tenders.Add(new PaymentTenderRequest(tenderMethodId, amount, extRef));
+            }
+
+            if (tenders.Count == 0)
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "At least one tender is required.");
+            }
+
+            string? guestName = null;
+            if (payload.TryGetProperty("guestName", out var guestNameProp))
+                guestName = guestNameProp.GetString();
+
+            string? guestPhone = null;
+            if (payload.TryGetProperty("guestPhone", out var guestPhoneProp))
+                guestPhone = guestPhoneProp.GetString();
+
+            string? idempotencyKey = null;
+            if (payload.TryGetProperty("idempotencyKey", out var idKeyProp))
+                idempotencyKey = idKeyProp.GetString();
+
+            var completionRequest = new PaymentCompletionRequest(tenders, guestName, guestPhone, idempotencyKey);
+            var result = await paymentService.CompleteOrderAsync(completionRequest, cancellationToken);
+
+            if (!result.Success)
+            {
+                return BridgeResponseEnvelope.Failure(
+                    request.Type, request.RequestId,
+                    result.ErrorCode ?? "PAYMENT_FAILED",
+                    result.ErrorMessage ?? "Payment could not be completed.");
+            }
+
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, new
+            {
+                orderId = result.OrderId?.ToString(),
+                receiptNumber = result.ReceiptNumber,
+                changeAmount = result.ChangeAmount,
+                receiptText = result.ReceiptText,
+                printJobId = result.PrintJobId?.ToString(),
+                outboxEventId = result.OutboxEventId?.ToString()
+            });
+        }
+        catch (JsonException)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was not valid JSON.");
         }
     }
 }

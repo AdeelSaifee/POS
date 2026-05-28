@@ -572,23 +572,28 @@
               <button class="qa-btn" onclick="setAmount(15000)">15,000</button>
             </div>
             <!-- Fields -->
-            <div class="fields-row">
-              <div class="field-group">
+            <div class="fields-row" id="fields-row-container" style="display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px;">
+              <div class="field-group" id="reason-group">
                 <label class="field-label">Reason Code</label>
                 <select class="field-select" id="reason-select">
-                  <option value="Vault Drop">Safe Drop to Main Vault</option>
-                  <option value="Shift Change">Shift Change Withdrawal</option>
-                  <option value="Mid-Day Clear">Mid-Day Clearing</option>
-                  <option value="Emergency Drop">Emergency Safe Drop</option>
+                  <!-- Dynamically populated -->
                 </select>
               </div>
-              <div class="field-group">
+              <div class="field-group" id="mgr-operator-group" style="display: none;">
+                <label class="field-label">
+                  Manager ID
+                  <span class="field-required">Required</span>
+                </label>
+                <input class="field-input" id="mgr-operator-id" type="text"
+                       placeholder="Manager ID" onclick="setFocus('mgr-operator-id')" disabled/>
+              </div>
+              <div class="field-group" id="mgr-pin-group" style="display: none;">
                 <label class="field-label">
                   Manager PIN
                   <span class="field-required">Required</span>
                 </label>
                 <input class="field-input pin" id="mgr-pin" type="password" maxlength="4"
-                       placeholder="••••" onclick="setFocus('pin')"/>
+                       placeholder="••••" onclick="setFocus('pin')" disabled/>
               </div>
             </div>
             <!-- Remarks -->
@@ -680,17 +685,30 @@
 // ── State ─────────────────────────────────────────────────────────────────────
 let activeTab  = 'drop';
 let amountStr  = '0';
-let focusedEl  = 'amount'; // 'amount' | 'pin'
+let focusedEl  = 'amount'; // 'amount' | 'mgr-operator-id' | 'pin'
+let reasonCodes = [];
+let currentSummary = null;
+let currentIdempotencyKey = null;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = v => 'PKR ' + new Intl.NumberFormat('en-PK').format(v);
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function showToast(msg, type='success') {
   const s = document.getElementById('toasts');
   const t = document.createElement('div');
   const icons = { success:'check_circle', error:'cancel', info:'info' };
   t.className = `toast ${type}`;
-  t.innerHTML = `<span class="icon">${icons[type]||'info'}</span><span>${msg}</span>`;
+  t.innerHTML = `<span class="icon">${icons[type]||'info'}</span><span>${escapeHtml(msg)}</span>`;
   s.appendChild(t);
   requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 280); }, 3500);
@@ -702,118 +720,149 @@ function updateClock() {
     String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
 }
 
-// ── Metrics ───────────────────────────────────────────────────────────────────
-function updateMetrics() {
-  const openingFloat = parseFloat(sessionStorage.getItem('pos_shift_float')) || 5000;
-  const txns = JSON.parse(sessionStorage.getItem('pos_completed_transactions') || '[]');
-  const cashSales = txns.filter(t=>(t.tender||'').toLowerCase()==='cash').reduce((s,t)=>s+t.total,0);
-  const cashTxns  = txns.filter(t=>(t.tender||'').toLowerCase()==='cash').length;
-  const drops = JSON.parse(sessionStorage.getItem('pos_safe_drops') || '[]');
-  const dropsTotal = drops.filter(d=>d.type==='withdraw').reduce((s,d)=>s+d.amount,0);
-  const injectTotal= drops.filter(d=>d.type==='deposit').reduce((s,d)=>s+d.amount,0);
-  const balance = openingFloat + cashSales - dropsTotal + injectTotal;
+// ── Bridge Helper ─────────────────────────────────────────────────────────────
+function bridgeRequest(type, payload) {
+  if (!window.posBridge || !window.posBridge.isAvailable || !window.posBridge.isAvailable()) {
+    return Promise.reject({ code: 'TRANSPORT_UNAVAILABLE', message: 'Bridge not available.' });
+  }
+  return window.posBridge.request(type, payload);
+}
 
-  document.getElementById('card-float').textContent   = fmt(openingFloat);
-  document.getElementById('card-sales').textContent   = fmt(cashSales);
-  document.getElementById('card-drops').textContent   = fmt(dropsTotal);
-  document.getElementById('card-balance').textContent = fmt(balance);
-  document.getElementById('card-txns').textContent    = cashTxns;
+// ── Idempotency Keys ──────────────────────────────────────────────────────────
+function getOrCreateIdempotencyKey() {
+  if (!currentIdempotencyKey) {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      currentIdempotencyKey = crypto.randomUUID();
+    } else {
+      currentIdempotencyKey = Date.now().toString(36) + Math.random().toString(36).substring(2);
+    }
+  }
+  return currentIdempotencyKey;
+}
+
+function resetIdempotencyKey() {
+  currentIdempotencyKey = null;
+}
+
+// ── Metrics & Ledger loading ───────────────────────────────────────────────────
+async function loadSummaryAndLedger() {
+  try {
+    currentSummary = await bridgeRequest('cash.getSummary', null);
+    bindSummary(currentSummary);
+
+    const ledgerData = await bridgeRequest('cash.getLedger', null);
+    bindLedger(ledgerData);
+  } catch (err) {
+    const code = err?.code || err?.error?.code || 'UNKNOWN';
+    const message = err?.message || err?.error?.message || 'Unknown error';
+    console.error('[CashControl] Failed to load summary/ledger:', code, message);
+    showToast('Failed to load live cash drawer status.', 'error');
+  }
+}
+
+function bindSummary(summary) {
+  if (!summary) return;
+
+  document.getElementById('card-float').textContent   = fmt(summary.openingFloat || 0);
+  document.getElementById('card-sales').textContent   = fmt(summary.cashSales || 0);
+  document.getElementById('card-drops').textContent   = fmt(summary.safeDrops || 0);
+  document.getElementById('card-balance').textContent = fmt(summary.expectedDrawerBalance || 0);
+  document.getElementById('card-txns').textContent    = summary.transactionCount || 0;
 
   const banner = document.getElementById('status-banner');
   const bIcon  = document.getElementById('banner-icon');
   const bTitle = document.getElementById('banner-title');
   const bDesc  = document.getElementById('banner-desc');
 
-  if (balance > 20000) {
-    banner.className='status-banner warn';
-    bIcon.textContent='warning';
-    bTitle.textContent='Safe Drop Required!';
-    bDesc.textContent=`Drawer balance ${fmt(balance)} exceeds PKR 20,000 threshold. Perform a safe drop immediately.`;
+  if (!summary.isOpen) {
+    banner.className = 'status-banner warn';
+    bIcon.textContent = 'lock';
+    bTitle.textContent = 'No Active Shift';
+    bDesc.textContent = 'Please open a shift to view and manage cash control.';
+  } else if (summary.alertCode === 'OVER_LIMIT' || summary.isOverLimit) {
+    banner.className = 'status-banner warn';
+    bIcon.textContent = 'error';
+    bTitle.textContent = 'Over Limit!';
+    bDesc.textContent = escapeHtml(summary.alertMessage) || `Drawer balance ${fmt(summary.expectedDrawerBalance)} exceeds the safe operating limit of ${fmt(summary.cashDrawerLimit)}. Perform safe drop immediately.`;
+  } else if (summary.alertCode === 'SAFE_DROP_RECOMMENDED' || summary.isSafeDropRecommended) {
+    banner.className = 'status-banner warn';
+    bIcon.textContent = 'warning';
+    bTitle.textContent = 'Safe Drop Recommended';
+    bDesc.textContent = escapeHtml(summary.alertMessage) || `Drawer balance ${fmt(summary.expectedDrawerBalance)} exceeds threshold of ${fmt(summary.safeDropThreshold)}. Perform safe drop.`;
   } else {
-    banner.className='status-banner ok';
-    bIcon.textContent='check_circle';
-    bTitle.textContent='Drawer Balance Secured';
-    bDesc.textContent=`Current balance ${fmt(balance)} — within the PKR 20,000 safe operating limit.`;
+    banner.className = 'status-banner ok';
+    bIcon.textContent = 'check_circle';
+    bTitle.textContent = 'Drawer Balance Secured';
+    bDesc.textContent = escapeHtml(summary.alertMessage) || `Current balance ${fmt(summary.expectedDrawerBalance)} — within the safe operating limit.`;
   }
-
-  renderLedger(openingFloat, txns, drops);
 }
 
-function renderLedger(floatVal, txns, drops) {
+function bindLedger(ledgerData) {
   const tbody = document.getElementById('ledger-body');
-  const rows = [];
+  const movements = (ledgerData && ledgerData.movements) || [];
 
-  rows.push({ ref:'INIT', time:'Shift Open', type:'Opening Float', desc:'Declared opening cash', amt:floatVal, sign:'+', color:'color:var(--text)', status:'ok' });
-
-  txns.forEach(t => {
-    if ((t.tender||'').toLowerCase()==='cash') {
-      rows.push({ ref:t.id||'TXN', time:t.timestamp||'—', type:'Cash Sale', desc:`${(t.items||[]).length} items`, amt:t.total||0, sign:'+', color:'color:var(--green)', status:'ok' });
-    }
-  });
-
-  drops.forEach(d => {
-    const isW = d.type==='withdraw';
-    rows.push({ ref:d.id, time:d.time||'—', type:isW?'Safe Drop':'Float Add', desc:d.reason||d.remarks||'—', amt:d.amount, sign:isW?'−':'+', color:isW?'color:var(--red)':'color:var(--blue)', status:'auth' });
-  });
-
-  if (rows.length === 0) {
+  if (movements.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No cash movements logged this shift.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = rows.map(r => `
-    <tr>
-      <td><span class="ledger-ref">${r.ref}</span></td>
-      <td style="font-size:11px;color:var(--muted)">${r.time}</td>
-      <td><span class="ledger-type">${r.type}</span></td>
-      <td style="font-size:11px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.desc}</td>
-      <td><span class="ledger-amt" style="${r.color}">${r.sign}${fmt(r.amt)}</span></td>
-      <td><span class="badge ${r.status}">${r.status==='ok'?'Verified':'Authorized'}</span></td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = movements.map(m => {
+    const isW = m.movementType === 'Drop';
+    const sign = isW ? '−' : '+';
+    const color = isW ? 'color:var(--red)' : 'color:var(--green)';
+
+    let timeStr = '—';
+    if (m.occurredOn) {
+      try {
+        timeStr = new Date(m.occurredOn).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: false });
+      } catch (e) {
+        const msg = e?.message || 'Unknown';
+        console.error('[CashControl] Failed to format ledger date:', msg);
+      }
+    }
+
+    const escReasonName = escapeHtml(m.reasonName || m.reasonCode || 'Safe Drop');
+    const escComment = escapeHtml(m.comment || '');
+    const escDesc = escComment ? `${escReasonName} (${escComment})` : escReasonName;
+    const statusClass = isW ? 'auth' : 'ok';
+    const statusText = isW ? 'Authorized' : 'Verified';
+
+    return `
+      <tr>
+        <td><span class="ledger-ref">${escapeHtml(m.terminalSequence || '—')}</span></td>
+        <td style="font-size:11px;color:var(--muted)">${timeStr}</td>
+        <td><span class="ledger-type">${isW ? 'Safe Drop' : escapeHtml(m.movementType || '—')}</span></td>
+        <td style="font-size:11px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escDesc}">${escDesc}</td>
+        <td><span class="ledger-amt" style="${color}">${sign}${fmt(m.amount)}</span></td>
+        <td><span class="badge ${statusClass}">${statusText}</span></td>
+      </tr>
+    `;
+  }).join('');
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(tab) {
-  activeTab = tab;
-  document.getElementById('tab-drop').className   = 'tab-btn' + (tab==='drop'?' active':'');
-  document.getElementById('tab-inject').className = 'tab-btn' + (tab==='inject'?' active':'');
+  if (tab === 'inject') {
+    showToast('Float Add / Cash In is not available yet. Safe Drop is currently supported.', 'info');
+    return;
+  }
+  // Keep active tab on 'drop'
+  activeTab = 'drop';
+  document.getElementById('tab-drop').className   = 'tab-btn active';
+  document.getElementById('tab-inject').className = 'tab-btn';
 
   const title  = document.getElementById('form-title');
   const desc   = document.getElementById('form-desc');
   const sub    = document.getElementById('submit-text');
   const qas    = document.getElementById('quick-amounts');
-  const reason = document.getElementById('reason-select');
 
-  if (tab === 'drop') {
-    title.textContent = 'Cash Drawer Withdrawal';
-    desc.textContent  = 'Drop excess counter cash into the secure main vault.';
-    sub.textContent   = 'Submit Safe Drop & Print Receipt';
-    qas.innerHTML = `
-      <button class="qa-btn" onclick="setAmount(5000)">5,000</button>
-      <button class="qa-btn" onclick="setAmount(10000)">10,000</button>
-      <button class="qa-btn" onclick="setAmount(15000)">15,000</button>`;
-    reason.innerHTML = `
-      <option value="Vault Drop">Safe Drop to Main Vault</option>
-      <option value="Shift Change">Shift Change Withdrawal</option>
-      <option value="Mid-Day Clear">Mid-Day Clearing</option>
-      <option value="Emergency Drop">Emergency Safe Drop</option>`;
-  } else {
-    title.textContent = 'Float Addition / Cash Injection';
-    desc.textContent  = 'Inject change float or supplementary cash into the counter drawer.';
-    sub.textContent   = 'Submit Cash Injection & Print Receipt';
-    qas.innerHTML = `
-      <button class="qa-btn" onclick="setAmount(2000)">2,000</button>
-      <button class="qa-btn" onclick="setAmount(5000)">5,000</button>
-      <button class="qa-btn" onclick="setAmount(10000)">10,000</button>`;
-    reason.innerHTML = `
-      <option value="Float Top-up">Float Change Injection</option>
-      <option value="Petty Cash In">Petty Cash Inbound</option>
-      <option value="Coin Refill">Coin Replenishment</option>`;
-  }
-  clearAmount();
-  document.getElementById('mgr-pin').value = '';
-  document.getElementById('remarks').value = '';
+  title.textContent = 'Cash Drawer Withdrawal';
+  desc.textContent  = 'Drop excess counter cash into the secure main vault.';
+  sub.textContent   = 'Submit Safe Drop & Print Receipt';
+  qas.innerHTML = `
+    <button class="qa-btn" onclick="setAmount(5000)">5,000</button>
+    <button class="qa-btn" onclick="setAmount(10000)">10,000</button>
+    <button class="qa-btn" onclick="setAmount(15000)">15,000</button>`;
 }
 
 // ── Amount + numpad ───────────────────────────────────────────────────────────
@@ -825,66 +874,212 @@ function setFocus(el) {
 function numKey(k) {
   if (focusedEl === 'pin') {
     const pin = document.getElementById('mgr-pin');
-    if (k === 'C') { pin.value = ''; return; }
-    if (pin.value.length < 4) pin.value += k;
+    if (k === 'C') { pin.value = ''; resetIdempotencyKey(); return; }
+    if (pin.value.length < 4) {
+      pin.value += k;
+      resetIdempotencyKey();
+    }
     return;
   }
-  if (k === 'C') { clearAmount(); return; }
+  if (focusedEl === 'mgr-operator-id') {
+    const opId = document.getElementById('mgr-operator-id');
+    if (k === 'C') { opId.value = ''; resetIdempotencyKey(); return; }
+    opId.value += k;
+    resetIdempotencyKey();
+    return;
+  }
+  if (k === 'C') { clearAmount(); resetIdempotencyKey(); return; }
   if (amountStr === '0') amountStr = '';
   if (amountStr.length < 8) amountStr += k;
   const v = parseInt(amountStr) || 0;
   document.getElementById('amount-val').textContent = new Intl.NumberFormat('en-PK').format(v);
+  resetIdempotencyKey();
 }
 
+// ── Clear and Preset amount helpers ───────────────────────────────────────────
 function clearAmount() {
   amountStr = '0';
   document.getElementById('amount-val').textContent = '0';
+  resetIdempotencyKey();
 }
 
 function setAmount(val) {
   amountStr = String(val);
   document.getElementById('amount-val').textContent = new Intl.NumberFormat('en-PK').format(val);
+  resetIdempotencyKey();
   setFocus('amount');
 }
 
+// ── Reason code dropdown population & toggle ──────────────────────────────────
+async function loadReasonCodes() {
+  try {
+    const payload = await bridgeRequest('cash.getReasonCodes', null);
+    reasonCodes = payload.reasonCodes || [];
+
+    if (payload.usedFallback) {
+      showToast('Cash control-specific reason codes are not synced yet. Showing available reasons.', 'info');
+      console.warn('[CashControl] Using fallback reason codes because no CashControl-specific codes were configured.');
+    }
+
+    const select = document.getElementById('reason-select');
+    select.innerHTML = '';
+
+    if (reasonCodes.length === 0) {
+      document.getElementById('submit-btn').disabled = true;
+      showToast('No reason codes are available for cash control.', 'error');
+      const opt = document.createElement('option');
+      opt.textContent = 'No reason codes available';
+      select.appendChild(opt);
+      return;
+    }
+
+    reasonCodes.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.id;
+      opt.textContent = escapeHtml(r.name);
+      select.appendChild(opt);
+    });
+
+    checkManagerPinRequirements();
+  } catch (err) {
+    const code = err?.code || err?.error?.code || 'UNKNOWN';
+    const message = err?.message || err?.error?.message || 'Unknown error';
+    console.error('[CashControl] Failed to load reason codes:', code, message);
+    showToast('Failed to load reason codes.', 'error');
+  }
+}
+
+function checkManagerPinRequirements() {
+  const select = document.getElementById('reason-select');
+  const selectedId = parseInt(select.value);
+  const selected = reasonCodes.find(r => r.id === selectedId);
+  const requiresManager = selected ? selected.requiresManagerApproval : false;
+
+  const row = document.getElementById('fields-row-container');
+  const opGroup = document.getElementById('mgr-operator-group');
+  const pinGroup = document.getElementById('mgr-pin-group');
+
+  if (requiresManager) {
+    opGroup.style.display = 'flex';
+    pinGroup.style.display = 'flex';
+    row.style.gridTemplateColumns = '2fr 1.5fr 1.5fr';
+    document.getElementById('mgr-operator-id').disabled = false;
+    document.getElementById('mgr-pin').disabled = false;
+  } else {
+    opGroup.style.display = 'none';
+    pinGroup.style.display = 'none';
+    row.style.gridTemplateColumns = '1fr';
+
+    // Clear and disable
+    const opInput = document.getElementById('mgr-operator-id');
+    const pinInput = document.getElementById('mgr-pin');
+    opInput.value = '';
+    pinInput.value = '';
+    opInput.disabled = true;
+    pinInput.disabled = true;
+
+    if (focusedEl === 'pin' || focusedEl === 'mgr-operator-id') {
+      setFocus('amount');
+    }
+  }
+}
+
 // ── Submit ─────────────────────────────────────────────────────────────────────
-function submitAction() {
+let isSubmitting = false;
+
+async function submitAction() {
+  if (isSubmitting) return;
+
   const val = parseInt(amountStr) || 0;
-  if (val <= 0) { showToast('Enter a valid amount.','error'); return; }
+  if (val <= 0) { showToast('Enter a valid amount.', 'error'); return; }
 
-  const pin = document.getElementById('mgr-pin').value;
-  if (pin !== '1234') { showToast('Invalid Manager PIN. Please try again.','error'); return; }
+  const select = document.getElementById('reason-select');
+  if (!select.value) { showToast('Please select a reason code.', 'error'); return; }
 
-  const openingFloat = parseFloat(sessionStorage.getItem('pos_shift_float')) || 5000;
-  const txns  = JSON.parse(sessionStorage.getItem('pos_completed_transactions') || '[]');
-  const cashSales = txns.filter(t=>(t.tender||'').toLowerCase()==='cash').reduce((s,t)=>s+t.total,0);
-  const drops = JSON.parse(sessionStorage.getItem('pos_safe_drops') || '[]');
-  const dropsTotal  = drops.filter(d=>d.type==='withdraw').reduce((s,d)=>s+d.amount,0);
-  const injectTotal = drops.filter(d=>d.type==='deposit').reduce((s,d)=>s+d.amount,0);
-  const balance = openingFloat + cashSales - dropsTotal + injectTotal;
+  const selectedId = parseInt(select.value);
+  const selected = reasonCodes.find(r => r.id === selectedId);
+  if (!selected) { showToast('Please select a valid reason code.', 'error'); return; }
 
-  if (activeTab==='drop' && val > balance) {
-    showToast(`Amount exceeds drawer balance (${fmt(balance)}).`,'error'); return;
+  const requiresManager = selected.requiresManagerApproval;
+  const managerOperatorId = document.getElementById('mgr-operator-id').value.trim();
+  const managerPin = document.getElementById('mgr-pin').value;
+
+  if (requiresManager) {
+    if (!managerOperatorId) { showToast('Manager Operator ID is required.', 'error'); return; }
+    if (!managerPin || managerPin.length !== 4) { showToast('A 4-digit Manager PIN is required.', 'error'); return; }
   }
 
-  const isW    = activeTab === 'drop';
-  const ref    = (isW ? 'DRP-' : 'INJ-') + Math.floor(100000 + Math.random()*900000);
-  const reason = document.getElementById('reason-select').value;
-  const remark = document.getElementById('remarks').value || (isW ? 'Safe drop to vault' : 'Float injection');
-  const now    = new Date();
-  const timeStr= String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  if (currentSummary && val > currentSummary.expectedDrawerBalance) {
+    showToast(`Amount exceeds drawer balance (${fmt(currentSummary.expectedDrawerBalance)}).`, 'error');
+    return;
+  }
 
-  drops.push({ id:ref, type:isW?'withdraw':'deposit', amount:val, reason, time:timeStr, remarks:remark });
-  sessionStorage.setItem('pos_safe_drops', JSON.stringify(drops));
+  const submitBtn = document.getElementById('submit-btn');
+  const submitText = document.getElementById('submit-text');
 
-  const newBalance = balance + (isW ? -val : val);
+  try {
+    isSubmitting = true;
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.7';
+    submitText.textContent = 'Submitting...';
 
-  document.getElementById('mgr-pin').value = '';
-  document.getElementById('remarks').value = '';
-  clearAmount();
-  updateMetrics();
-  showToast(isW ? 'Safe drop recorded successfully.' : 'Float injection completed.','success');
-  showReceipt({ id:ref, type:activeTab, amount:val, reason, newBalance });
+    const payload = {
+      movementType: 'Drop',
+      amount: val,
+      reasonCodeId: selectedId,
+      comment: document.getElementById('remarks').value || '',
+      idempotencyKey: getOrCreateIdempotencyKey()
+    };
+
+    if (requiresManager) {
+      payload.managerOperatorId = managerOperatorId;
+      payload.managerPin = managerPin;
+    } else {
+      payload.managerOperatorId = null;
+      payload.managerPin = null;
+    }
+
+    const result = await bridgeRequest('cash.recordMovement', payload);
+
+    showToast('Safe drop recorded successfully.', 'success');
+
+    // Clear inputs on success
+    document.getElementById('mgr-pin').value = '';
+    document.getElementById('remarks').value = '';
+    clearAmount();
+
+    resetIdempotencyKey();
+
+    // Reload layout and data
+    await loadSummaryAndLedger();
+
+    // Show receipt modal using C# result fields
+    showReceipt({
+      id: result.terminalSequence || result.movementId || '—',
+      type: 'drop',
+      amount: val,
+      reason: selected.name,
+      requiresManager: requiresManager,
+      newBalance: currentSummary ? currentSummary.expectedDrawerBalance : 0
+    });
+  } catch (err) {
+    const code = err?.code || err?.error?.code || 'UNKNOWN';
+    const message = err?.message || err?.error?.message || 'Unknown error';
+    console.error('[CashControl] Record movement failed:', code, message);
+
+    // Clear manager PIN input on error so they can re-enter
+    document.getElementById('mgr-pin').value = '';
+
+    // Do NOT automatically reset idempotency key on failure (per instructions)
+
+    const errMsg = err.message || 'Failed to record movement.';
+    showToast(errMsg, 'error');
+  } finally {
+    isSubmitting = false;
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+    submitText.textContent = 'Submit Safe Drop & Print Receipt';
+  }
 }
 
 // ── Receipt ───────────────────────────────────────────────────────────────────
@@ -906,20 +1101,20 @@ async function showReceipt(data) {
       <div class="r-sub" style="margin-top:4px;font-weight:700">${isW ? 'CASH DRAWER WITHDRAWAL' : 'CASH FLOAT INJECTION'}</div>
     </div>
     <hr class="r-div"/>
-    <div class="r-row"><span>REF ID:</span><span class="r-bold">${data.id}</span></div>
+    <div class="r-row"><span>REF ID:</span><span class="r-bold">${escapeHtml(data.id)}</span></div>
     <div class="r-row"><span>DATE/TIME:</span><span>${now}</span></div>
     <div class="r-row"><span>TERMINAL:</span><span>POS-01</span></div>
-    <div class="r-row"><span>OPERATOR:</span><span>${opName.toUpperCase()}</span></div>
-    <div class="r-row"><span>MGR AUTH:</span><span>VERIFIED (PIN ****)</span></div>
+    <div class="r-row"><span>OPERATOR:</span><span>${escapeHtml(opName.toUpperCase())}</span></div>
+    <div class="r-row"><span>MGR AUTH:</span><span>${data.requiresManager ? 'VERIFIED (PIN ****)' : 'NOT REQUIRED'}</span></div>
     <hr class="r-div"/>
     <div class="r-row"><span>TYPE:</span><span class="r-bold">${isW ? 'SAFE DROP / WITHDRAW' : 'FLOAT ADD / DEPOSIT'}</span></div>
-    <div class="r-row"><span>REASON:</span><span>${data.reason}</span></div>
+    <div class="r-row"><span>REASON:</span><span>${escapeHtml(data.reason)}</span></div>
     <div class="r-row r-bold" style="font-size:13px"><span>AMOUNT:</span><span>${fmt(data.amount)}</span></div>
     <div class="r-row"><span>NEW DRAWER BALANCE:</span><span class="r-bold">${fmt(data.newBalance)}</span></div>
     <hr class="r-div"/>
     <div class="r-ctr" style="font-size:9px;color:#888;margin-top:6px">
       <div>IMAGYN POS · Imagyn Technologies</div>
-      <div>${isW ? 'SECURE VAULT DROP VERIFIED' : 'FLOAT DEPOSIT RECONCILED'}</div>
+      <div>SECURE VAULT DROP VERIFIED</div>
     </div>
   `;
   document.getElementById('receipt-overlay').classList.add('open');
@@ -943,7 +1138,8 @@ async function getCurrentSessionOrNull() {
       return payload.currentSession;
     }
   } catch (e) {
-    console.error('[Session] Failed to get session:', e);
+    const msg = e?.message || 'Unknown';
+    console.error('[Session] Failed to get session:', msg);
   }
   return null;
 }
@@ -954,7 +1150,8 @@ async function getCurrentShiftOrNull() {
       return await window.posBridge.request('shift.getCurrent', null);
     }
   } catch (e) {
-    console.error('[Shift] Failed to get current shift:', e);
+    const msg = e?.message || 'Unknown';
+    console.error('[Shift] Failed to get current shift:', msg);
   }
   return null;
 }
@@ -965,7 +1162,8 @@ async function clearDesktopSession(reason) {
       await window.posBridge.request('session.clear', { reason: reason || 'manual' });
     }
   } catch (e) {
-    console.error('[Session] Failed to clear session:', e);
+    const msg = e?.message || 'Unknown';
+    console.error('[Session] Failed to clear session:', msg);
   }
   sessionStorage.clear();
   localStorage.removeItem('terminal_operator');
@@ -1006,12 +1204,26 @@ window.addEventListener('DOMContentLoaded', async () => {
     opAvatarEl.style.backgroundColor = opColor;
   }
 
-  // Focus routing via click on pin input
+  // Setup UI event listeners to reset idempotency key
+  document.getElementById('mgr-pin').addEventListener('input', resetIdempotencyKey);
+  document.getElementById('mgr-operator-id').addEventListener('input', resetIdempotencyKey);
+  document.getElementById('remarks').addEventListener('input', resetIdempotencyKey);
+
+  document.getElementById('reason-select').addEventListener('change', () => {
+    resetIdempotencyKey();
+    checkManagerPinRequirements();
+  });
+
+  // Focus routing via click on input fields
   document.getElementById('mgr-pin').addEventListener('focus', () => setFocus('pin'));
   document.getElementById('mgr-pin').addEventListener('click', () => setFocus('pin'));
+  document.getElementById('mgr-operator-id').addEventListener('focus', () => setFocus('mgr-operator-id'));
+  document.getElementById('mgr-operator-id').addEventListener('click', () => setFocus('mgr-operator-id'));
   document.getElementById('amount-display').addEventListener('click', () => setFocus('amount'));
 
-  updateMetrics();
+  // Load backend data
+  await loadReasonCodes();
+  await loadSummaryAndLedger();
 
   // Task 3.1.7: Confirm bridge reachability from any screen
   window.posBridgeTransport?.logStatus?.("cash_control");

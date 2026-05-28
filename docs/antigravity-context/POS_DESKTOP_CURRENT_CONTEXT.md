@@ -2,7 +2,7 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 5 / Milestone 5.5 - Cash control service - **IN PROGRESS**
-- **Group**: Group 3 (Task 5.5.7 - completed)
+- **Group**: Group 4 (Task 5.5.8 - completed)
 
 ## Status of All Milestone 5.5 Tasks (Current)
 - `[x]` Task 5.5.1 - Define ICashControlService
@@ -12,7 +12,7 @@
 - `[x]` Task 5.5.5 - Compute drawer balance
 - `[x]` Task 5.5.6 - Compute threshold alerts
 - `[x]` Task 5.5.7 - Add handlers + ledger query
-- `[ ]` Task 5.5.8 - Wire cash_control.html + remove pos_safe_drops
+- `[x]` Task 5.5.8 - Wire cash_control.html + remove pos_safe_drops
 - `[ ]` Task 5.5.9 - Tie movements to active shift
 - `[ ]` Task 5.5.10 - Test drops/injections + alerts
 
@@ -74,7 +74,12 @@
 - [ADD] `POS.Desktop.Tests/Shell/CashControlBridgeHandlerTests.cs` (Comprehensive 18-test suite verifying bridge routing, success and malformed payload mapping, string/numeric movementType parsing, and fallback categories)
 - [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs` (Updated CanHandle registrations list and count assertions to exactly 26)
 
-### Test count: 407 passing (was 388; +19 new bridge handler tests)
+### Group 4 (Task 5.5.8 - completed)
+- [MODIFY] `POS.Desktop/Assets/ui/cash_control.html` (Wired UI to bridge endpoints, implemented dynamic summary and ledger binding, added Manager ID field, implemented Manager PIN Visibility logic, and integrated idempotency key handling)
+- [SYNC] `docs/ui-prototype/screens/cash_control.html` (Synchronized byte-identical copy)
+- [ADD] `POS.Desktop.Tests/Shell/CashControlScreenStaticTests.cs` (Added 18 static tests checking file parity, bridge endpoint invocations, and sessionStorage exclusions)
+
+### Test count: 425 passing (was 407; +18 new CashControl static tests)
 
 ### Group 5 (Task 5.4.10 - completed)
 - [MODIFY] `POS.Desktop.Tests/Shell/PaymentBridgeHandlerTests.cs` (+3 tests: missing `tenderMethodId` -> MALFORMED_REQUEST; `guestName` mapped to `PaymentCompletionRequest.GuestName`; multiple tenders all mapped with amounts and external references)

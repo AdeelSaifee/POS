@@ -1,108 +1,118 @@
 # POS
 
-A multi-tenant, offline-first Point-of-Sale platform built on **.NET 8**. The system pairs a centralized ASP.NET Core API with a Windows desktop terminal that operates against a local SQLite database and reconciles with the server via an outbox/cursor sync protocol.
-
-The desktop terminal UI is hosted in a WPF shell using Microsoft Edge WebView2, rendering local HTML/CSS/JS screens served via a virtual host mapping (`https://pos.app/`).
+A multi-tenant, offline-first Point-of-Sale platform built on **.NET 8**. The solution pairs a centralized ASP.NET Core API (SQL Server) with a Windows desktop terminal that operates against a local SQLite database. The desktop UI is a WPF shell hosting Microsoft Edge WebView2; HTML/CSS/JS screens are served via a virtual host mapping (`https://pos.app/`) and call into C# services through a typed JS↔C# bridge.
 
 ## Solution Layout
 
 | Project | Type | Purpose |
 | --- | --- | --- |
-| `POS.Api` | ASP.NET Core 8 Web API | Multi-tenant backend, JWT auth, SQL Server via EF Core |
-| `POS.Desktop` | WPF (`net8.0-windows`) | WPF terminal, WebView2 shell, local SQLite, bridge-enabled HTML UI |
-| `POS.Desktop.Hardware` | Class library | Hardware abstractions (cash drawer, printers, scanners, payment terminals, customer display, gateway) |
-| `POS.Shared` | Class library | Domain entities, enums, DTOs, cross-cutting contracts |
-| `POS.Tests` | xUnit | Integration + unit tests for POS.Api (`Microsoft.AspNetCore.Mvc.Testing`) |
-| `POS.Desktop.Tests` | xUnit | Unit + integration tests for `POS.Desktop` (router, bridge, and services) |
+| `POS.Api` | ASP.NET Core 8 Web API | Central multi-tenant backend, JWT auth, SQL Server via EF Core |
+| `POS.Desktop` | WPF (`net8.0-windows`) | Terminal shell, WebView2 hosting, local SQLite, JS↔C# bridge, operational services |
+| `POS.Desktop.Hardware` | Class library | Hardware abstractions (cash drawer, printers, scanners, payment terminal, customer display, gateway) — deferred |
+| `POS.Shared` | Class library | Shared domain entities, enums, DTOs, contracts |
+| `POS.Tests` | xUnit | Integration and unit tests for `POS.Api` |
+| `POS.Desktop.Tests` | xUnit | Service, bridge handler, and static HTML/parity tests for `POS.Desktop` |
 
-## POS.Desktop UI Integration Status
+## Desktop UI Integration — Phase Status
 
-The repository contains the implementation of the desktop UI integration up to **Milestone 4.2**:
-- **Phase 1 Complete:** Generic Host bootstrap (Dependency Injection), borderless full-screen WebView2 shell, startup SQLite migration, and diagnostics/Evergreen runtime presence guard.
-- **Phase 2 Complete:** Asset ingestion of 7 HTML screens hosted under `https://pos.app/` origin via virtual host mapping (retiring the simulator wrapper `index.html` for in-app views).
-- **Milestone 3.1 Complete:** Two-way asynchronous postMessage transport channel.
-- **Milestone 3.2 Complete:** Standardized v1 message envelope (`version`, `type`, `requestId`, `payload`, `ok`, `error`) with camelCase serialization and JS bridge helper.
-- **Milestone 3.3 Complete:** `PosWebMessageRouter` dispatching bridge requests to registered C# handlers within scoped DI context.
-- **Milestone 3.4 Complete:** In-memory operator session service (`ISessionService`), `session.get` and `session.clear` bridge message handlers, and post-login UI redirection utilizing bridge-backed C# session state.
-- **Milestone 3.5 Complete:** Login PIN proof now goes through the JS↔C# bridge using `auth.validatePin`; valid stub credentials set `ISessionService`; `terminal_login.html` no longer compares PINs in JS and no longer writes to `localStorage.terminal_operator`.
-- **Milestone 4.1 Complete:** Real provisioned-terminal context, fail-closed unprovisioned/half-provisioned behavior, and tenant-scoped query filter verification.
-- **Milestone 4.2 Complete:** Durable `TerminalProvisioning` SQLite store, provisioning bridge handlers, `provision_terminal.html` bridge wiring, removal of `terminal_config` localStorage, startup loader for restart survival, and controlled reprovisioning support.
-- **Next Milestone:** **Phase 4 / Milestone 4.3** — Minimal local catalog schema & seed.
+| Phase | Status | Scope |
+| --- | --- | --- |
+| Phase 1 | Complete | WPF shell bootstrap, Generic Host DI, borderless full-screen WebView2 foundation, local SQLite migration on startup, Evergreen runtime guard, prototype hosting basics |
+| Phase 2 | Complete | Asset ingestion under `https://pos.app/`, bridge transport groundwork, shell stability, UI prototype integration foundation |
+| Phase 3 | Complete | Bridge envelope/contracts, `PosWebMessageRouter` dispatch, session/auth/provisioning handlers, operational shell integration |
+| Phase 4 | Complete | Local SQLite provisioning store, catalog/tax/tender/reason-code seed and read services, local DB foundation |
+| Phase 5.1 | Complete | Authentication & login service (`IAuthService` / `LocalEmployeeAuthService` / PIN verifier, `LocalTerminalSession` persistence) |
+| Phase 5.2 | Complete | Shift open flow (`IShiftService`, opening cash, config-driven checklist & policy, shift gating) |
+| Phase 5.3 | Complete | Order/cart service (cart math, tax, proportional discount, central money rounding) |
+| Phase 5.4 | Complete | Payment completion (tenders, change, atomic order/lines/payments/outbox/print, receipt rendering, idempotency) |
+| Phase 5.5 | Complete | Cash control service (safe drops, manager PIN, drawer summary, threshold alerts, ledger, reason codes) |
+
+The current head of work is **Phase 5 / Milestone 5.5 — Cash control service, COMPLETE**.
 
 For detailed phase roadmaps and task lists, see:
 - [DESKTOP_UI_PHASE_MILESTONES.md](DESKTOP_UI_PHASE_MILESTONES.md)
 - [DESKTOP_UI_MILESTONE_TASKS.md](DESKTOP_UI_MILESTONE_TASKS.md)
 - [DESKTOP_UI_INTEGRATION_PLAN.md](DESKTOP_UI_INTEGRATION_PLAN.md)
 
+## Implemented Desktop Flows
+
+- **Terminal provisioning** — `TerminalProvisioning` row persisted in local SQLite; loaded into `ProvisionedTerminalContext` at startup; fail-closed on unprovisioned/half-provisioned state; controlled re-provisioning via an explicit `allowReprovision` flag.
+- **Login** — operator grid + 4-digit keypad in `terminal_login.html`; PIN validated in C# by `LocalEmployeeAuthService` (via `IPinVerifier`); successful login starts an `OperatorSession` and persists a `LocalTerminalSession`.
+- **Operator session** — in-memory `OperatorSessionService`, single-active-operator per terminal, cleared on logout/shift close. Local `LocalTerminalSession` records login/logout history.
+- **Shift open** — `shift_open.html` reads cash-drawer limit, safe-drop threshold, and pre-shift checklist from `shift.getOpenPolicy`; `shift.open` persists a `LocalShift` with the opening cash float. All operational screens gate on `shift.getCurrent`.
+- **Checkout / cart** — `main_checkout.html` is backed by `IOrderService` / `DraftCartStore`; add/quantity/remove, line and cart discount, tax (inclusive/exclusive), proportional discount distribution, and centralized money rounding via `MoneyRounder`.
+- **Payment completion** — `payment_screen.html` calls `payment.getTenderMethods` and `payment.complete`; `PaymentService` atomically writes `LocalOrder` / `LocalOrderLine` / `LocalPayment`, enqueues a `SyncOutbox` event and a `PrintQueue` receipt row, computes cash change, renders a plain-text receipt via `ReceiptRenderer`, and enforces a mandatory `IdempotencyKey` with deterministic SHA-256 payload fingerprinting.
+- **Cash control** — `cash_control.html` calls `cash.getSummary`, `cash.recordMovement`, `cash.getLedger`, and `cash.getReasonCodes`. `CashControlService` persists `LocalCashDrawerMovement` (Drop only), enforces manager PIN via `IAuthService.ValidateManagerPinAsync` when the resolved reason code requires approval, computes drawer balance/alerts against `ShiftOpenPolicyOptions`, and scopes movements to the active open shift on this terminal/location.
+- **UI prototype parity** — every operational screen exists in both `POS.Desktop/Assets/ui` and `docs/ui-prototype/screens`; copies are kept byte-identical and verified by SHA-256 parity tests.
+
 ## Bridge Overview
 
-Communication between the hosted JavaScript UI and the C# WPF shell goes through a Promise-based bridge:
-- JavaScript requests are sent via `posBridge.request(type, payload)`, which resolves to the payload on success and rejects with a structured error on failure.
-- C# receives requests in `WebViewHost`, which maps them to `PosWebMessageRouter` for type-based dispatch to services.
-- Business logic, validation, and data persistence reside strictly in C#; the JS UI is restricted to input/view rendering.
-- Current active bridge types:
-  - `transport.echo` (Echo test)
-  - `session.get` (Retrieves active operator session details)
-  - `session.clear` (Clears operator session on logout/shift close)
-  - `auth.validatePin` (Validates login PIN credentials over the bridge)
-  - `provisioning.provisionTerminal` (Persists tenant/location/terminal identity through C# into SQLite)
-  - `provisioning.getProvisioningStatus` (Returns fail-closed provisioning status from the persisted store)
+Communication between the hosted HTML/JS UI and the C# WPF shell goes through a Promise-based `posBridge.request(type, payload)` channel routed by `PosWebMessageRouter`. Business logic, validation, and persistence live in C#.
 
-The `auth.validatePin` action is currently implemented as a temporary deterministic stub for proving the login flow. It validates operator credentials against a local mock collection in C# and starts the in-memory operator session upon success. Real Employee/database verification is deferred to Phase 5.1 work.
+Registered local desktop bridge endpoints (verified in `POS.Desktop/Shell/PosWebMessageRouter.cs`):
 
-Controlled re-provisioning is supported only through an explicit guarded `allowReprovision` flag; normal accidental re-provisioning remains blocked.
+| Type | Purpose |
+| --- | --- |
+| `transport.echo` | Transport health check |
+| `session.get` | Returns active operator session |
+| `session.clear` | Clears the operator session |
+| `auth.validatePin` | Validates operator PIN, starts session, persists `LocalTerminalSession` |
+| `provisioning.provisionTerminal` | Persists tenant/location/terminal identity to SQLite |
+| `provisioning.getProvisioningStatus` | Fail-closed provisioning status |
+| `catalog.listCategories` | Lists catalog categories |
+| `catalog.listItems` | Lists/filters catalog items |
+| `catalog.searchItems` | Search catalog items |
+| `catalog.lookupByIdentifier` | Barcode/identifier lookup |
+| `shift.open` | Opens a shift with an opening float |
+| `shift.getCurrent` | Returns current open shift (gate for operational screens) |
+| `shift.getOpenPolicy` | Returns cash limit, safe-drop threshold, checklist from config |
+| `order.getCart` | Returns the current draft cart |
+| `order.addItem` | Adds a variant to the cart |
+| `order.updateLineQuantity` | Updates a cart line quantity |
+| `order.removeItem` | Removes a cart line |
+| `order.clearCart` | Clears the cart |
+| `order.applyDiscount` | Applies a cart-level discount |
+| `order.removeDiscount` | Removes the cart-level discount |
+| `payment.getTenderMethods` | Lists local tender methods |
+| `payment.complete` | Completes an order atomically with idempotency |
+| `cash.getSummary` | Drawer balance, totals, and alert state |
+| `cash.recordMovement` | Records a cash drawer movement (Drop only) |
+| `cash.getLedger` | Returns movements for the active open shift |
+| `cash.getReasonCodes` | Reason codes for cash control (with category fallback) |
 
-For conventions and schema details, see:
+`payment.complete` and `cash.recordMovement` require a non-blank `idempotencyKey`. `cash.recordMovement` accepts only `Drop` (string, case-insensitive) or numeric enum value `4`; all other movement types are rejected at the bridge layer with `INVALID_MOVEMENT_TYPE`.
+
+For envelope and convention details, see:
 - [BRIDGE_ENVELOPE_SCHEMA.md](docs/bridge/BRIDGE_ENVELOPE_SCHEMA.md)
 - [BRIDGE_CONVENTIONS.md](docs/bridge/BRIDGE_CONVENTIONS.md)
 - [WEBVIEW2_TRANSPORT_OPTIONS.md](docs/bridge/WEBVIEW2_TRANSPORT_OPTIONS.md)
+- [OPERATOR_SESSION_MODEL.md](docs/bridge/OPERATOR_SESSION_MODEL.md)
 
-## Operator Session Model
+## Runtime Data
 
-The operator session tracks identity and login state for the active cashier:
-- **Lifetime:** In-memory, process-lifetime only. No SQLite persistence.
-- **Scope:** Single terminal, single active operator. Registered as a Singleton `ISessionService`.
-- **Security:** Contains only safe metadata (`operatorId`, `displayName`, `role`, `loginTime`, `terminalId`, `sessionId`). It **never** stores sensitive credentials like PINs, passwords, payment card tokens, or payment details.
-- **State Control:** Exposes current status through `session.get` and clears state via `session.clear` on shift close/logout. The C# session is set by `auth.validatePin` upon a valid login. `terminal_login.html` no longer writes the operator identity to `localStorage.terminal_operator`.
-- **Source of Truth:** Operator session is still in-memory only. Terminal provisioning config is no longer stored in browser localStorage. Terminal provisioning truth now lives in the local SQLite TerminalProvisioning store and is loaded into ProvisionedTerminalContext on startup. Browser storage must not be used as source of truth for terminal/operator/provisioning state.
+`POS.Desktop` keeps all mutable state under the user's local application data folder so it does not depend on its installation directory for writable access.
 
-For more details, see [OPERATOR_SESSION_MODEL.md](docs/bridge/OPERATOR_SESSION_MODEL.md).
+- **Local database (SQLite):** `%LocalAppData%/IMAGYN/POS/Desktop/Data/pos_local.db`
+- **WebView2 user data:** `%LocalAppData%/IMAGYN/POS/Desktop/WebView2`
+- **Diagnostic logs:** `%LocalAppData%/IMAGYN/POS/Desktop/Logs/pos-desktop.log`
 
-## Terminal Provisioning Model
+Local SQLite is owned by `PosLocalDbContext`. EF Core migrations live under `POS.Desktop/Data/Migrations/Local` and are applied automatically on desktop startup. The central SQL Server database is owned by `POS.Api` / `PosCentralDbContext` and is unaffected by desktop migrations.
 
-- `TerminalProvisioning` is stored locally in SQLite.
-- The table is single-row, `Id = 1`.
-- It stores `TenantId`, `LocationId`, `TerminalId`, and `UpdatedAt`.
-- It does not store PINs, passwords, tokens, payment/card data, DB paths, or connection strings.
-- Provisioning state is loaded after local DB migrations at desktop startup.
-- Missing/partial/invalid persisted state fails closed.
-- Controlled re-provisioning requires explicit override and does not add catalog seed or sync.
+Local entity areas (all tenant-scoped via `CurrentTenantId` query filter):
 
-## Login PIN Proof Status
-
-The operator login workflow preserves the existing visual operator grid and 4-digit keypad UX, but delegates the PIN validation decision to C# via `posBridge.request('auth.validatePin', ...)`:
-- In-JS PIN comparison has been removed.
-- Operator PIN values were completely removed from the JavaScript `operators` collection in `terminal_login.html`.
-- A successful login continues to trigger the checkmark overlay animation and navigates to `shift_open.html`.
-- An invalid login still triggers the error shake and red dots UI feedback.
-- This is a stub proof of authentication; integration with real database entities belongs to Phase 5.1.
+- **Provisioning:** `TerminalProvisioning`
+- **Catalog & config:** `LocalCategory`, `LocalItem`, `LocalItemVariant`, `LocalItemIdentifier`, `LocalItemPrice`, `LocalUnitOfMeasure`, `LocalTaxRule`, `LocalTenderMethod`, `LocalReasonCode`
+- **Auth / session:** `LocalEmployee`, `LocalEmployeeLocationRole`, `LocalTerminalSession`
+- **Shift / sales:** `LocalShift`, `LocalOrder`, `LocalOrderLine`, `LocalPayment`
+- **Cash control:** `LocalCashDrawerMovement` (append-only, Drop only)
+- **Operational queues:** `SyncOutbox`, `PrintQueue`, `SyncCursor`, `PaymentReconciliationQueue`, `LocalRecoveryJournal`, `LocalRetentionState`
 
 ## Prerequisites
 
 - .NET 8 SDK
 - SQL Server (LocalDB or full) for the central API database
-- Windows (the desktop client targets `net8.0-windows`)
-- **Microsoft Edge WebView2 Evergreen Runtime** (Required for `POS.Desktop` UI)
-
-## Runtime Data (%LocalAppData%)
-
-`POS.Desktop` stores all mutable state and diagnostic data in the user's local application data folder to ensure compatibility with locked-down terminal environments. It does not depend on its installation directory for writable access.
-
-- **Local Database:** `%LocalAppData%/IMAGYN/POS/Desktop/Data/pos_local.db`
-- **WebView2 User Data:** `%LocalAppData%/IMAGYN/POS/Desktop/WebView2`
-- **Diagnostic Logs:** `%LocalAppData%/IMAGYN/POS/Desktop/Logs/pos-desktop.log`
-
-**Deployment Note:** Install or ensure the Microsoft Edge WebView2 Evergreen Runtime is present on the target machine before launching `POS.Desktop`.
+- Windows (`POS.Desktop` targets `net8.0-windows`)
+- **Microsoft Edge WebView2 Evergreen Runtime** on the terminal machine
 
 ## Getting Started
 
@@ -124,51 +134,50 @@ dotnet run --project POS.Api
 dotnet run --project POS.Desktop
 ```
 
-Configure connection strings and JWT settings in `POS.Api/appsettings.json` (or `appsettings.Development.json`).
+Configure connection strings and JWT settings in `POS.Api/appsettings.json`. Configure cash drawer / safe-drop limits and the shift-open checklist under the `ShiftOpen` section in `POS.Desktop/appsettings.json`.
 
 ## Testing
 
 ```powershell
-# Run API integration and unit tests
+# Central API tests
 dotnet test POS.Tests
 
-# Run Desktop unit and integration tests
+# Desktop service, bridge, and static UI tests
 dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug
 
-# Run full solution build
+# Full solution build
 dotnet build POS.slnx --configuration Debug
 ```
 
-API tests use `ApiWebApplicationFactory` with a stubbed JWT handler (`TestAuthenticationHandler`) and a seeded in-memory dataset. Desktop tests cover the `PosWebMessageRouter`, operator session lifecycle, `auth.validatePin` routing, validation outcomes (valid/invalid PIN), `session.get`, provisioning context tests, `TerminalProvisioning` SQLite store tests, provisioning bridge handler tests, startup loader/restart survival tests, controlled re-provisioning tests, and provisioning without catalog seed tests.
+`POS.Desktop.Tests` includes:
 
-## Key Endpoints
+- Service tests (auth, session, shift, order, payment, cash control)
+- Bridge handler tests for every registered router endpoint
+- Static HTML tests asserting that `Assets/ui` and `docs/ui-prototype/screens` copies are SHA-256 identical, that operational screens use the bridge (not `localStorage` / `sessionStorage`) for source-of-truth state, and that forbidden patterns (demo timeouts, in-JS PIN compares, etc.) stay out
 
-All endpoints (except `/api/health`) require a JWT bearer token whose claims satisfy one of the configured policies (`UserOrAdmin`, `PosDevice`, `SystemScope`).
+The latest project context records **451 desktop tests passing** in `POS.Desktop.Tests` and **49 tests passing** in `POS.Tests`. (Counts are taken from `docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md`; this README does not claim a fresh local test run.)
 
-| Route | Policy | Description |
-| --- | --- | --- |
-| `GET /api/health` | none | Liveness probe |
-| `GET /api/categories` | UserOrAdmin | List product categories |
-| `GET /api/locations` | UserOrAdmin | List business locations |
-| `GET /api/unitofmeasure` | UserOrAdmin | List units of measure |
-| `GET /api/tenant/profile` | UserOrAdmin | Current tenant profile |
+## Project Conventions
 
-## Repository Conventions
+- **Browser storage is never the source of truth for operational data.** `sessionStorage` / `localStorage` may not gate operational screens, store provisioning truth, hold the cart, or hold tender state.
+- **Business logic lives in C# services**, not in HTML/JS. JS screens call bridge endpoints and render results.
+- **UI prototype parity.** Each screen in `POS.Desktop/Assets/ui/*.html` has a byte-identical sibling in `docs/ui-prototype/screens/*.html`; SHA-256 parity is enforced by static tests.
+- **No logging of sensitive data.** PINs (operator or manager) are never logged, persisted raw, or returned in responses.
+- **Idempotency on writes.** `payment.complete` and `cash.recordMovement` require a non-blank `idempotencyKey`; the database enforces uniqueness on the relevant indexes.
+- **Multi-tenancy** is enforced via EF Core query filters on `CurrentTenantId` in both `PosCentralDbContext` and `PosLocalDbContext`. Never bypass `TenantScopedEntity`.
+- **Append-only local cash movements / outbox / print queue.** Corrections become new rows, not mutations.
 
-- **Multi-tenancy** is enforced via EF Core query filters on `ICurrentTenantContext.CurrentTenantId`. Never bypass `TenantScopedEntity`.
-- **Offline writes** on the desktop go through `SyncOutbox` (append-only with idempotency keys) — never write directly to a central-only entity from the client.
-- **Domain entities** live in `POS.Shared/Domain/Entities/Central`. Shared enums in `POS.Shared/Enums`.
-- See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design, data model, and sync protocol.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design and the desktop service architecture.
 
 ## Project Status
 
-Central API/read endpoints remain in place.
-POS.Desktop WPF/WebView2 shell, JS↔C# bridge, operator session, bridge-backed login PIN proof, and terminal provisioning through Milestone 4.2 are complete.
+**Implemented** — Central API read endpoints; desktop shell, WebView2 hosting, bridge transport and router; provisioning; catalog read; authentication & login through Milestone 5.1; shift open through Milestone 5.2; cart/order through Milestone 5.3; payment completion through Milestone 5.4; cash control through Milestone 5.5.
 
-Remaining future work:
-- **Phase 4 / Milestone 4.3:** Minimal local catalog schema & seed
-- **Phase 4.4:** Catalog read service and bridge endpoints if listed in milestone docs
-- **Phase 5:** Employee-backed authentication, shift, order, payment, cash control, Z-report flows
-- **Phase 6:** Push/pull synchronization
-- **Phase 7:** Hardware integration
-- **Phase 8:** Packaging, offline assets, telemetry hardening
+**Deferred / not implemented:**
+
+- `FloatInjection` domain design (enum value not added; UI Injection tab deferred and blocked at bridge layer)
+- `Payout` and `Correction` cash movement implementations (rejected by bridge and service)
+- Shift close and Z-report (Phase 5.6)
+- Real hardware integrations — cash drawer, pinpad, printer wiring (Phase 7)
+- Central sync transport for cash movements and other local writes (Phase 6) — local outbox rows exist, push/pull pipeline does not
+- Packaging, offline assets, telemetry hardening (Phase 8)

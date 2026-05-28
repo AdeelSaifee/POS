@@ -167,6 +167,19 @@ public class PaymentBridgeHandlerTests : IDisposable
         Assert.Equal("MALFORMED_REQUEST", response.Error!.Code);
     }
 
+    [Fact]
+    public async Task Complete_TenderMissingTenderMethodId_ReturnsMalformedRequest()
+    {
+        var (router, _, _) = CreateRouterWithStub();
+        var payloadElement = JsonDocument.Parse("""{"tenders":[{"amount":100}]}""").RootElement;
+        var request = new BridgeRequestEnvelope { Type = "payment.complete", RequestId = "req-13", Version = "v1", Payload = payloadElement };
+
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        Assert.False(response.Ok);
+        Assert.Equal("MALFORMED_REQUEST", response.Error!.Code);
+    }
+
     // ── payment.complete — success path ───────────────────────────────────────
 
     [Fact]
@@ -288,6 +301,40 @@ public class PaymentBridgeHandlerTests : IDisposable
         Assert.False(response.Ok);
         Assert.Equal("HANDLER_ERROR", response.Error!.Code);
         Assert.DoesNotContain("Internal DB failure", response.Error.Message);
+    }
+
+    [Fact]
+    public async Task Complete_GuestName_IsMappedToService()
+    {
+        var (router, service, _) = CreateRouterWithStub();
+        service.ResultToReturn = new PaymentCompletionResult(Success: true);
+
+        var payloadElement = JsonDocument.Parse("""{"tenders":[{"tenderMethodId":1,"amount":500}],"guestName":"John Smith"}""").RootElement;
+        var request = new BridgeRequestEnvelope { Type = "payment.complete", RequestId = "req-14", Version = "v1", Payload = payloadElement };
+
+        await router.RouteAsync(request, CancellationToken.None);
+
+        Assert.Equal("John Smith", service.LastRequest!.GuestName);
+    }
+
+    [Fact]
+    public async Task Complete_MultipleTenders_AllMappedToService()
+    {
+        var (router, service, _) = CreateRouterWithStub();
+        service.ResultToReturn = new PaymentCompletionResult(Success: true);
+
+        var payloadElement = JsonDocument.Parse("""{"tenders":[{"tenderMethodId":1,"amount":300},{"tenderMethodId":2,"amount":700,"externalPaymentReference":"TXN-CARD-ABCDEF123456"}],"idempotencyKey":"idem-split-1"}""").RootElement;
+        var request = new BridgeRequestEnvelope { Type = "payment.complete", RequestId = "req-15", Version = "v1", Payload = payloadElement };
+
+        await router.RouteAsync(request, CancellationToken.None);
+
+        Assert.Equal(2, service.LastRequest!.Tenders.Count);
+        Assert.Equal(1, service.LastRequest.Tenders[0].TenderMethodId);
+        Assert.Equal(300m, service.LastRequest.Tenders[0].Amount);
+        Assert.Null(service.LastRequest.Tenders[0].ExternalPaymentReference);
+        Assert.Equal(2, service.LastRequest.Tenders[1].TenderMethodId);
+        Assert.Equal(700m, service.LastRequest.Tenders[1].Amount);
+        Assert.Equal("TXN-CARD-ABCDEF123456", service.LastRequest.Tenders[1].ExternalPaymentReference);
     }
 
     // ── Stub ──────────────────────────────────────────────────────────────────

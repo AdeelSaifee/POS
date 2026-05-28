@@ -1,8 +1,8 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 5 / Milestone 5.4 - Payment & completion service
-- **Group**: Group 4 (Task 5.4.9 - completed)
+- **Milestone**: Phase 5 / Milestone 5.4 - Payment & completion service — **COMPLETED**
+- **Group**: Group 5 (Task 5.4.10 - completed)
 
 ## Status of All Milestone 5.4 Tasks (Current)
 - `[x]` Task 5.4.1 - Define IPaymentService (Tender, change, completion contract)
@@ -14,7 +14,7 @@
 - `[x]` Task 5.4.7 - Render receipt from data (Fully data-driven plain text receipt rendering service)
 - `[x]` Task 5.4.8 - Ensure idempotent completion
 - `[x]` Task 5.4.9 - Wire payment_screen.html
-- `[ ]` Task 5.4.10 - Unit test tender/change/completion
+- `[x]` Task 5.4.10 - Unit test tender/change/completion
 
 ## Status of All Milestone 5.3 Tasks
 - `[x]` Task 5.3.1 - Define IOrderService
@@ -42,6 +42,11 @@
 
 ## Files Created/Changed in this Milestone
 
+### Group 5 (Task 5.4.10 - completed)
+- [MODIFY] `POS.Desktop.Tests/Shell/PaymentBridgeHandlerTests.cs` (+3 tests: missing `tenderMethodId` → MALFORMED_REQUEST; `guestName` mapped to `PaymentCompletionRequest.GuestName`; multiple tenders all mapped with amounts and external references)
+
+### Test count: 365 passing (was 362 after 5.4.9; +3 targeted bridge handler tests)
+
 ### Group 4 (Task 5.4.9 - completed, post-review fixes applied)
 - [MODIFY] `POS.Desktop/Shell/PosWebMessageRouter.cs` (Added `payment.getTenderMethods` and `payment.complete` bridge handlers; added `using POS.Desktop.Data`, `using POS.Desktop.Services.Payments`, `using Microsoft.EntityFrameworkCore`)
 - [MODIFY] `POS.Desktop/Assets/ui/payment_screen.html` (Removed `sessionStorage` cart + demo fallback; removed `localStorage` terminal config read; removed `simulateCardPay`/`simulateWalletPay` with setTimeout; added `bridgeRequest()` helper; robust tender resolution via `getCashTenderMethod()`/`getCardTenderMethod()`/`getWalletTenderMethod()` with property-based fallbacks; stable per-attempt external refs via `getOrCreateCardRef()`/`getOrCreateWalletRef()` (`TXN-CARD-…`/`TXN-WALLET-…`); idempotency reset on every cash key, CLEAR, back, setExact, quick-amount select, split input change, wallet phone change, tender tab change; wallet phone sent as `guestPhone` in `payment.complete`; `approveWalletStub` guards against missing wallet method; `renderOrderSummaryFromState()` drives totals from backend; `buildReceipt()` removed)
@@ -53,7 +58,7 @@
 ### Fix 4 confirmed — no code change needed
 `LocalTenderMethod` has `HasQueryFilter(x => x.TenantId == CurrentTenantId)` in `PosLocalDbContext`. No `IsActive` field exists; all tenant-filtered rows are active. Current handler is correct.
 
-### Test count: 362 passing (was 325)
+### Test count after 5.4.9: 362 passing (was 325)
 
 ### Group 3 (Task 5.4.8 - completed)
 - [ADD] `POS.Desktop/Data/Migrations/Local/20260528104909_AddLocalOrderIdempotencyKeyIndex.cs` (EF Core SQLite local database schema migration adding unique index)
@@ -253,7 +258,41 @@ The `openShift()` function in `shift_open.html` transition flow:
 - Raw exception text shown to cashier: ✗ Not present
 
 ## Deferred Items
-- WebView2 UI bridge routing and bridge endpoints integration for payments (`payment_screen.html` wiring) is deferred to Group 4 / Task 5.4.9.
+- Real pinpad/hardware integration deferred to Phase 7.6
+- Real printer wiring deferred to Phase 7.3
 
-## Next Recommended Group
-- **Milestone 5.4 Group 4 (Task 5.4.9 - payment_screen.html wiring)**
+## Verification Summary (Milestone 5.4 Group 5 — Task 5.4.10)
+
+### Builds
+- `dotnet build POS.Desktop.Tests`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests`: **365/365 passed** (362 existing + 3 new bridge handler tests)
+- Payment filter: **61/61 passed** (20 service + 18 bridge + 24 static + PaymentReconciliationQueue tenant filter)
+
+### Static checks (payment_screen.html)
+| Check | Result |
+|---|---|
+| `sessionStorage.getItem('pos_cart')` absent | ✓ True |
+| `simulateCardPay` absent | ✓ True |
+| `simulateWalletPay` absent | ✓ True |
+| Fake 1800ms timeout absent | ✓ True |
+| Fake 2200ms timeout absent | ✓ True |
+| `order.getCart` call present | ✓ True |
+| `payment.getTenderMethods` call present | ✓ True |
+| `payment.complete` call present | ✓ True |
+| `receiptText` usage present | ✓ True |
+
+### SHA-256 parity
+- `POS.Desktop/Assets/ui/payment_screen.html`: `AB8B001613275593DDAE4055B3CEBE1927928EC90AB957E93CA2C8FBA2D281B6`
+- `docs/ui-prototype/screens/payment_screen.html`: `AB8B001613275593DDAE4055B3CEBE1927928EC90AB957E93CA2C8FBA2D281B6`
+- **IDENTICAL: True**
+
+### Confirmations
+- POS.Api: untouched
+- No new migrations created
+- No production code modified
+- Milestone 5.4: **COMPLETE** (all 10 tasks)
+
+## Next Recommended Milestone
+- **Phase 5 / Milestone 5.5** (or next milestone per `DESKTOP_UI_MILESTONE_TASKS.md`)

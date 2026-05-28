@@ -10,6 +10,7 @@ using POS.Desktop.Services.Catalog;
 using POS.Desktop.Services.Session;
 using POS.Desktop.Services.Auth;
 using POS.Desktop.Services.Provisioning;
+using POS.Shared.Contracts;
 
 namespace POS.Desktop.Shell;
 
@@ -45,6 +46,7 @@ public sealed class PosWebMessageRouter
         Register("auth.validatePin", sp => (req, ct) => HandleAuthValidatePinAsync(
             sp.GetRequiredService<IAuthService>(),
             sp.GetRequiredService<ISessionService>(),
+            sp.GetRequiredService<IProvisionedTerminalContext>(),
             req,
             ct));
 
@@ -228,12 +230,13 @@ public sealed class PosWebMessageRouter
     }
 
     /// <summary>
-    /// Handles the auth.validatePin message, validating credentials against the stub database
+    /// Handles the auth.validatePin message, validating credentials against the database
     /// and initializing a session upon success.
     /// </summary>
     private async Task<BridgeResponseEnvelope> HandleAuthValidatePinAsync(
         IAuthService authService,
         ISessionService sessionService,
+        IProvisionedTerminalContext provisioningContext,
         BridgeRequestEnvelope request,
         CancellationToken cancellationToken)
     {
@@ -258,13 +261,28 @@ public sealed class PosWebMessageRouter
         var result = await authService.ValidatePinAsync(operatorId, pin, cancellationToken);
         if (result.IsValid && result.Operator != null)
         {
+            if (string.IsNullOrWhiteSpace(result.Operator.SessionId))
+            {
+                _logger.LogError("Authentication succeeded but no LocalTerminalSession ID was resolved.");
+                return BridgeResponseEnvelope.Failure(
+                    type: request.Type,
+                    requestId: request.RequestId,
+                    code: "SESSION_NOT_CREATED",
+                    message: "A terminal session could not be established."
+                );
+            }
+
+            string resolvedTerminalId = provisioningContext.IsProvisioned
+                ? provisioningContext.CurrentTerminalId.ToString()
+                : "POS-01";
+
             var session = new OperatorSession(
                 OperatorId: result.Operator.OperatorId,
                 DisplayName: result.Operator.DisplayName,
                 Role: result.Operator.Role,
                 LoginTime: DateTimeOffset.UtcNow,
-                TerminalId: "POS-01",
-                SessionId: Guid.NewGuid().ToString()
+                TerminalId: resolvedTerminalId,
+                SessionId: result.Operator.SessionId
             );
 
             sessionService.StartSession(session);

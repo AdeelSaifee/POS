@@ -10,6 +10,9 @@ using POS.Desktop.Services.Session;
 using POS.Desktop.Shell;
 using Xunit;
 
+using POS.Desktop.Services.Provisioning;
+using POS.Shared.Contracts;
+
 namespace POS.Desktop.Tests.Services.Auth;
 
 public class AuthValidatePinTests
@@ -22,6 +25,7 @@ public class AuthValidatePinTests
         services.AddLogging();
         services.AddSingleton(sessionService);
         services.AddSingleton(authService);
+        services.AddSingleton<IProvisionedTerminalContext>(new NoProvisionedTerminalContext());
         var provider = services.BuildServiceProvider();
         var scopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
         return new PosWebMessageRouter(scopeFactory, NullLogger<PosWebMessageRouter>.Instance);
@@ -255,5 +259,49 @@ public class AuthValidatePinTests
         Assert.Equal("OP001", sessionProp.GetProperty("operatorId").GetString());
         Assert.Equal("Adeel Saifee", sessionProp.GetProperty("displayName").GetString());
         Assert.Equal("Sr. Cashier", sessionProp.GetProperty("role").GetString());
+    }
+
+    [Fact]
+    public async Task ValidatePin_MissingSessionId_ReturnsSessionNotCreatedError()
+    {
+        // Arrange
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var mockAuthService = new MockAuthServiceWithNullSession();
+        var router = CreateRouter(sessionService, mockAuthService);
+
+        var request = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "auth.validatePin",
+            RequestId = "req-val-err-session",
+            Payload = CreatePayloadElement(new { operatorId = "OP001", pin = "1111" })
+        };
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.False(response.Ok);
+        Assert.NotNull(response.Error);
+        Assert.Equal("SESSION_NOT_CREATED", response.Error.Code);
+        Assert.Contains("session could not be established", response.Error.Message, StringComparison.OrdinalIgnoreCase);
+
+        // Verify C# Session is NOT set
+        Assert.False(sessionService.IsActive);
+    }
+
+    private class MockAuthServiceWithNullSession : IAuthService
+    {
+        public Task<AuthResult> ValidatePinAsync(string operatorId, string pin, CancellationToken cancellationToken = default)
+        {
+            var details = new OperatorDetails(operatorId, "Test Operator", "Cashier", SessionId: null);
+            return Task.FromResult(new AuthResult(true, details));
+        }
+
+        public Task<AuthResult> ValidateManagerPinAsync(string operatorId, string pin, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

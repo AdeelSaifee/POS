@@ -93,7 +93,9 @@ public sealed class LocalEmployeeAuthService : IAuthService
             .Where(r => r.EmployeeId == employee.Id && r.IsActive)
             .Where(r => r.LocationId == currentLocationId || r.LocationId == null)
             .Where(r => r.StartsOn == null || r.StartsOn <= now)
-            .Where(r => r.EndsOn == null || r.EndsOn >= now);
+            .Where(r => r.EndsOn == null || r.EndsOn >= now)
+            .OrderByDescending(r => r.LocationId == currentLocationId)
+            .ThenBy(r => r.Id);
 
         var locationRole = await locationRoleQuery.FirstOrDefaultAsync(cancellationToken);
 
@@ -105,13 +107,49 @@ public sealed class LocalEmployeeAuthService : IAuthService
 
         _logger.LogInformation("Authentication successful for employee '{EmployeeNumber}' at location {LocationId} as role '{Role}'.", operatorId, currentLocationId, locationRole.Role);
 
+        // 5. Generate next terminal sequence number
+        long nextSequence = 1;
+        var lastSession = await _db.LocalTerminalSessions
+            .AsNoTracking()
+            .Where(s => s.TerminalId == _provisionedTerminalContext.CurrentTerminalId)
+            .OrderByDescending(s => s.TerminalSequence)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (lastSession != null)
+        {
+            nextSequence = lastSession.TerminalSequence + 1;
+        }
+
+        // 6. Create and persist LocalTerminalSession
+        var terminalSession = new LocalTerminalSession
+        {
+            TenantId = employee.TenantId,
+            LocationId = currentLocationId,
+            TerminalId = _provisionedTerminalContext.CurrentTerminalId,
+            EmployeeId = employee.Id,
+            EmployeeNumber = employee.EmployeeNumber,
+            DisplayName = employee.DisplayName,
+            Role = locationRole.Role,
+            ShiftId = null,
+            BusinessDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            TerminalSequence = nextSequence,
+            Status = TerminalSessionStatus.Open,
+            LoggedInOn = DateTimeOffset.UtcNow,
+            LoggedOutOn = null,
+            MetadataJson = null
+        };
+
+        _db.LocalTerminalSessions.Add(terminalSession);
+        await _db.SaveChangesAsync(cancellationToken);
+
         var details = new OperatorDetails(
             OperatorId: employee.EmployeeNumber,
             DisplayName: employee.DisplayName,
             Role: locationRole.Role,
             PermissionSetCode: locationRole.PermissionSetCode,
             LocationId: locationRole.LocationId,
-            MustChangePin: employee.MustChangePin
+            MustChangePin: employee.MustChangePin,
+            SessionId: terminalSession.Id.ToString()
         );
 
         return new AuthResult(true, details);
@@ -177,7 +215,9 @@ public sealed class LocalEmployeeAuthService : IAuthService
             .Where(r => r.LocationId == currentLocationId || r.LocationId == null)
             .Where(r => r.StartsOn == null || r.StartsOn <= now)
             .Where(r => r.EndsOn == null || r.EndsOn >= now)
-            .Where(r => r.Role == "Manager" || r.Role == "Supervisor" || r.Role == "manager" || r.Role == "supervisor");
+            .Where(r => r.Role == "Manager" || r.Role == "Supervisor" || r.Role == "manager" || r.Role == "supervisor")
+            .OrderByDescending(r => r.LocationId == currentLocationId)
+            .ThenBy(r => r.Id);
 
         var locationRole = await locationRoleQuery.FirstOrDefaultAsync(cancellationToken);
 

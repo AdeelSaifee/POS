@@ -20,4 +20,5 @@ public sealed record OperatorDetails(
     string Role,
     string? PermissionSetCode = null,
     int? LocationId = null,
-    bool MustChangePin = false);
+    bool MustChangePin = false,
+    string? SessionId = null);

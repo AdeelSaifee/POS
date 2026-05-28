@@ -35,7 +35,7 @@ public sealed class StubAuthService : IAuthService
         if (_stubOperators.TryGetValue(operatorId, out var op) && op.Pin == pin)
         {
             _logger.LogInformation("Stub login successful for operator ID: {OperatorId}", operatorId);
-            return Task.FromResult(new AuthResult(true, new OperatorDetails(operatorId, op.Name, op.Role)));
+            return Task.FromResult(new AuthResult(true, new OperatorDetails(operatorId, op.Name, op.Role, SessionId: "STUB-SESSION-" + Guid.NewGuid().ToString())));
         }
 
         _logger.LogWarning("Stub login failed for operator ID: {OperatorId}", operatorId);

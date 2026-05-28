@@ -39,6 +39,7 @@ public sealed class SyncController : ControllerBase
     [ProducesResponseType<SyncIngestResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status501NotImplemented)]
     public async Task<ActionResult<SyncIngestResponse>> Ingest(
         [FromBody] SyncIngestRequest request,
@@ -95,6 +96,20 @@ public sealed class SyncController : ControllerBase
         {
             var response = await _syncIngestService.IngestAsync(identity, request, cancellationToken);
             return Ok(response);
+        }
+        catch (SyncConflictException ex)
+        {
+            return Problem(
+                detail: ex.Message,
+                statusCode: StatusCodes.Status409Conflict,
+                title: ex.ErrorCode);
+        }
+        catch (ArgumentException ex)
+        {
+            return Problem(
+                detail: ex.Message,
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Invalid Ingest Request");
         }
         catch (NotImplementedException ex)
         {

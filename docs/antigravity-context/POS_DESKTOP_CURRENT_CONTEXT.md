@@ -1,19 +1,19 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 6 / Milestone 6.1 - POS.Api sync ingest endpoint - **Group 3 COMPLETE**
-- **Group**: Group 3 (Tasks 6.1.5, 6.1.6, 6.1.8 - completed)
+- **Milestone**: Phase 6 / Milestone 6.1 - POS.Api sync ingest endpoint - **Group 4 COMPLETE**
+- **Group**: Group 4 (Tasks 6.1.7, 6.1.9 - completed)
 
-## Status of All Milestone 6.1 Tasks (Group 3 COMPLETE)
+## Status of All Milestone 6.1 Tasks (Group 4 COMPLETE)
 - `[x]` Task 6.1.1 - Design the ingest contract (Shared contract records in POS.Shared)
 - `[x]` Task 6.1.2 - Create the Sync structures (API sync service scaffolding in POS.Api)
 - `[x]` Task 6.1.3 - Add the ingest endpoint (POST api/sync/ingest implemented in SyncController)
 - `[x]` Task 6.1.4 - Apply the PosDevice policy (PosDevice authorization mapping enforced)
 - `[x]` Task 6.1.5 - Implement idempotent persist + dedupe (Persist inside SyncIngestAck with custom identity validations)
 - `[x]` Task 6.1.6 - Ack via SyncIngestAck (Durable response and event-level Received acknowledgement)
-- `[ ]` Task 6.1.7 - Reject unauthorized callers
+- `[x]` Task 6.1.7 - Reject unauthorized callers (Confirm policy enforcement and reject invalid tokens)
 - `[x]` Task 6.1.8 - Handle duplicate event IDs (Secure replay safe matching and duplicate sequences blocking)
-- `[ ]` Task 6.1.9 - Add an API integration test
+- `[x]` Task 6.1.9 - Add an API integration test (Comprehensive 12-scenario integration test suite added)
 - `[ ]` Task 6.1.10 - Document the endpoint contract
 
 
@@ -66,6 +66,9 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.1 - Group 4 (Tasks 6.1.7 & 6.1.9 - completed)
+- [ADD] `POS.Tests/IntegrationTests/SyncIngestEndpointTests.cs` (Comprehensive 12-scenario integration test suite verifying dynamic authentication, mismatch validation, persistence, replay, same-batch duplicate event validation, and conflict mapping)
 
 ### Phase 6 / Milestone 6.1 - Group 3 (Tasks 6.1.5, 6.1.6 & 6.1.8 - completed)
 - [ADD] `POS.Api/Application/Sync/SyncConflictException.cs` (Exception thrown centrally on key/sequence conflicts)
@@ -491,12 +494,22 @@ The `openShift()` function in `shift_open.html` transition flow:
   - Cross-chunk event ID duplicate detection is deferred until a proper inbound event ledger/table or processor exists.
 - **Deferred Operations:** Both business event ledger transformations (mapping events to operational tables) and central canonical hash recalculations remain deferred.
 
+## Verification Summary (Milestone 6.1 Group 4)
+
+### Design Decisions & Implementation Details
+- **Dynamic Test Authentication Scheme**: Leveraged the `ApiWebApplicationFactory` and `TestRequestAuthentication` headers scheme (`X-Test-Authenticate` / `X-Test-Claim-`) to inject custom device context profiles.
+- **Valid Seeding Setup**: Automatically queries existing seeded locations and inserts a unique active `Terminal` instance per test run to provide real database identity constraints.
+- **Strict Authorization Mapping**: Integrated 10 distinct integration scenarios validating `401 Unauthorized` block on non-token requests, `403 Forbidden` block on non-device clients, missing/blank identity claims, malformed/non-positive integer identifiers, and `400 BadRequest` body identity mismatch.
+- **Ingest Envelope Durable Persistence**: Successfully tested that the happy path returns `200 OK` with `Received` status, persists the `SyncIngestAck` record, and stores the complete serialized `SyncIngestAckEnvelope` preserving events payload, hash, and idempotency key.
+- **Safe Replays Verification**: Proved that multiple duplicate chunk requests return the same `AckId` outcome with no duplicate row created in the database.
+- **Accurate Conflict Rejection**: Proved that duplicate keys with different hashes (`IDEMPOTENCY_CONFLICT`), sequence collision (`SEQUENCE_CONFLICT`), and same-batch duplicate `EventId` (`DUPLICATE_EVENT_ID`) or event `IdempotencyKey` (`DUPLICATE_EVENT_IDEMPOTENCY_KEY`) are rejected with `409 Conflict` and descriptive ProblemDetails.
+
 ### Builds
 - `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
 
 ### Tests
-- `dotnet test POS.Tests/POS.Tests.csproj --configuration Debug`: **49/49 passed** (0 warnings/errors)
+- `dotnet test POS.Tests/POS.Tests.csproj --configuration Debug`: **68/68 passed** (49 prior central tests + 19 new integration test runs covering 12 scenarios)
 
 ## Next Recommended Milestone
-- **Phase 6 / Milestone 6.1 - Group 4** (Tasks 6.1.7 Reject unauthorized callers + 6.1.9 Add API integration tests)
+- **Phase 6 / Milestone 6.1 - Group 5** (Task 6.1.10 Document the endpoint contract)
 

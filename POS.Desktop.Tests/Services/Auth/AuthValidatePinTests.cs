@@ -340,4 +340,63 @@ public class AuthValidatePinTests
             Assert.DoesNotContain("\"pin\":", msg);
         }
     }
+
+    [Theory]
+    [InlineData("INVALID_CREDENTIALS")]
+    [InlineData("OPERATOR_INACTIVE")]
+    [InlineData("LOCATION_NOT_AUTHORIZED")]
+    [InlineData("TERMINAL_UNPROVISIONED")]
+    public async Task ValidatePin_VariousFailures_ReturnsGenericFailureWithoutDetails(string errorCode)
+    {
+        // Arrange
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var mockAuthService = new MockAuthServiceWithErrorCode(errorCode);
+        var router = CreateRouter(sessionService, mockAuthService);
+
+        var request = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "auth.validatePin",
+            RequestId = "req-val-generic-fail",
+            Payload = CreatePayloadElement(new { operatorId = "OP001", pin = "1111" })
+        };
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.True(response.Ok);
+        Assert.Null(response.Error);
+
+        var json = JsonSerializer.Serialize(response.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = JsonDocument.Parse(json);
+        Assert.False(doc.RootElement.GetProperty("isValid").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, doc.RootElement.GetProperty("operator").ValueKind);
+
+        // Prove internal error details are not leaked
+        Assert.False(doc.RootElement.TryGetProperty("errorCode", out _));
+        Assert.False(doc.RootElement.TryGetProperty("message", out _));
+        Assert.DoesNotContain(errorCode, json, StringComparison.OrdinalIgnoreCase);
+
+        // Verify C# Session is NOT set
+        Assert.False(sessionService.IsActive);
+        Assert.Null(sessionService.CurrentSession);
+    }
+
+    private class MockAuthServiceWithErrorCode : IAuthService
+    {
+        private readonly string _errorCode;
+        public MockAuthServiceWithErrorCode(string errorCode) => _errorCode = errorCode;
+
+        public Task<AuthResult> ValidatePinAsync(string operatorId, string pin, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new AuthResult(false, null, _errorCode));
+        }
+
+        public Task<AuthResult> ValidateManagerPinAsync(string operatorId, string pin, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

@@ -390,8 +390,12 @@ public class LocalEmployeeAuthServiceTests : IDisposable
         Assert.True(result.IsValid);
     }
 
-    [Fact]
-    public async Task ValidateManagerPinAsync_Succeeds_ForManagerRole()
+    [Theory]
+    [InlineData("Manager")]
+    [InlineData("Supervisor")]
+    [InlineData("manager")]
+    [InlineData("supervisor")]
+    public async Task ValidateManagerPinAsync_Succeeds_ForAuthorizedRoles(string role)
     {
         // Arrange
         using var db = _dbHarness.CreateProvisionedDbContext(tenantId: 1, locationId: 101);
@@ -416,7 +420,7 @@ public class LocalEmployeeAuthServiceTests : IDisposable
             TenantId = 1,
             EmployeeId = 11,
             LocationId = 101,
-            Role = "Manager",
+            Role = role,
             IsActive = true
         });
 
@@ -431,7 +435,7 @@ public class LocalEmployeeAuthServiceTests : IDisposable
         // Assert
         Assert.True(result.IsValid);
         Assert.NotNull(result.Operator);
-        Assert.Equal("Manager", result.Operator!.Role);
+        Assert.Equal(role, result.Operator!.Role);
     }
 
     [Fact]
@@ -475,6 +479,94 @@ public class LocalEmployeeAuthServiceTests : IDisposable
         // Assert
         Assert.False(result.IsValid);
         Assert.Equal("LOCATION_NOT_AUTHORIZED", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task ValidatePinAsync_FailsClosed_WithWrongTenant()
+    {
+        // Arrange - DB is provisioned with TenantId = 1, but we seed the employee with TenantId = 2
+        using var db = _dbHarness.CreateProvisionedDbContext(tenantId: 1, locationId: 101, terminalId: 999);
+        var credentials = _pinVerifier.HashPin("1111");
+
+        db.LocalEmployees.Add(new LocalEmployee
+        {
+            Id = 10,
+            TenantId = 2, // Mismatched TenantId
+            EmployeeNumber = "OP001",
+            DisplayName = "Adeel Cashier",
+            PinHash = credentials.Hash,
+            PinSalt = credentials.Salt,
+            PinHashAlgorithm = credentials.Algorithm,
+            Status = EmployeeStatus.Active,
+            IsActive = true
+        });
+
+        db.LocalEmployeeLocationRoles.Add(new LocalEmployeeLocationRole
+        {
+            Id = 100,
+            TenantId = 2, // Mismatched TenantId
+            EmployeeId = 10,
+            LocationId = 101,
+            Role = "Cashier",
+            IsActive = true
+        });
+
+        await db.SaveChangesAsync();
+
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(1, 101, 999));
+        var authService = new LocalEmployeeAuthService(db, provisioningContext, _pinVerifier, NullLogger<LocalEmployeeAuthService>.Instance);
+
+        // Act
+        var result = await authService.ValidatePinAsync("OP001", "1111");
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Equal("INVALID_CREDENTIALS", result.ErrorCode);
+        Assert.Null(result.Operator);
+    }
+
+    [Fact]
+    public async Task ValidateManagerPinAsync_FailsClosed_WithWrongTenant()
+    {
+        // Arrange - DB is provisioned with TenantId = 1, but we seed the manager with TenantId = 2
+        using var db = _dbHarness.CreateProvisionedDbContext(tenantId: 1, locationId: 101, terminalId: 999);
+        var credentials = _pinVerifier.HashPin("9999");
+
+        db.LocalEmployees.Add(new LocalEmployee
+        {
+            Id = 11,
+            TenantId = 2, // Mismatched TenantId
+            EmployeeNumber = "MGR001",
+            DisplayName = "Zainab Manager",
+            PinHash = credentials.Hash,
+            PinSalt = credentials.Salt,
+            PinHashAlgorithm = credentials.Algorithm,
+            Status = EmployeeStatus.Active,
+            IsActive = true
+        });
+
+        db.LocalEmployeeLocationRoles.Add(new LocalEmployeeLocationRole
+        {
+            Id = 101,
+            TenantId = 2, // Mismatched TenantId
+            EmployeeId = 11,
+            LocationId = 101,
+            Role = "Manager",
+            IsActive = true
+        });
+
+        await db.SaveChangesAsync();
+
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(1, 101, 999));
+        var authService = new LocalEmployeeAuthService(db, provisioningContext, _pinVerifier, NullLogger<LocalEmployeeAuthService>.Instance);
+
+        // Act
+        var result = await authService.ValidateManagerPinAsync("MGR001", "9999");
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Equal("INVALID_CREDENTIALS", result.ErrorCode);
+        Assert.Null(result.Operator);
     }
 
     [Fact]

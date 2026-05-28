@@ -98,14 +98,15 @@ public sealed class ShiftService : IShiftService
         }
 
         int currentTerminalId = _provisionedTerminalContext.CurrentTerminalId;
+        int currentLocationId = _provisionedTerminalContext.CurrentLocationId;
 
         // 5. Prevent double-open on this terminal
         var activeShiftExists = await _db.LocalShifts
-            .AnyAsync(s => s.TerminalId == currentTerminalId && s.Status == ShiftStatus.Open, cancellationToken);
+            .AnyAsync(s => s.LocationId == currentLocationId && s.TerminalId == currentTerminalId && s.Status == ShiftStatus.Open, cancellationToken);
 
         if (activeShiftExists)
         {
-            _logger.LogWarning("Shift open failed: An active open shift already exists on terminal {TerminalId}.", currentTerminalId);
+            _logger.LogWarning("Shift open failed: An active open shift already exists on terminal {TerminalId} and location {LocationId}.", currentTerminalId, currentLocationId);
             return new ShiftOpenResult(false, "SHIFT_ALREADY_OPEN", "A shift is already open on this terminal.");
         }
 
@@ -113,7 +114,7 @@ public sealed class ShiftService : IShiftService
         long nextSequence = 1;
         var lastShift = await _db.LocalShifts
             .AsNoTracking()
-            .Where(s => s.TerminalId == currentTerminalId)
+            .Where(s => s.LocationId == currentLocationId && s.TerminalId == currentTerminalId)
             .OrderByDescending(s => s.TerminalSequence)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -128,7 +129,7 @@ public sealed class ShiftService : IShiftService
         {
             Id = newShiftId,
             TenantId = _provisionedTerminalContext.CurrentTenantId,
-            LocationId = _provisionedTerminalContext.CurrentLocationId,
+            LocationId = currentLocationId,
             TerminalId = currentTerminalId,
             OpenedByEmployeeId = terminalSession.EmployeeId,
             ClosedByEmployeeId = null,
@@ -163,5 +164,35 @@ public sealed class ShiftService : IShiftService
             newShiftId, currentTerminalId, openingFloat);
 
         return new ShiftOpenResult(true, Shift: localShift);
+    }
+
+    /// <inheritdoc />
+    public async Task<ShiftDetailsResult> GetCurrentShiftAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_provisionedTerminalContext.IsProvisioned)
+        {
+            _logger.LogWarning("GetCurrentShift failed: Terminal is not provisioned.");
+            return new ShiftDetailsResult(false);
+        }
+
+        int currentTerminalId = _provisionedTerminalContext.CurrentTerminalId;
+        int currentLocationId = _provisionedTerminalContext.CurrentLocationId;
+
+        var openShift = await _db.LocalShifts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.LocationId == currentLocationId && s.TerminalId == currentTerminalId && s.Status == ShiftStatus.Open, cancellationToken);
+
+        if (openShift == null)
+        {
+            return new ShiftDetailsResult(false);
+        }
+
+        return new ShiftDetailsResult(
+            IsOpen: true,
+            ShiftId: openShift.Id,
+            BusinessDate: openShift.BusinessDate,
+            OpeningFloat: openShift.OpeningCashAmount,
+            Status: openShift.Status.ToString()
+        );
     }
 }

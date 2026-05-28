@@ -1075,9 +1075,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   updateClock();
   setInterval(updateClock, 1000);
 
-  if (sessionStorage.getItem('pos_shift_open') !== 'true') {
-    alert('Please open your shift first.');
-    window.location.href = 'shift_open.html';
+  const shiftStatus = await getCurrentShiftOrNull();
+  if (!shiftStatus || !shiftStatus.isOpen) {
+    showToast('Please open your shift first.', 'error');
+    setTimeout(() => {
+      window.location.href = 'shift_open.html';
+    }, 1500);
     return;
   }
 
@@ -1574,8 +1577,9 @@ function proceedToPayment() {
 }
 
 // ─── NAVIGATION ─────────────────────────────
-function navigateToShift() {
-  window.location.href = sessionStorage.getItem('pos_shift_open') === 'true' ? 'shift_close.html' : 'shift_open.html';
+async function navigateToShift() {
+  const shift = await getCurrentShiftOrNull();
+  window.location.href = (shift && shift.isOpen) ? 'shift_close.html' : 'shift_open.html';
 }
 async function doLogout() {
   if (!confirm('Sign out? Your shift will remain open.')) return;
@@ -1595,6 +1599,17 @@ async function getCurrentSessionOrNull() {
     }
   } catch (e) {
     console.error('[Session] Failed to get session:', e);
+  }
+  return null;
+}
+
+async function getCurrentShiftOrNull() {
+  try {
+    if (window.posBridge && window.posBridge.isAvailable && window.posBridge.isAvailable()) {
+      return await window.posBridge.request('shift.getCurrent', null);
+    }
+  } catch (e) {
+    console.error('[Shift] Failed to get current shift:', e);
   }
   return null;
 }

@@ -84,6 +84,12 @@ public sealed class PosWebMessageRouter
             sp.GetRequiredService<IShiftService>(),
             req,
             ct));
+
+        // Task 5.2.7: Get current shift status bridge handler.
+        Register("shift.getCurrent", sp => (req, ct) => HandleGetCurrentShiftAsync(
+            sp.GetRequiredService<IShiftService>(),
+            req,
+            ct));
     }
 
     /// <summary>
@@ -646,5 +652,41 @@ public sealed class PosWebMessageRouter
             code: errorCode,
             message: errorMessage
         );
+    }
+
+    /// <summary>
+    /// Handles the shift.getCurrent message, retrieving active shift details.
+    /// </summary>
+    private async Task<BridgeResponseEnvelope> HandleGetCurrentShiftAsync(
+        IShiftService shiftService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await shiftService.GetCurrentShiftAsync(cancellationToken);
+            return BridgeResponseEnvelope.Success(
+                type: request.Type,
+                requestId: request.RequestId,
+                payload: new
+                {
+                    isOpen = result.IsOpen,
+                    shiftId = result.ShiftId?.ToString(),
+                    businessDate = result.BusinessDate?.ToString("yyyy-MM-dd"),
+                    openingFloat = result.OpeningFloat,
+                    status = result.Status
+                }
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get current shift.");
+            return BridgeResponseEnvelope.Failure(
+                type: request.Type,
+                requestId: request.RequestId,
+                code: "SHIFT_QUERY_FAILED",
+                message: "Failed to query current shift status."
+            );
+        }
     }
 }

@@ -2,19 +2,35 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 5 / Milestone 5.2 - Shift open service
-- **Group**: Group 2 (Tasks 5.2.4, 5.2.5) - Completed
+- **Group**: Group 3 (Tasks 5.2.6, 5.2.7) - Completed
 
 ## Status of Tasks in this Session
-- `[x]` Task 5.2.4 - Wire shift_open.html to shift.open bridge endpoint
-- `[x]` Task 5.2.5 - Remove pos_shift_* sessionStorage and pos_cart initialization
+- `[x]` Task 5.2.6 - Guard against double-open (Service-level hardened SQLite guard + comprehensive test coverage)
+- `[x]` Task 5.2.7 - Define the app-wide "shift open" gate (Real database-backed bridge-gated operational screens)
 
 ## Files Created/Changed in this Session
 
-### Group 2 (Current uncommitted changes)
-- [MODIFY] `POS.Desktop/Assets/ui/shift_open.html`
-- [MODIFY] `docs/ui-prototype/screens/shift_open.html`
+### Group 3 (Current uncommitted changes)
+- [ADD] `POS.Desktop/Services/Shifts/ShiftDetailsResult.cs`
+- [MODIFY] `POS.Desktop/Services/Shifts/IShiftService.cs`
+- [MODIFY] `POS.Desktop/Services/Shifts/ShiftService.cs`
+- [MODIFY] `POS.Desktop/Shell/PosWebMessageRouter.cs`
+- [MODIFY] `POS.Desktop/Assets/ui/main_checkout.html`
+- [MODIFY] `docs/ui-prototype/screens/main_checkout.html`
+- [MODIFY] `POS.Desktop/Assets/ui/payment_screen.html`
+- [MODIFY] `docs/ui-prototype/screens/payment_screen.html`
+- [MODIFY] `POS.Desktop/Assets/ui/cash_control.html`
+- [MODIFY] `docs/ui-prototype/screens/cash_control.html`
+- [MODIFY] `POS.Desktop/Assets/ui/shift_close.html`
+- [MODIFY] `docs/ui-prototype/screens/shift_close.html`
+- [MODIFY] `POS.Desktop.Tests/Services/Shifts/ShiftServiceTests.cs`
+- [MODIFY] `POS.Desktop.Tests/Shell/ShiftBridgeHandlerTests.cs`
+- [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs`
 
 ### Prior Completed Groups & Milestones
+- Group 2 (Tasks 5.2.4 - 5.2.5) - Completed:
+  - [MODIFY] `POS.Desktop/Assets/ui/shift_open.html`
+  - [MODIFY] `docs/ui-prototype/screens/shift_open.html`
 - Group 1 (Tasks 5.2.1 - 5.2.3) - Completed:
   - [ADD] `POS.Desktop/Services/Shifts/IShiftService.cs`
   - [ADD] `POS.Desktop/Services/Shifts/ShiftOpenResult.cs`
@@ -30,59 +46,28 @@
   - [ADD] `POS.Desktop.Tests/Services/Shifts/ShiftServiceTests.cs`
   - [ADD] `POS.Desktop.Tests/Shell/ShiftBridgeHandlerTests.cs`
   - [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs`
-- Milestone 5.1 - Authentication & login service (Committed & Pushed - HEAD: `acc7c5ae` + Group 4 changes uncommitted)
-- Milestone 4.5 - Data-access conventions & tenant-filter validation (Committed)
-- Milestone 4.4 - Local catalog search & scan bridge integration (Committed)
+- Milestone 5.1 - Authentication & login service (Committed & Pushed)
 
 ## Scope Boundaries & Constraints
-- Do NOT modify backend C# service logic.
+- Do NOT use localStorage or sessionStorage for operational screen gating.
+- Preserve original element class/ID names in HTML/JS. No UI/CSS redesign.
 - Do NOT modify POS.Api or central API migrations.
 - Do NOT commit or push.
-- Keep double-open prevention at the service level only (no full screen gate yet).
-- Disable/guard Open Shift button during bridge request.
 
-## Important Decisions
-- **SessionId to EmployeeId Resolution:** In memory, `OperatorSession` does not contain `EmployeeId` (only `OperatorId`). We safely parse `CurrentSession.SessionId` to an integer (representing the SQLite DB session PK) and query `LocalTerminalSessions` to resolve `EmployeeId` securely, preventing any session injection.
-- **Strict Location & Terminal Boundaries:** Verified that active session parameters in SQLite align exactly with the current `IProvisionedTerminalContext` tenant, location, and terminal identifiers before permitting a shift to open.
-- **Idempotency & Correlation IDs:** Generated unique non-empty string GUIDs for `IdempotencyKey` and `CorrelationId` to ensure local offline operation auditability.
-- **Consistent Float Validation:** Enforced strictly positive opening cash floats (`OpeningCashAmount > 0` DB constraint and `openingFloat <= 0` service rejection).
+## Important Decisions & Gate Behavior
+- **Database Gated Authority:** All operational screens (`main_checkout.html`, `payment_screen.html`, `cash_control.html`, `shift_close.html`) now asynchronously request the `"shift.getCurrent"` bridge endpoint on `DOMContentLoaded`. If the SQLite database does not record an open active shift (`isOpen: false`), they show a user-friendly error toast (`Please open your shift first.`) and redirect to `shift_open.html` after a `1.5-second` delay.
+- **Fail Safe / Locked Terminal:** If the bridge transport is unavailable, terminal session context is invalid, or the terminal is unprovisioned, the screens fail closed/locked and redirect immediately to `shift_open.html` without exposing internal exception details.
+- **Consistent Bridge Contracts:** Leveraged the `"shift.getCurrent"` message type across all operational flows, returning structured success payloads of type `ShiftDetailsResult`.
+- **Strict Location Isolation Gating:** Both `OpenShiftAsync` and `GetCurrentShiftAsync` filter open shifts and sequences strictly by location and terminal identifier (`LocationId == CurrentLocationId` and `TerminalId == CurrentTerminalId`), ensuring shifts opened at different locations do not bleed through.
+- **Identical Copies:** Kept `POS.Desktop/Assets/ui/*.html` and `docs/ui-prototype/screens/*.html` identically synchronized.
 
-
-## Auth Coverage Matrix
-| Path Type | Description | Test Case / Verification | Status |
-|---|---|---|---|
-| **Valid** | 1. Valid employee PIN returns success | `ValidatePinAsync_Succeeds_WithValidEmployeeAndRole` | Covered |
-| | 2. Valid employee PIN creates LocalTerminalSession | `ValidatePinAsync_PersistsSession_AndIncrementsSequence_OnSuccess` | Covered |
-| | 3. Valid employee PIN sets ISessionService through router | `ValidatePin_ValidCredentials_ReturnsIsValidTrue_AndStartsSession` | Covered |
-| | 4. Valid manager PIN succeeds for manager/supervisor roles | `ValidateManagerPinAsync_Succeeds_ForAuthorizedRoles` (covers Manager, Supervisor, manager, supervisor) | Covered |
-| | 5. Exact location role is preferred over global role | `ValidatePinAsync_PrefersExactLocationRole_OverGlobalRole` | Covered |
-| | 6. Auth result/session response contains no credentials | Verified structurally in all contract returned models | Covered |
-| **Invalid** | 1. Wrong PIN fails | `ValidatePinAsync_Fails_WithWrongPin` | Covered |
-| | 2. Unknown operator fails | `ValidatePinAsync_Fails_WithUnknownOperator` | Covered |
-| | 3. Inactive operator fails | `ValidatePinAsync_Fails_WithInactiveOperator` | Covered |
-| | 4. Employee with missing PinHash fails | `ValidatePinAsync_FailsClosed_WithMissingPinHashOrSaltOrAlgorithm` | Covered |
-| | 5. Employee with missing PinSalt fails | `ValidatePinAsync_FailsClosed_WithMissingPinHashOrSaltOrAlgorithm` | Covered |
-| | 6. Employee with missing PinHashAlgorithm fails | `ValidatePinAsync_FailsClosed_WithMissingPinHashOrSaltOrAlgorithm` | Covered |
-| | 7. Empty LocalEmployees table fails closed | `ValidatePinAsync_FailsClosed_WithEmptyLocalEmployeesTable` | Covered |
-| | 8. No active location role fails | `ValidatePinAsync_FailsClosed_WithExpiredEndsOnRole` / `ValidatePinAsync_Fails_WithWrongLocation` | Covered |
-| | 9. Future StartsOn role fails | `ValidatePinAsync_FailsClosed_WithFutureStartsOnRole` | Covered |
-| | 10. Expired EndsOn role fails | `ValidatePinAsync_FailsClosed_WithExpiredEndsOnRole` | Covered |
-| | 11. Wrong tenant/location fails | `ValidatePinAsync_FailsClosed_WithWrongTenant` / `ValidateManagerPinAsync_FailsClosed_WithWrongTenant` / `ValidatePinAsync_Fails_WithWrongLocation` | Covered |
-| | 12. Unprovisioned terminal fails closed | `ValidatePinAsync_FailsClosed_WhenTerminalUnprovisioned` | Covered |
-| | 13. Malformed/missing bridge payload returns MALFORMED_REQUEST | `ValidatePin_MalformedPayload_ReturnsStructuredErrorSafely` | Covered |
-| | 14. Missing session id returns SESSION_NOT_CREATED error | `ValidatePin_MissingSessionId_ReturnsSessionNotCreatedError` | Covered |
-| | 15. Failed auth does not create LocalTerminalSession | `ValidatePinAsync_DoesNotPersistSession_OnFailure` | Covered |
-| | 16. Failed auth does not mutate ISessionService | `ValidatePin_VariousFailures_ReturnsGenericFailureWithoutDetails` | Covered |
-| | 17. StubAuthService is no longer default IAuthService | `CreateHostBuilder_RegistersLocalEmployeeAuthService_AsIAuthService` | Covered |
-| | 18. No credentials/raw payloads leaked in logs | `ValidatePinAsync_DoesNotLogSensitiveData_OnSuccessAndFailure` / `Router_DoesNotLogSensitiveDataOrRawPayloads` | Covered |
-
-## Verification Summary (Milestone 5.2 Group 1)
-- `git status --short --untracked-files=all`: Checked and verified only expected files are changed/created.
-- `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: Built successfully (0 errors, 0 warnings).
-- `dotnet build POS.slnx --configuration Debug`: Built successfully (0 errors, 0 warnings).
-- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: Passed successfully (234/234 passed).
-- `dotnet test POS.Tests/POS.Tests.csproj --configuration Debug`: Passed successfully (49/49 passed).
-- `git diff --check`: Verified zero formatting or whitespace issues.
+## Verification Summary (Milestone 5.2 Group 3)
+- `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: Built successfully with 0 errors/warnings.
+- `dotnet build POS.slnx --configuration Debug`: Built successfully with 0 errors/warnings.
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: 242/242 tests passed successfully (including location isolation checks).
+- `dotnet test POS.Tests/POS.Tests.csproj --configuration Debug --logger "console;verbosity=minimal"`: 49/49 tests passed successfully.
+- `git diff --check`: Checked and confirmed zero whitespace or layout errors.
+- `git status --short --untracked-files=all`: Verified only expected files are changed/created.
 
 ## Next Recommended Group
-- **Group 3**: Tasks 5.2.6 to 5.2.7, define double-open prevention logic and implementing the app-wide "shift open" screen-guard gate.
+- **Group 4**: Tasks 5.2.8 to 5.2.9, pull checklist policies from central configuration and handle final post-open navigate transitions.

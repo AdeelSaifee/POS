@@ -412,4 +412,206 @@ public class ShiftServiceTests : IDisposable
         Assert.NotNull(result.Shift);
         Assert.Equal(8, result.Shift.TerminalSequence); // Should increment previous sequence 7 -> 8
     }
+
+    [Fact]
+    public async Task GetCurrentShiftAsync_ReturnsIsOpenTrue_AfterShiftOpened()
+    {
+        // Arrange
+        int tenantId = 1;
+        int locationId = 101;
+        int terminalId = 999;
+        using var db = _dbHarness.CreateProvisionedDbContext(tenantId, locationId, terminalId);
+
+        var terminalSession = new LocalTerminalSession
+        {
+            TenantId = tenantId,
+            LocationId = locationId,
+            TerminalId = terminalId,
+            EmployeeId = 12,
+            EmployeeNumber = "EMP012",
+            DisplayName = "Adeel cashier",
+            Role = "Cashier",
+            Status = TerminalSessionStatus.Open,
+            LoggedInOn = DateTimeOffset.UtcNow
+        };
+        db.LocalTerminalSessions.Add(terminalSession);
+
+        var openShift = new LocalShift
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            LocationId = locationId,
+            TerminalId = terminalId,
+            OpenedByEmployeeId = 12,
+            Status = ShiftStatus.Open,
+            OpeningCashAmount = 3000m,
+            OpenedOn = DateTimeOffset.UtcNow,
+            IsActive = true
+        };
+        db.LocalShifts.Add(openShift);
+        await db.SaveChangesAsync();
+
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+
+        // Act
+        var result = await shiftService.GetCurrentShiftAsync();
+
+        // Assert
+        Assert.True(result.IsOpen);
+        Assert.Equal(openShift.Id, result.ShiftId);
+        Assert.Equal(openShift.OpeningCashAmount, result.OpeningFloat);
+        Assert.Equal("Open", result.Status);
+    }
+
+    [Fact]
+    public async Task GetCurrentShiftAsync_ReturnsIsOpenFalse_WhenNoShiftOpen()
+    {
+        // Arrange
+        int tenantId = 1;
+        int locationId = 101;
+        int terminalId = 999;
+        using var db = _dbHarness.CreateProvisionedDbContext(tenantId, locationId, terminalId);
+
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+
+        // Act
+        var result = await shiftService.GetCurrentShiftAsync();
+
+        // Assert
+        Assert.False(result.IsOpen);
+        Assert.Null(result.ShiftId);
+    }
+
+    [Fact]
+    public async Task GetCurrentShiftAsync_ReturnsIsOpenFalse_WhenTerminalUnprovisioned()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateUnprovisionedDbContext();
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var provisioningContext = new ProvisionedTerminalContext(); // Unprovisioned by default
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+
+        // Act
+        var result = await shiftService.GetCurrentShiftAsync();
+
+        // Assert
+        Assert.False(result.IsOpen);
+        Assert.Null(result.ShiftId);
+    }
+
+    [Fact]
+    public async Task GetCurrentShiftAsync_IgnoresOpenShiftFromDifferentLocation()
+    {
+        // Arrange
+        int tenantId = 1;
+        int locationId = 101;
+        int terminalId = 999;
+        using var db = _dbHarness.CreateProvisionedDbContext(tenantId, locationId, terminalId);
+
+        var terminalSession = new LocalTerminalSession
+        {
+            TenantId = tenantId,
+            LocationId = locationId,
+            TerminalId = terminalId,
+            EmployeeId = 12,
+            EmployeeNumber = "EMP012",
+            DisplayName = "Adeel cashier",
+            Role = "Cashier",
+            Status = TerminalSessionStatus.Open,
+            LoggedInOn = DateTimeOffset.UtcNow
+        };
+        db.LocalTerminalSessions.Add(terminalSession);
+
+        // Setup an open shift from a different location but same terminalId and tenantId
+        var openShiftFromDiffLocation = new LocalShift
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            LocationId = 999, // Different location
+            TerminalId = terminalId,
+            OpenedByEmployeeId = 12,
+            Status = ShiftStatus.Open,
+            OpeningCashAmount = 3000m,
+            OpenedOn = DateTimeOffset.UtcNow,
+            IsActive = true
+        };
+        db.LocalShifts.Add(openShiftFromDiffLocation);
+        await db.SaveChangesAsync();
+
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+
+        // Act
+        var result = await shiftService.GetCurrentShiftAsync();
+
+        // Assert
+        Assert.False(result.IsOpen);
+        Assert.Null(result.ShiftId);
+    }
+
+    [Fact]
+    public async Task OpenShiftAsync_DoubleOpenGuard_AllowsShiftOnDifferentLocation()
+    {
+        // Arrange
+        int tenantId = 1;
+        int locationId = 101;
+        int terminalId = 999;
+        using var db = _dbHarness.CreateProvisionedDbContext(tenantId, locationId, terminalId);
+
+        var terminalSession = new LocalTerminalSession
+        {
+            TenantId = tenantId,
+            LocationId = locationId,
+            TerminalId = terminalId,
+            EmployeeId = 12,
+            EmployeeNumber = "EMP012",
+            DisplayName = "Adeel cashier",
+            Role = "Cashier",
+            Status = TerminalSessionStatus.Open,
+            LoggedInOn = DateTimeOffset.UtcNow
+        };
+        db.LocalTerminalSessions.Add(terminalSession);
+
+        // Setup an open shift from a different location but same terminalId and tenantId
+        var openShiftFromDiffLocation = new LocalShift
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            LocationId = 999, // Different location
+            TerminalId = terminalId,
+            OpenedByEmployeeId = 12,
+            Status = ShiftStatus.Open,
+            OpeningCashAmount = 3000m,
+            OpenedOn = DateTimeOffset.UtcNow,
+            IsActive = true
+        };
+        db.LocalShifts.Add(openShiftFromDiffLocation);
+        await db.SaveChangesAsync();
+
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        sessionService.StartSession(new OperatorSession(
+            OperatorId: "EMP012",
+            DisplayName: "Adeel cashier",
+            Role: "Cashier",
+            LoginTime: DateTimeOffset.UtcNow,
+            TerminalId: terminalId.ToString(),
+            SessionId: terminalSession.Id.ToString()
+        ));
+
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+
+        // Act
+        var result = await shiftService.OpenShiftAsync(5000m);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Shift);
+        Assert.Equal(ShiftStatus.Open, result.Shift.Status);
+    }
 }

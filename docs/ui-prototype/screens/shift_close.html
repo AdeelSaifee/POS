@@ -943,6 +943,17 @@ async function getCurrentSessionOrNull() {
   return null;
 }
 
+async function getCurrentShiftOrNull() {
+  try {
+    if (window.posBridge && window.posBridge.isAvailable && window.posBridge.isAvailable()) {
+      return await window.posBridge.request('shift.getCurrent', null);
+    }
+  } catch (e) {
+    console.error('[Shift] Failed to get current shift:', e);
+  }
+  return null;
+}
+
 async function clearDesktopSession(reason) {
   try {
     if (window.posBridge && window.posBridge.isAvailable && window.posBridge.isAvailable()) {
@@ -957,6 +968,15 @@ async function clearDesktopSession(reason) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
+  const shiftStatus = await getCurrentShiftOrNull();
+  if (!shiftStatus || !shiftStatus.isOpen) {
+    showToast('Please open your shift first.', 'error');
+    setTimeout(() => {
+      window.location.href = 'shift_open.html';
+    }, 1500);
+    return;
+  }
+
   updateClock();
   setInterval(updateClock, 20000);
 

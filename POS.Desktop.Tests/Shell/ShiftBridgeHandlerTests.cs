@@ -268,4 +268,86 @@ public sealed class ShiftBridgeHandlerTests : IDisposable
         Assert.NotNull(response.Error);
         Assert.Equal("INVALID_OPENING_FLOAT", response.Error.Code);
     }
+
+    [Fact]
+    public async Task HandleGetCurrentShiftAsync_ReturnsSuccessPayload_WithIsOpenTrue_WhenOpenShiftExists()
+    {
+        // Arrange
+        var (router, _, db) = await BuildRouterAndServicesAsync(tenantId: 1, isProvisioned: true);
+
+        // Setup an active open shift in SQLite
+        var openShift = new LocalShift
+        {
+            Id = Guid.NewGuid(),
+            TenantId = 1,
+            LocationId = 101,
+            TerminalId = 999,
+            OpenedByEmployeeId = 12,
+            Status = ShiftStatus.Open,
+            OpeningCashAmount = 3000m,
+            OpenedOn = DateTimeOffset.UtcNow,
+            IsActive = true
+        };
+        db.LocalShifts.Add(openShift);
+        await db.SaveChangesAsync();
+
+        var request = MakeRequest("shift.getCurrent");
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.True(response.Ok);
+        Assert.Null(response.Error);
+        Assert.NotNull(response.Payload);
+
+        var payloadJson = JsonSerializer.Serialize(response.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = JsonDocument.Parse(payloadJson);
+        Assert.True(doc.RootElement.GetProperty("isOpen").GetBoolean());
+        Assert.Equal(openShift.Id.ToString(), doc.RootElement.GetProperty("shiftId").GetString());
+        Assert.Equal(3000m, doc.RootElement.GetProperty("openingFloat").GetDecimal());
+        Assert.Equal("Open", doc.RootElement.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task HandleGetCurrentShiftAsync_ReturnsSuccessPayload_WithIsOpenFalse_WhenNoShiftExists()
+    {
+        // Arrange
+        var (router, _, _) = await BuildRouterAndServicesAsync(tenantId: 1, isProvisioned: true);
+        var request = MakeRequest("shift.getCurrent");
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.True(response.Ok);
+        Assert.Null(response.Error);
+        Assert.NotNull(response.Payload);
+
+        var payloadJson = JsonSerializer.Serialize(response.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = JsonDocument.Parse(payloadJson);
+        Assert.False(doc.RootElement.GetProperty("isOpen").GetBoolean());
+        Assert.Null(doc.RootElement.GetProperty("shiftId").GetString());
+    }
+
+    [Fact]
+    public async Task HandleGetCurrentShiftAsync_DoesNotExposeExceptionDetails_OnFailure()
+    {
+        // Arrange
+        var (router, _, db) = await BuildRouterAndServicesAsync(tenantId: 1, isProvisioned: true);
+
+        // Force database querying to fail by closing SQLite connection
+        _connection.Close();
+
+        var request = MakeRequest("shift.getCurrent");
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.False(response.Ok);
+        Assert.NotNull(response.Error);
+        Assert.Equal("SHIFT_QUERY_FAILED", response.Error.Code);
+        Assert.Equal("Failed to query current shift status.", response.Error.Message);
+    }
 }

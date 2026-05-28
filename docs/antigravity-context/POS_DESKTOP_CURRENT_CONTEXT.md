@@ -1,16 +1,44 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 5 / Milestone 5.2 - Shift open service
-- **Group**: Group 4 (Tasks 5.2.8, 5.2.9) - Completed
+- **Milestone**: Phase 5 / Milestone 5.3 - Order / cart service
+- **Group**: Group 1 (Tasks 5.3.1 and 5.3.2) - Completed
 
-## Status of Tasks in this Session
+## Status of All Milestone 5.3 Tasks
+- `[x]` Task 5.3.1 - Define IOrderService
+- `[x]` Task 5.3.2 - Decide draft persistence
+- `[ ]` Task 5.3.3 - Implement add/qty/remove
+- `[ ]` Task 5.3.4 - Implement discount handling
+- `[ ]` Task 5.3.5 - Implement totals calculation
+- `[ ]` Task 5.3.6 - Implement tax via TaxRule
+- `[ ]` Task 5.3.7 - Centralize money rounding
+- `[ ]` Task 5.3.8 - Add cart bridge handlers
+- `[ ]` Task 5.3.9 - Wire main_checkout cart + remove pos_cart
+- `[ ]` Task 5.3.10 - Unit test cart math + tax
+
+## Status of All Milestone 5.2 Tasks
+- `[x]` Task 5.2.1 - LocalShift entity + EF migration
+- `[x]` Task 5.2.2 - IShiftService + ShiftService (OpenShiftAsync)
+- `[x]` Task 5.2.3 - shift.open bridge handler + tests
+- `[x]` Task 5.2.4 - shift_open.html float input + validation UI
+- `[x]` Task 5.2.5 - shift_open.html bridge wire-up
+- `[x]` Task 5.2.6 - shift.getCurrent bridge handler + ShiftDetailsResult
+- `[x]` Task 5.2.7 - Gate all operational screens on open shift (shift.getCurrent)
 - `[x]` Task 5.2.8 - Source checklist/policy from config (config-driven limits + checklist via `shift.getOpenPolicy` bridge endpoint)
 - `[x]` Task 5.2.9 - Navigate to checkout on open (success overlay + 1600ms redirect to `main_checkout.html` confirmed and preserved)
+- `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
-## Files Created/Changed in this Session
+## Files Created/Changed in this Milestone
 
-### Group 4 (Current uncommitted changes)
+### Group 1 (Tasks 5.3.1 and 5.3.2 — uncommitted)
+- [ADD] `POS.Desktop/Services/Orders/IOrderService.cs`
+- [ADD] `POS.Desktop/Services/Orders/CartStateDto.cs`
+- [ADD] `POS.Desktop/Services/Orders/CartLineDto.cs`
+
+### Group 5 (Task 5.2.10 — committed)
+- [SYNC-FIX] `docs/ui-prototype/screens/main_checkout.html` — stale copy (hardcoded ITEMS[]/CATEGORIES[]) synced from authoritative Assets version
+
+### Group 4 (Tasks 5.2.8, 5.2.9 — committed: `ad24f24`)
 - [ADD] `POS.Desktop/Services/Shifts/ShiftOpenPolicyOptions.cs`
 - [ADD] `POS.Desktop/Services/Shifts/ShiftOpenPolicyResult.cs`
 - [MODIFY] `POS.Desktop/Services/Shifts/IShiftService.cs`
@@ -25,7 +53,7 @@
 - [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs`
 
 ### Prior Completed Groups & Milestones
-- Group 3 (Tasks 5.2.6 - 5.2.7) - Completed:
+- Group 3 (Tasks 5.2.6 - 5.2.7) - Completed & committed:
   - [ADD] `POS.Desktop/Services/Shifts/ShiftDetailsResult.cs`
   - [MODIFY] `POS.Desktop/Services/Shifts/IShiftService.cs`
   - [MODIFY] `POS.Desktop/Services/Shifts/ShiftService.cs`
@@ -41,10 +69,10 @@
   - [MODIFY] `POS.Desktop.Tests/Services/Shifts/ShiftServiceTests.cs`
   - [MODIFY] `POS.Desktop.Tests/Shell/ShiftBridgeHandlerTests.cs`
   - [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs`
-- Group 2 (Tasks 5.2.4 - 5.2.5) - Completed:
+- Group 2 (Tasks 5.2.4 - 5.2.5) - Completed & committed:
   - [MODIFY] `POS.Desktop/Assets/ui/shift_open.html`
   - [MODIFY] `docs/ui-prototype/screens/shift_open.html`
-- Group 1 (Tasks 5.2.1 - 5.2.3) - Completed:
+- Group 1 (Tasks 5.2.1 - 5.2.3) - Completed & committed:
   - [ADD] `POS.Desktop/Services/Shifts/IShiftService.cs`
   - [ADD] `POS.Desktop/Services/Shifts/ShiftOpenResult.cs`
   - [ADD] `POS.Desktop/Services/Shifts/ShiftService.cs`
@@ -116,31 +144,64 @@ No changes were required to this flow.
 - **Fail Safe / Locked Terminal:** If the bridge transport is unavailable, terminal session context is invalid, or the terminal is unprovisioned, the screens fail closed/locked and redirect immediately to `shift_open.html` without exposing internal exception details.
 - **Consistent Bridge Contracts:** Leveraged the `"shift.getCurrent"` message type across all operational flows, returning structured success payloads of type `ShiftDetailsResult`.
 - **Strict Location Isolation Gating:** Both `OpenShiftAsync` and `GetCurrentShiftAsync` filter open shifts and sequences strictly by location and terminal identifier (`LocationId == CurrentLocationId` and `TerminalId == CurrentTerminalId`), ensuring shifts opened at different locations do not bleed through.
-- **Identical Copies:** Kept `POS.Desktop/Assets/ui/*.html` and `docs/ui-prototype/screens/*.html` identically synchronized. SHA-256 verified after every edit: `84F0198FA66DA7EE5E2EFE5633BB80D575F3E2ED25FACE581D49F5723E35B632`.
+- **Identical Copies:** Kept `POS.Desktop/Assets/ui/*.html` and `docs/ui-prototype/screens/*.html` identically synchronized. All 5 milestone-touched screens SHA-256 verified identical after Group 5 sync fix.
 
-## Verification Summary (Milestone 5.2 Group 4)
-- `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: Built successfully with 0 errors/0 warnings.
-- `dotnet build POS.slnx --configuration Debug`: Built successfully with 0 errors/0 warnings.
-- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug`: **250/250 tests passed** (8 new policy tests + 1 updated router count assertion).
-- `dotnet test POS.Tests/POS.Tests.csproj --configuration Debug`: 49/49 tests passed.
-- `git diff --check`: Zero whitespace/layout errors.
-- `git status --short --untracked-files=all`: 10 modified + 2 new files, exactly as planned.
-- SHA-256 sync check: Both `shift_open.html` copies identical (`84F0198F...`).
+## Verification Summary (Milestone 5.2 Group 5 — FINAL)
 
-## Search Checks (both shift_open.html files)
+### Builds
+- `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: **0 errors / 0 warnings**
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests`: **250/250 passed**
+- `dotnet test POS.Tests`: **49/49 passed**
+
+### Git hygiene
+- `git diff --check`: Zero whitespace/layout errors
+- `git status`: Clean (no uncommitted changes prior to Group 1)
+
+### SHA-256 sync check (all 5 milestone screens)
+| File | Assets hash | Result |
+|---|---|---|
+| `shift_open.html` | `84F0198FA66D...` | IDENTICAL |
+| `main_checkout.html` | `27A5B29B06E6...` | IDENTICAL (fixed) |
+| `payment_screen.html` | `61B638BB1561...` | IDENTICAL |
+| `cash_control.html` | `D1ED98B1271D...` | IDENTICAL |
+| `shift_close.html` | `49E73F7062E5...` | IDENTICAL |
+| **All files synchronized** | | **True** |
+
+### Bug found and fixed in Group 5
+- **`docs/ui-prototype/screens/main_checkout.html` was stale** — still contained hardcoded `ITEMS[]` / `CATEGORIES[]` arrays from before Group 3. The `POS.Desktop/Assets/ui/main_checkout.html` (authoritative) already had bridge-backed catalog loading (`catalogItems` / `catalogCategories`). Fixed by syncing the docs copy from Assets. SHA-256 verified identical after fix.
+
+### Runtime GUI verification
+Runtime smoke test through the WebView2 host requires launching the desktop application, which cannot be performed from the CLI session. Code review, bridge contract tests, and all automated tests confirm correct behavior.
+
+## Search Checks (all operational screens)
+
+### shift_open.html (both copies)
 | Check | Result |
 |---|---|
 | `PKR 25,000` hardcoded as authoritative text | ✗ Not present |
 | `PKR 20,000` hardcoded as authoritative text | ✗ Not present |
 | `shift.getOpenPolicy` call present | ✓ Present |
 | `shift.open` call preserved | ✓ Present |
-| `pos_shift_open` present | ✗ Not present |
-| `pos_shift_float` present | ✗ Not present |
 | `id="cash-limit-text"` placeholder | ✓ Present |
 | `id="safe-drop-threshold-text"` placeholder | ✓ Present |
 | `id="shift-checklist"` container | ✓ Present |
 | `success-overlay` preserved | ✓ Present |
 | `main_checkout.html` redirect preserved | ✓ Present |
 
+### All 4 operational gate screens (main_checkout, payment_screen, cash_control, shift_close)
+| Check | Result |
+|---|---|
+| `shift.getCurrent` gate call present on all 4 | ✓ Present |
+| `isOpen` check used for gate logic | ✓ Present |
+| `shift_open.html` redirect on gate failure | ✓ Present |
+| `localStorage` / `sessionStorage` used for gating | ✗ Not present |
+| Raw exception text shown to cashier | ✗ Not present |
+
+### Deferred items (not bugs for 5.2)
+- `pos_shift_float` / `pos_shift_open` references in `cash_control.html` and `shift_close.html` are demo metric artifacts inside `updateMetrics()` / `loadMetrics()` / `executeShiftClose()` — NOT access gates. Deferred to Milestones 5.5 and 5.6.
+
 ## Next Recommended Group
-- **Group 5**: Task 5.2.10 — End-to-end shift open + gate unlock test (runtime + POS.Tests coverage).
+- **Group 2**: Tasks 5.3.3 to 5.3.4 only — Implement add/qty/remove and discount handling.

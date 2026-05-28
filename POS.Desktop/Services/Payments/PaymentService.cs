@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using POS.Desktop.Data;
 using POS.Desktop.Data.LocalEntities;
 using POS.Desktop.Services.Orders;
+using POS.Desktop.Services.Receipts;
 using POS.Desktop.Services.Session;
 using POS.Shared.Contracts;
 using POS.Shared.Enums;
@@ -23,6 +27,7 @@ public sealed class PaymentService : IPaymentService
     private readonly IOrderService _orderService;
     private readonly ISessionService _sessionService;
     private readonly IProvisionedTerminalContext _provisionedTerminalContext;
+    private readonly IReceiptRenderer _receiptRenderer;
     private readonly ILogger<PaymentService> _logger;
 
     public PaymentService(
@@ -30,12 +35,14 @@ public sealed class PaymentService : IPaymentService
         IOrderService orderService,
         ISessionService sessionService,
         IProvisionedTerminalContext provisionedTerminalContext,
+        IReceiptRenderer receiptRenderer,
         ILogger<PaymentService> logger)
     {
         _db = db ?? throw new ArgumentNullException(nameof(db));
         _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
         _sessionService = sessionService ?? throw new ArgumentNullException(nameof(sessionService));
         _provisionedTerminalContext = provisionedTerminalContext ?? throw new ArgumentNullException(nameof(provisionedTerminalContext));
+        _receiptRenderer = receiptRenderer ?? throw new ArgumentNullException(nameof(receiptRenderer));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -386,16 +393,180 @@ public sealed class PaymentService : IPaymentService
 
         // 13. Execute atomic SQLite transaction commit
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        string receiptText;
+        SyncOutbox syncOutbox;
+        PrintQueue printQueue;
+
         try
         {
+            // Render receipt text using persisted order data mapping
+            var tenderMethodNames = dbTenderMethods.ToDictionary(m => m.Id, m => m.Name);
+            receiptText = _receiptRenderer.RenderReceipt(localOrder, orderLines, payments, tenderMethodNames);
+
+            // Serialize standard structured SyncOutbox payload
+            var payload = new
+            {
+                Order = new
+                {
+                    localOrder.Id,
+                    localOrder.TenantId,
+                    localOrder.LocationId,
+                    localOrder.TerminalId,
+                    localOrder.ShiftId,
+                    localOrder.EmployeeId,
+                    localOrder.CustomerId,
+                    localOrder.OriginalOrderId,
+                    localOrder.BusinessDate,
+                    localOrder.TerminalSequence,
+                    localOrder.ReceiptNumber,
+                    localOrder.OrderType,
+                    localOrder.Status,
+                    localOrder.PaymentStatus,
+                    localOrder.FulfillmentStatus,
+                    localOrder.CatalogVersion,
+                    localOrder.PriceListId,
+                    localOrder.RuleVersion,
+                    localOrder.ReceiptTemplateId,
+                    localOrder.SubtotalAmount,
+                    localOrder.DiscountAmount,
+                    localOrder.TaxAmount,
+                    localOrder.TotalAmount,
+                    localOrder.PaidAmount,
+                    localOrder.ChangeAmount,
+                    localOrder.CurrencyCode,
+                    localOrder.GuestName,
+                    localOrder.GuestPhone,
+                    localOrder.CompletedOn,
+                    localOrder.IdempotencyKey,
+                    localOrder.CorrelationId
+                },
+                Lines = orderLines.Select(line => new
+                {
+                    line.Id,
+                    line.TenantId,
+                    line.OrderId,
+                    line.LocationId,
+                    line.TerminalId,
+                    line.ItemId,
+                    line.ItemVariantId,
+                    line.OriginalOrderLineId,
+                    line.ReasonCodeId,
+                    line.AuthorizedByEmployeeId,
+                    line.LineNumber,
+                    line.LineType,
+                    line.Status,
+                    line.SKU,
+                    line.Barcode,
+                    line.ItemName,
+                    line.VariantName,
+                    line.UnitOfMeasureCode,
+                    line.Quantity,
+                    line.UnitPrice,
+                    line.GrossAmount,
+                    line.DiscountAmount,
+                    line.TaxAmount,
+                    line.NetAmount,
+                    line.TaxRuleId,
+                    line.TaxRate,
+                    line.PriceListId,
+                    line.CatalogVersion,
+                    line.IdempotencyKey,
+                    line.CorrelationId
+                }).ToList(),
+                Payments = payments.Select(p => new
+                {
+                    p.Id,
+                    p.TenantId,
+                    p.OrderId,
+                    p.LocationId,
+                    p.TerminalId,
+                    p.ShiftId,
+                    p.TenderMethodId,
+                    p.OriginalPaymentId,
+                    p.BusinessDate,
+                    p.TerminalSequence,
+                    p.PaymentType,
+                    p.Status,
+                    p.Amount,
+                    p.CurrencyCode,
+                    p.AuthorizedAmount,
+                    p.CapturedAmount,
+                    p.PaymentToken,
+                    p.ExternalPaymentReference,
+                    p.AuthorizationCode,
+                    p.CardBrand,
+                    p.CardLast4,
+                    p.ProcessedOn,
+                    p.IdempotencyKey,
+                    p.CorrelationId
+                }).ToList()
+            };
+            var payloadJson = JsonSerializer.Serialize(payload);
+            var payloadHash = ComputeSha256Hash(payloadJson);
+
+            syncOutbox = new SyncOutbox
+            {
+                Id = Guid.NewGuid(),
+                TenantId = currentTenantId,
+                LocationId = currentLocationId,
+                TerminalId = currentTerminalId,
+                BusinessDate = businessDate,
+                TerminalSequence = nextOrderSequence,
+                EventType = "OrderCompleted",
+                EventId = orderId,
+                PayloadJson = payloadJson,
+                PayloadHash = payloadHash,
+                IdempotencyKey = $"order-completed:{orderId}",
+                CorrelationId = correlationId,
+                Status = SyncOutboxStatus.Pending,
+                AttemptCount = 0,
+                IsActive = true,
+                CreatedBy = currentSession.DisplayName,
+                CreatedOn = localOrder.CreatedOn
+            };
+
+            // Serialize print metadata payload
+            var printPayloadJson = JsonSerializer.Serialize(new
+            {
+                orderId = orderId,
+                receiptNumber = receiptNumber,
+                totalAmount = localOrder.TotalAmount,
+                paymentCount = payments.Count,
+                createdOn = localOrder.CreatedOn
+            });
+
+            printQueue = new PrintQueue
+            {
+                Id = Guid.NewGuid(),
+                TenantId = currentTenantId,
+                LocationId = currentLocationId,
+                TerminalId = currentTerminalId,
+                OrderId = orderId,
+                PrintJobType = "Receipt",
+                ReceiptNumber = receiptNumber,
+                ReceiptTemplateId = null,
+                PayloadJson = printPayloadJson,
+                RenderedContent = receiptText,
+                Status = PrintQueueStatus.Pending,
+                Priority = 1,
+                AttemptCount = 0,
+                IdempotencyKey = $"receipt-print:{orderId}",
+                CorrelationId = correlationId,
+                IsActive = true,
+                CreatedBy = currentSession.DisplayName,
+                CreatedOn = localOrder.CreatedOn
+            };
+
             _db.LocalOrders.Add(localOrder);
             _db.LocalOrderLines.AddRange(orderLines);
             _db.LocalPayments.AddRange(payments);
+            _db.SyncOutbox.Add(syncOutbox);
+            _db.PrintQueue.Add(printQueue);
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            _logger.LogInformation("Order completed and saved atomically. Receipt: '{ReceiptNumber}', OrderId: {OrderId}", receiptNumber, orderId);
+            _logger.LogInformation("Order, outbox event and print job saved atomically inside SQLite transaction. Receipt: '{ReceiptNumber}', OrderId: {OrderId}", receiptNumber, orderId);
         }
         catch (Exception ex)
         {
@@ -418,6 +589,21 @@ public sealed class PaymentService : IPaymentService
             Success: true,
             OrderId: orderId,
             ReceiptNumber: receiptNumber,
-            ChangeAmount: changeAmount);
+            ChangeAmount: changeAmount,
+            ReceiptText: receiptText,
+            PrintJobId: printQueue.Id,
+            OutboxEventId: syncOutbox.Id);
+    }
+
+    private static string ComputeSha256Hash(string rawData)
+    {
+        using var sha256 = SHA256.Create();
+        byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(rawData));
+        var builder = new StringBuilder();
+        for (int i = 0; i < bytes.Length; i++)
+        {
+            builder.Append(bytes[i].ToString("x2"));
+        }
+        return builder.ToString();
     }
 }

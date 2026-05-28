@@ -13,6 +13,7 @@ using POS.Desktop.Services.Auth;
 using POS.Desktop.Services.Shifts;
 using POS.Desktop.Services.Orders;
 using POS.Desktop.Services.Payments;
+using POS.Desktop.Services.Receipts;
 using POS.Desktop.Shell;
 using Microsoft.Extensions.Options;
 using System.IO;
@@ -79,6 +80,7 @@ public static class DesktopHostBuilder
                 services.AddSingleton<IDraftCartStore, DraftCartStore>();
                 services.AddScoped<IOrderService, OrderService>();
                 services.AddScoped<IPaymentService, PaymentService>();
+                services.AddScoped<IReceiptRenderer, ReceiptRenderer>();
 
                 // Register context first as DbContext depends on it.
                 // ProvisioningConfigLoader seeds the context with the appsettings.json value (normally

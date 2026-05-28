@@ -663,4 +663,239 @@ public class LocalEmployeeAuthServiceTests : IDisposable
         Assert.NotNull(result.Operator);
         Assert.Equal("ExactCashier", result.Operator.Role);
     }
+
+    [Fact]
+    public async Task ValidatePinAsync_FailsClosed_WithEmptyLocalEmployeesTable()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(tenantId: 1, locationId: 101, terminalId: 999);
+        // Leave LocalEmployees table empty
+
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(1, 101, 999));
+        var authService = new LocalEmployeeAuthService(db, provisioningContext, _pinVerifier, NullLogger<LocalEmployeeAuthService>.Instance);
+
+        // Act
+        var result = await authService.ValidatePinAsync("OP001", "1111");
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Equal("INVALID_CREDENTIALS", result.ErrorCode);
+        Assert.Null(result.Operator);
+
+        // Verify no session is created
+        var sessions = await db.LocalTerminalSessions.ToListAsync();
+        Assert.Empty(sessions);
+    }
+
+    [Theory]
+    [InlineData(true, false, false)] // Missing PinHash
+    [InlineData(false, true, false)] // Missing PinSalt
+    [InlineData(false, false, true)] // Missing PinHashAlgorithm
+    public async Task ValidatePinAsync_FailsClosed_WithMissingPinHashOrSaltOrAlgorithm(
+        bool missingHash,
+        bool missingSalt,
+        bool missingAlgorithm)
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(tenantId: 1, locationId: 101, terminalId: 999);
+
+        db.LocalEmployees.Add(new LocalEmployee
+        {
+            Id = 10,
+            TenantId = 1,
+            EmployeeNumber = "OP001",
+            DisplayName = "Adeel Cashier",
+            PinHash = missingHash ? null : "hash",
+            PinSalt = missingSalt ? null : "salt",
+            PinHashAlgorithm = missingAlgorithm ? null : "PBKDF2",
+            Status = EmployeeStatus.Active,
+            IsActive = true
+        });
+
+        db.LocalEmployeeLocationRoles.Add(new LocalEmployeeLocationRole
+        {
+            Id = 100,
+            TenantId = 1,
+            EmployeeId = 10,
+            LocationId = 101,
+            Role = "Cashier",
+            IsActive = true
+        });
+
+        await db.SaveChangesAsync();
+
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(1, 101, 999));
+        var authService = new LocalEmployeeAuthService(db, provisioningContext, _pinVerifier, NullLogger<LocalEmployeeAuthService>.Instance);
+
+        // Act
+        var result = await authService.ValidatePinAsync("OP001", "1111");
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Equal("INVALID_CREDENTIALS", result.ErrorCode);
+        Assert.Null(result.Operator);
+
+        // Verify no session is created
+        var sessions = await db.LocalTerminalSessions.ToListAsync();
+        Assert.Empty(sessions);
+    }
+
+    [Fact]
+    public async Task ValidatePinAsync_FailsClosed_WithFutureStartsOnRole()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(tenantId: 1, locationId: 101, terminalId: 999);
+        var credentials = _pinVerifier.HashPin("1111");
+
+        db.LocalEmployees.Add(new LocalEmployee
+        {
+            Id = 10,
+            TenantId = 1,
+            EmployeeNumber = "OP001",
+            DisplayName = "Adeel Cashier",
+            PinHash = credentials.Hash,
+            PinSalt = credentials.Salt,
+            PinHashAlgorithm = credentials.Algorithm,
+            Status = EmployeeStatus.Active,
+            IsActive = true
+        });
+
+        db.LocalEmployeeLocationRoles.Add(new LocalEmployeeLocationRole
+        {
+            Id = 100,
+            TenantId = 1,
+            EmployeeId = 10,
+            LocationId = 101,
+            Role = "Cashier",
+            StartsOn = DateTime.UtcNow.AddDays(2), // Future StartsOn
+            EndsOn = null,
+            IsActive = true
+        });
+
+        await db.SaveChangesAsync();
+
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(1, 101, 999));
+        var authService = new LocalEmployeeAuthService(db, provisioningContext, _pinVerifier, NullLogger<LocalEmployeeAuthService>.Instance);
+
+        // Act
+        var result = await authService.ValidatePinAsync("OP001", "1111");
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Equal("LOCATION_NOT_AUTHORIZED", result.ErrorCode);
+        Assert.Null(result.Operator);
+
+        // Verify no session is created
+        var sessions = await db.LocalTerminalSessions.ToListAsync();
+        Assert.Empty(sessions);
+    }
+
+    [Fact]
+    public async Task ValidatePinAsync_FailsClosed_WithExpiredEndsOnRole()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(tenantId: 1, locationId: 101, terminalId: 999);
+        var credentials = _pinVerifier.HashPin("1111");
+
+        db.LocalEmployees.Add(new LocalEmployee
+        {
+            Id = 10,
+            TenantId = 1,
+            EmployeeNumber = "OP001",
+            DisplayName = "Adeel Cashier",
+            PinHash = credentials.Hash,
+            PinSalt = credentials.Salt,
+            PinHashAlgorithm = credentials.Algorithm,
+            Status = EmployeeStatus.Active,
+            IsActive = true
+        });
+
+        db.LocalEmployeeLocationRoles.Add(new LocalEmployeeLocationRole
+        {
+            Id = 100,
+            TenantId = 1,
+            EmployeeId = 10,
+            LocationId = 101,
+            Role = "Cashier",
+            StartsOn = null,
+            EndsOn = DateTime.UtcNow.AddDays(-2), // Expired EndsOn
+            IsActive = true
+        });
+
+        await db.SaveChangesAsync();
+
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(1, 101, 999));
+        var authService = new LocalEmployeeAuthService(db, provisioningContext, _pinVerifier, NullLogger<LocalEmployeeAuthService>.Instance);
+
+        // Act
+        var result = await authService.ValidatePinAsync("OP001", "1111");
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Equal("LOCATION_NOT_AUTHORIZED", result.ErrorCode);
+        Assert.Null(result.Operator);
+
+        // Verify no session is created
+        var sessions = await db.LocalTerminalSessions.ToListAsync();
+        Assert.Empty(sessions);
+    }
+
+    [Fact]
+    public async Task ValidatePinAsync_DoesNotLogSensitiveData_OnSuccessAndFailure()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateProvisionedDbContext(tenantId: 1, locationId: 101, terminalId: 999);
+        var credentials = _pinVerifier.HashPin("1234-SECRET-PIN");
+
+        db.LocalEmployees.Add(new LocalEmployee
+        {
+            Id = 10,
+            TenantId = 1,
+            EmployeeNumber = "OP001",
+            DisplayName = "Adeel Cashier",
+            PinHash = credentials.Hash,
+            PinSalt = credentials.Salt,
+            PinHashAlgorithm = credentials.Algorithm,
+            Status = EmployeeStatus.Active,
+            IsActive = true
+        });
+
+        db.LocalEmployeeLocationRoles.Add(new LocalEmployeeLocationRole
+        {
+            Id = 100,
+            TenantId = 1,
+            EmployeeId = 10,
+            LocationId = 101,
+            Role = "Cashier",
+            IsActive = true
+        });
+
+        await db.SaveChangesAsync();
+
+        var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(1, 101, 999));
+        var testLogger = new TestLogger<LocalEmployeeAuthService>();
+        var authService = new LocalEmployeeAuthService(db, provisioningContext, _pinVerifier, testLogger);
+
+        // Act 1: Success login
+        var successResult = await authService.ValidatePinAsync("OP001", "1234-SECRET-PIN");
+        Assert.True(successResult.IsValid);
+
+        // Act 2: Failure login
+        var failureResult = await authService.ValidatePinAsync("OP001", "wrong-pin-5678");
+        Assert.False(failureResult.IsValid);
+
+        // Assert over logged messages
+        Assert.NotEmpty(testLogger.LoggedMessages);
+        foreach (var msg in testLogger.LoggedMessages)
+        {
+            // Raw PINs must never be logged
+            Assert.DoesNotContain("1234-SECRET-PIN", msg);
+            Assert.DoesNotContain("wrong-pin-5678", msg);
+
+            // Hash/Salt/Algorithm must never be logged
+            Assert.DoesNotContain(credentials.Hash, msg);
+            Assert.DoesNotContain(credentials.Salt, msg);
+            Assert.DoesNotContain(credentials.Algorithm, msg);
+        }
+    }
 }

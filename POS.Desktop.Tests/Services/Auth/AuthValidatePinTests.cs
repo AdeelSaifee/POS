@@ -12,6 +12,8 @@ using Xunit;
 
 using POS.Desktop.Services.Provisioning;
 using POS.Shared.Contracts;
+using Microsoft.Extensions.Logging;
+using POS.Desktop.Tests.TestSupport;
 
 namespace POS.Desktop.Tests.Services.Auth;
 
@@ -19,7 +21,8 @@ public class AuthValidatePinTests
 {
     private PosWebMessageRouter CreateRouter(
         ISessionService sessionService,
-        IAuthService authService)
+        IAuthService authService,
+        ILogger<PosWebMessageRouter>? logger = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -28,7 +31,7 @@ public class AuthValidatePinTests
         services.AddSingleton<IProvisionedTerminalContext>(new NoProvisionedTerminalContext());
         var provider = services.BuildServiceProvider();
         var scopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
-        return new PosWebMessageRouter(scopeFactory, NullLogger<PosWebMessageRouter>.Instance);
+        return new PosWebMessageRouter(scopeFactory, logger ?? NullLogger<PosWebMessageRouter>.Instance);
     }
 
     private JsonElement CreatePayloadElement(object obj)
@@ -302,6 +305,39 @@ public class AuthValidatePinTests
         public Task<AuthResult> ValidateManagerPinAsync(string operatorId, string pin, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
+        }
+    }
+
+    [Fact]
+    public async Task Router_DoesNotLogSensitiveDataOrRawPayloads()
+    {
+        // Arrange
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var authService = new StubAuthService(NullLogger<StubAuthService>.Instance);
+        var testLogger = new TestLogger<PosWebMessageRouter>();
+        var router = CreateRouter(sessionService, authService, testLogger);
+
+        var request = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "auth.validatePin",
+            RequestId = "req-val-logs-7",
+            Payload = CreatePayloadElement(new { operatorId = "OP001", pin = "1234-SECRET-PIN" })
+        };
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.NotEmpty(testLogger.LoggedMessages);
+        foreach (var msg in testLogger.LoggedMessages)
+        {
+            // Verify raw PIN or secret values are not present
+            Assert.DoesNotContain("1234-SECRET-PIN", msg);
+            // Verify the raw JSON payload / structure is not printed
+            Assert.DoesNotContain("{\"operatorId\"", msg);
+            Assert.DoesNotContain("\"pin\":", msg);
         }
     }
 }

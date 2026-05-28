@@ -122,7 +122,8 @@ public class PaymentServiceTests : IDisposable
         var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
 
         var request = new PaymentCompletionRequest(
-            Tenders: new List<PaymentTenderRequest> { new(1, 105m) }
+            Tenders: new List<PaymentTenderRequest> { new(1, 105m) },
+            IdempotencyKey: Guid.NewGuid().ToString("N")
         );
 
         // Act
@@ -189,7 +190,8 @@ public class PaymentServiceTests : IDisposable
         var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
 
         var request = new PaymentCompletionRequest(
-            Tenders: new List<PaymentTenderRequest> { new(1, 100m) } // 100 paid for 90 due
+            Tenders: new List<PaymentTenderRequest> { new(1, 100m) }, // 100 paid for 90 due
+            IdempotencyKey: Guid.NewGuid().ToString("N")
         );
 
         // Act
@@ -232,7 +234,8 @@ public class PaymentServiceTests : IDisposable
         var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
 
         var request = new PaymentCompletionRequest(
-            Tenders: new List<PaymentTenderRequest> { new(2, 150m, "TXN-CARD-99") }
+            Tenders: new List<PaymentTenderRequest> { new(2, 150m, "TXN-CARD-99") },
+            IdempotencyKey: Guid.NewGuid().ToString("N")
         );
 
         // Act
@@ -274,7 +277,8 @@ public class PaymentServiceTests : IDisposable
 
         // Act: split pay 50 Cash + 150 Card
         var request = new PaymentCompletionRequest(
-            Tenders: new List<PaymentTenderRequest> { new(1, 50m), new(2, 150m) }
+            Tenders: new List<PaymentTenderRequest> { new(1, 50m), new(2, 150m) },
+            IdempotencyKey: Guid.NewGuid().ToString("N")
         );
 
         var result = await paymentService.CompleteOrderAsync(request);
@@ -314,7 +318,8 @@ public class PaymentServiceTests : IDisposable
         var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
 
         var request = new PaymentCompletionRequest(
-            Tenders: new List<PaymentTenderRequest> { new(1, 99m) } // underpaid by 1 PKR
+            Tenders: new List<PaymentTenderRequest> { new(1, 99m) }, // underpaid by 1 PKR
+            IdempotencyKey: Guid.NewGuid().ToString("N")
         );
 
         // Act
@@ -343,7 +348,10 @@ public class PaymentServiceTests : IDisposable
 
         var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
 
-        var request = new PaymentCompletionRequest(Tenders: new List<PaymentTenderRequest> { new(1, 50m) });
+        var request = new PaymentCompletionRequest(
+            Tenders: new List<PaymentTenderRequest> { new(1, 50m) },
+            IdempotencyKey: Guid.NewGuid().ToString("N")
+        );
 
         // Act
         var result = await paymentService.CompleteOrderAsync(request);
@@ -370,7 +378,10 @@ public class PaymentServiceTests : IDisposable
         };
 
         var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
-        var request = new PaymentCompletionRequest(Tenders: new List<PaymentTenderRequest> { new(1, 50m) });
+        var request = new PaymentCompletionRequest(
+            Tenders: new List<PaymentTenderRequest> { new(1, 50m) },
+            IdempotencyKey: Guid.NewGuid().ToString("N")
+        );
 
         // Act
         var result = await paymentService.CompleteOrderAsync(request);
@@ -395,7 +406,10 @@ public class PaymentServiceTests : IDisposable
         var stubSessionService = new StubSessionService(); // No session
 
         var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
-        var request = new PaymentCompletionRequest(Tenders: new List<PaymentTenderRequest> { new(1, 50m) });
+        var request = new PaymentCompletionRequest(
+            Tenders: new List<PaymentTenderRequest> { new(1, 50m) },
+            IdempotencyKey: Guid.NewGuid().ToString("N")
+        );
 
         // Act
         var result = await paymentService.CompleteOrderAsync(request);
@@ -442,7 +456,10 @@ public class PaymentServiceTests : IDisposable
         };
 
         var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
-        var request = new PaymentCompletionRequest(Tenders: new List<PaymentTenderRequest> { new(1, 50m) });
+        var request = new PaymentCompletionRequest(
+            Tenders: new List<PaymentTenderRequest> { new(1, 50m) },
+            IdempotencyKey: Guid.NewGuid().ToString("N")
+        );
 
         // Act
         var result = await paymentService.CompleteOrderAsync(request);
@@ -472,7 +489,8 @@ public class PaymentServiceTests : IDisposable
 
         var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
         var request = new PaymentCompletionRequest(
-            Tenders: new List<PaymentTenderRequest> { new(999, 50m) } // Unknown tender ID 999
+            Tenders: new List<PaymentTenderRequest> { new(999, 50m) }, // Unknown tender ID 999
+            IdempotencyKey: Guid.NewGuid().ToString("N")
         );
 
         // Act
@@ -510,7 +528,8 @@ public class PaymentServiceTests : IDisposable
         var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
 
         var request = new PaymentCompletionRequest(
-            Tenders: new List<PaymentTenderRequest> { new(2, 105m, "TXN-CARD") } // Card (AllowsChange = false) overpaid by 5 PKR
+            Tenders: new List<PaymentTenderRequest> { new(2, 105m, "TXN-CARD") }, // Card (AllowsChange = false) overpaid by 5 PKR
+            IdempotencyKey: Guid.NewGuid().ToString("N")
         );
 
         // Act
@@ -555,7 +574,8 @@ public class PaymentServiceTests : IDisposable
         var request = new PaymentCompletionRequest(
             Tenders: new List<PaymentTenderRequest> { new(1, 100m) }, // 100 paid for 95 due (5 change)
             GuestName: "Alice Guest",
-            GuestPhone: "555-1234"
+            GuestPhone: "555-1234",
+            IdempotencyKey: Guid.NewGuid().ToString("N")
         );
 
         // Act
@@ -634,7 +654,8 @@ public class PaymentServiceTests : IDisposable
         var request = new PaymentCompletionRequest(
             Tenders: new List<PaymentTenderRequest> { new(1, 100m) }, // 100 paid for 95 due (5 change)
             GuestName: "Alice Guest",
-            GuestPhone: "555-1234"
+            GuestPhone: "555-1234",
+            IdempotencyKey: Guid.NewGuid().ToString("N")
         );
 
         // Act
@@ -680,7 +701,10 @@ public class PaymentServiceTests : IDisposable
         };
 
         var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
-        var request = new PaymentCompletionRequest(Tenders: new List<PaymentTenderRequest> { new(1, 50m) });
+        var request = new PaymentCompletionRequest(
+            Tenders: new List<PaymentTenderRequest> { new(1, 50m) },
+            IdempotencyKey: Guid.NewGuid().ToString("N")
+        );
 
         // Act
         var result = await paymentService.CompleteOrderAsync(request);
@@ -729,7 +753,8 @@ public class PaymentServiceTests : IDisposable
         var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
 
         var request = new PaymentCompletionRequest(
-            Tenders: new List<PaymentTenderRequest> { new(1, 200m) }
+            Tenders: new List<PaymentTenderRequest> { new(1, 200m) },
+            IdempotencyKey: Guid.NewGuid().ToString("N")
         );
 
         // Act & Assert
@@ -755,14 +780,384 @@ public class PaymentServiceTests : IDisposable
         Assert.False(stubOrderService.ClearCartCalled);
     }
 
+    [Fact]
+    public async Task CompleteOrderAsync_MissingIdempotencyKey_RejectsWithIdempotencyKeyRequired()
+    {
+        // Arrange
+        var provRecord = new ProvisioningRecord(_tenantId, _locationId, _terminalId);
+        var provContext = new ProvisionedTerminalContext(provRecord);
+        using var db = CreateDbContext(provContext);
+        await SeedBaseDataAsync(db);
+
+        var stubOrderService = new StubOrderService
+        {
+            CartState = new CartStateDto
+            {
+                SubtotalAmount = 100m,
+                TotalAmount = 100m,
+                Lines = new List<CartLineDto> { new() { ItemId = 1, VariantId = 101, Name = "Item A", Quantity = 1, UnitPrice = 100m, GrossAmount = 100m, NetAmount = 100m } }
+            }
+        };
+
+        var stubSessionService = new StubSessionService
+        {
+            CurrentSession = new OperatorSession(_operatorId, "John Cashier", "Cashier", DateTimeOffset.UtcNow, _terminalId.ToString(), "STUB-SESS")
+        };
+
+        var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
+
+        var request = new PaymentCompletionRequest(
+            Tenders: new List<PaymentTenderRequest> { new(1, 100m) },
+            IdempotencyKey: null // Missing
+        );
+
+        // Act
+        var result = await paymentService.CompleteOrderAsync(request);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Equal("IDEMPOTENCY_KEY_REQUIRED", result.ErrorCode);
+        Assert.Contains("key is required", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task CompleteOrderAsync_SuccessfulCompletion_StoresFingerprintInMetadataJson()
+    {
+        // Arrange
+        var provRecord = new ProvisioningRecord(_tenantId, _locationId, _terminalId);
+        var provContext = new ProvisionedTerminalContext(provRecord);
+        using var db = CreateDbContext(provContext);
+        await SeedBaseDataAsync(db);
+
+        var stubOrderService = new StubOrderService
+        {
+            CartState = new CartStateDto
+            {
+                SubtotalAmount = 100m,
+                TotalAmount = 100m,
+                Lines = new List<CartLineDto> { new() { ItemId = 1, VariantId = 101, Name = "Item A", Quantity = 1, UnitPrice = 100m, GrossAmount = 100m, NetAmount = 100m } }
+            }
+        };
+
+        var stubSessionService = new StubSessionService
+        {
+            CurrentSession = new OperatorSession(_operatorId, "John Cashier", "Cashier", DateTimeOffset.UtcNow, _terminalId.ToString(), "STUB-SESS")
+        };
+
+        var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
+
+        var idempotencyKey = Guid.NewGuid().ToString("N");
+        var request = new PaymentCompletionRequest(
+            Tenders: new List<PaymentTenderRequest> { new(1, 100m) },
+            IdempotencyKey: idempotencyKey
+        );
+
+        // Act
+        var result = await paymentService.CompleteOrderAsync(request);
+
+        // Assert
+        Assert.True(result.Success);
+        var savedOrder = await db.LocalOrders.FirstAsync(o => o.Id == result.OrderId);
+        Assert.NotNull(savedOrder.MetadataJson);
+        Assert.Contains("PayloadFingerprint", savedOrder.MetadataJson);
+    }
+
+    [Fact]
+    public async Task CompleteOrderAsync_RepeatedKeyAfterCartCleared_BypassesFingerprintAndReturnsOriginalResult()
+    {
+        // Arrange
+        var provRecord = new ProvisioningRecord(_tenantId, _locationId, _terminalId);
+        var provContext = new ProvisionedTerminalContext(provRecord);
+        using var db = CreateDbContext(provContext);
+        await SeedBaseDataAsync(db);
+
+        var cartState = new CartStateDto
+        {
+            SubtotalAmount = 100m,
+            TotalAmount = 100m,
+            Lines = new List<CartLineDto> { new() { ItemId = 1, VariantId = 101, Name = "Item A", Quantity = 1, UnitPrice = 100m, GrossAmount = 100m, NetAmount = 100m } }
+        };
+        var stubOrderService = new StubOrderService { CartState = cartState };
+
+        var stubSessionService = new StubSessionService
+        {
+            CurrentSession = new OperatorSession(_operatorId, "John Cashier", "Cashier", DateTimeOffset.UtcNow, _terminalId.ToString(), "STUB-SESS")
+        };
+
+        var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
+
+        var idempotencyKey = "TEST-REPEAT-KEY";
+        var request = new PaymentCompletionRequest(
+            Tenders: new List<PaymentTenderRequest> { new(1, 100m) },
+            IdempotencyKey: idempotencyKey
+        );
+
+        // First Completion
+        var firstResult = await paymentService.CompleteOrderAsync(request);
+        Assert.True(firstResult.Success);
+
+        // Clear cart to simulate post-success empty-cart state
+        stubOrderService.CartState = new CartStateDto(); // Empty cart
+
+        // Act - Retry completion with same key and now empty cart
+        var secondResult = await paymentService.CompleteOrderAsync(request);
+
+        // Assert
+        Assert.True(secondResult.Success);
+        Assert.Equal(firstResult.OrderId, secondResult.OrderId);
+        Assert.Equal(firstResult.ReceiptNumber, secondResult.ReceiptNumber);
+        Assert.Equal(firstResult.ChangeAmount, secondResult.ChangeAmount);
+        Assert.Equal(firstResult.ReceiptText, secondResult.ReceiptText);
+        Assert.Equal(firstResult.PrintJobId, secondResult.PrintJobId);
+        Assert.Equal(firstResult.OutboxEventId, secondResult.OutboxEventId);
+
+        // Verify no duplicate entities created
+        var ordersCount = await db.LocalOrders.CountAsync(o => o.IdempotencyKey == idempotencyKey);
+        var paymentsCount = await db.LocalPayments.CountAsync(p => p.OrderId == firstResult.OrderId);
+        var outboxCount = await db.SyncOutbox.CountAsync(s => s.EventId == firstResult.OrderId);
+        var printCount = await db.PrintQueue.CountAsync(p => p.OrderId == firstResult.OrderId);
+
+        Assert.Equal(1, ordersCount);
+        Assert.Equal(1, paymentsCount);
+        Assert.Equal(1, outboxCount);
+        Assert.Equal(1, printCount);
+    }
+
+    [Fact]
+    public async Task CompleteOrderAsync_RepeatedKeyWithChangedPayload_RejectsWithConflict()
+    {
+        // Arrange
+        var provRecord = new ProvisioningRecord(_tenantId, _locationId, _terminalId);
+        var provContext = new ProvisionedTerminalContext(provRecord);
+        using var db = CreateDbContext(provContext);
+        await SeedBaseDataAsync(db);
+
+        var cartState = new CartStateDto
+        {
+            SubtotalAmount = 100m,
+            TotalAmount = 100m,
+            Lines = new List<CartLineDto> { new() { ItemId = 1, VariantId = 101, Name = "Item A", Quantity = 1, UnitPrice = 100m, GrossAmount = 100m, NetAmount = 100m } }
+        };
+        var stubOrderService = new StubOrderService { CartState = cartState };
+
+        var stubSessionService = new StubSessionService
+        {
+            CurrentSession = new OperatorSession(_operatorId, "John Cashier", "Cashier", DateTimeOffset.UtcNow, _terminalId.ToString(), "STUB-SESS")
+        };
+
+        var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
+
+        var idempotencyKey = "TEST-CONFLICT-KEY";
+        var request1 = new PaymentCompletionRequest(
+            Tenders: new List<PaymentTenderRequest> { new(1, 100m) },
+            IdempotencyKey: idempotencyKey
+        );
+
+        // First Completion
+        var firstResult = await paymentService.CompleteOrderAsync(request1);
+        Assert.True(firstResult.Success);
+
+        // Second request has the same key but different cart lines
+        var differentCartState = new CartStateDto
+        {
+            SubtotalAmount = 200m,
+            TotalAmount = 200m,
+            Lines = new List<CartLineDto> { new() { ItemId = 2, VariantId = 102, Name = "Item B", Quantity = 1, UnitPrice = 200m, GrossAmount = 200m, NetAmount = 200m } }
+        };
+        stubOrderService.CartState = differentCartState;
+
+        var request2 = new PaymentCompletionRequest(
+            Tenders: new List<PaymentTenderRequest> { new(1, 200m) },
+            IdempotencyKey: idempotencyKey
+        );
+
+        // Act
+        var secondResult = await paymentService.CompleteOrderAsync(request2);
+
+        // Assert
+        Assert.False(secondResult.Success);
+        Assert.Equal("IDEMPOTENCY_CONFLICT", secondResult.ErrorCode);
+        Assert.Contains("already exists with a different payload", secondResult.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task CompleteOrderAsync_UniqueConstraintRaceConflict_SafelyHandlesRollbackAndReturnsExistingResult()
+    {
+        // Arrange
+        var provRecord = new ProvisioningRecord(_tenantId, _locationId, _terminalId);
+        var provContext = new ProvisionedTerminalContext(provRecord);
+        using var db = CreateDbContext(provContext);
+        await SeedBaseDataAsync(db);
+
+        var activeShift = await db.LocalShifts.FirstAsync(s => s.Status == ShiftStatus.Open);
+
+        var cartState = new CartStateDto
+        {
+            SubtotalAmount = 100m,
+            TotalAmount = 100m,
+            Lines = new List<CartLineDto> { new() { ItemId = 1, VariantId = 101, Name = "Item A", Quantity = 1, UnitPrice = 100m, GrossAmount = 100m, NetAmount = 100m } }
+        };
+
+        var idempotencyKey = "TEST-RACE-KEY";
+        var request = new PaymentCompletionRequest(
+            Tenders: new List<PaymentTenderRequest> { new(1, 100m) },
+            IdempotencyKey: idempotencyKey
+        );
+
+        Guid printQueueId = Guid.NewGuid();
+        Guid syncOutboxId = Guid.NewGuid();
+        Guid concurrentOrderId = Guid.NewGuid();
+        string receiptNumber = "20260528-999-00099";
+
+        // We simulate the concurrent insert race by inserting the duplicate order inside OnGetCartState
+        // which runs right after the early lookup and before the main db transaction starts.
+        var stubOrderService = new StubOrderService
+        {
+            CartState = cartState,
+            OnGetCartState = async () =>
+            {
+                using var db2 = CreateDbContext(provContext);
+
+                var concurrentOrder = new LocalOrder
+                {
+                    Id = concurrentOrderId,
+                    TenantId = _tenantId,
+                    LocationId = _locationId,
+                    TerminalId = _terminalId,
+                    ShiftId = activeShift.Id,
+                    EmployeeId = 10,
+                    BusinessDate = activeShift.BusinessDate,
+                    TerminalSequence = 99,
+                    ReceiptNumber = receiptNumber,
+                    OrderType = OrderType.Sale,
+                    Status = OrderStatus.Completed,
+                    PaymentStatus = PaymentStatus.Paid,
+                    FulfillmentStatus = FulfillmentStatus.Completed,
+                    SubtotalAmount = 100m,
+                    TotalAmount = 100m,
+                    IdempotencyKey = idempotencyKey,
+                    MetadataJson = $"{{\"PayloadFingerprint\":\"{BuildFingerprint(cartState, request, activeShift.Id, activeShift.BusinessDate)}\"}}"
+                };
+                db2.LocalOrders.Add(concurrentOrder);
+
+                var printQueue = new PrintQueue
+                {
+                    Id = printQueueId,
+                    TenantId = _tenantId,
+                    LocationId = _locationId,
+                    TerminalId = _terminalId,
+                    OrderId = concurrentOrder.Id,
+                    PrintJobType = "Receipt",
+                    ReceiptNumber = concurrentOrder.ReceiptNumber,
+                    RenderedContent = "Concurrently Rendered Receipt Content",
+                    Status = PrintQueueStatus.Pending
+                };
+                db2.PrintQueue.Add(printQueue);
+
+                var syncOutbox = new SyncOutbox
+                {
+                    Id = syncOutboxId,
+                    TenantId = _tenantId,
+                    LocationId = _locationId,
+                    TerminalId = _terminalId,
+                    BusinessDate = concurrentOrder.BusinessDate,
+                    EventType = "OrderCompleted",
+                    EventId = concurrentOrder.Id,
+                    Status = SyncOutboxStatus.Pending
+                };
+                db2.SyncOutbox.Add(syncOutbox);
+
+                await db2.SaveChangesAsync();
+            }
+        };
+
+        var stubSessionService = new StubSessionService
+        {
+            CurrentSession = new OperatorSession(_operatorId, "John Cashier", "Cashier", DateTimeOffset.UtcNow, _terminalId.ToString(), "STUB-SESS")
+        };
+
+        var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
+
+        // Act - Call CompleteOrderAsync which does not find it in early lookup,
+        // but throws UNIQUE constraint violation on SaveChangesAsync, rolls back, and reloads!
+        var result = await paymentService.CompleteOrderAsync(request);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Equal(concurrentOrderId, result.OrderId);
+        Assert.Equal(receiptNumber, result.ReceiptNumber);
+        Assert.Equal("Concurrently Rendered Receipt Content", result.ReceiptText);
+        Assert.Equal(printQueueId, result.PrintJobId);
+        Assert.Equal(syncOutboxId, result.OutboxEventId);
+    }
+
+    private string BuildFingerprint(CartStateDto cartState, PaymentCompletionRequest request, Guid shiftId, DateOnly businessDate)
+    {
+        var details = new
+        {
+            TenantId = _tenantId,
+            LocationId = _locationId,
+            TerminalId = _terminalId,
+            ShiftId = shiftId,
+            BusinessDate = businessDate,
+            Lines = cartState.Lines.Select(l => new
+            {
+                ItemId = l.ItemId,
+                VariantId = l.VariantId,
+                Quantity = l.Quantity,
+                UnitPrice = l.UnitPrice,
+                GrossAmount = l.GrossAmount,
+                DiscountAmount = l.DiscountAmount,
+                TaxAmount = l.TaxAmount,
+                NetAmount = l.NetAmount
+            }).OrderBy(l => l.ItemId).ThenBy(l => l.VariantId).ToList(),
+            Totals = new
+            {
+                cartState.SubtotalAmount,
+                cartState.DiscountAmount,
+                cartState.TaxAmount,
+                cartState.TotalAmount
+            },
+            Tenders = request.Tenders.Select(t => new
+            {
+                t.TenderMethodId,
+                Amount = MoneyRounder.Round(t.Amount),
+                ExternalPaymentReference = t.ExternalPaymentReference ?? string.Empty
+            }).OrderBy(t => t.TenderMethodId).ThenBy(t => t.Amount).ThenBy(t => t.ExternalPaymentReference).ToList(),
+            Guest = new
+            {
+                GuestName = request.GuestName?.Trim() ?? string.Empty,
+                GuestPhone = request.GuestPhone?.Trim() ?? string.Empty
+            }
+        };
+        return ComputeSha256Hash(System.Text.Json.JsonSerializer.Serialize(details));
+    }
+
+    private static string ComputeSha256Hash(string rawData)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        byte[] bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(rawData));
+        var builder = new System.Text.StringBuilder();
+        for (int i = 0; i < bytes.Length; i++)
+        {
+            builder.Append(bytes[i].ToString("x2"));
+        }
+        return builder.ToString();
+    }
+
     private class StubOrderService : IOrderService
     {
         public CartStateDto CartState { get; set; } = new();
         public bool ClearCartCalled { get; set; }
+        public Func<Task>? OnGetCartState { get; set; }
 
-        public Task<CartStateDto> GetCartStateAsync(CancellationToken cancellationToken = default)
+        public async Task<CartStateDto> GetCartStateAsync(CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(CartState);
+            if (OnGetCartState != null)
+            {
+                await OnGetCartState();
+            }
+            return CartState;
         }
 
         public Task<CartStateDto> ClearCartAsync(CancellationToken cancellationToken = default)

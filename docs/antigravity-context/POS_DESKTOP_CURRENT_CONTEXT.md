@@ -2,7 +2,7 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 5 / Milestone 5.4 - Payment & completion service
-- **Group**: Group 2 (Tasks 5.4.5 to 5.4.7 - completed)
+- **Group**: Group 3 (Task 5.4.8 - completed)
 
 ## Status of All Milestone 5.4 Tasks (Current)
 - `[x]` Task 5.4.1 - Define IPaymentService (Tender, change, completion contract)
@@ -12,7 +12,7 @@
 - `[x]` Task 5.4.5 - Enqueue SyncOutbox event (Pending outbox row inside same order transaction)
 - `[x]` Task 5.4.6 - Enqueue PrintQueue receipt (Pending receipt print job inside same order transaction)
 - `[x]` Task 5.4.7 - Render receipt from data (Fully data-driven plain text receipt rendering service)
-- `[ ]` Task 5.4.8 - Ensure idempotent completion
+- `[x]` Task 5.4.8 - Ensure idempotent completion
 - `[ ]` Task 5.4.9 - Wire payment_screen.html
 - `[ ]` Task 5.4.10 - Unit test tender/change/completion
 
@@ -41,6 +41,15 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Group 3 (Task 5.4.8 - completed)
+- [ADD] `POS.Desktop/Data/Migrations/Local/20260528104909_AddLocalOrderIdempotencyKeyIndex.cs` (EF Core SQLite local database schema migration adding unique index)
+- [ADD] `POS.Desktop/Data/Migrations/Local/20260528104909_AddLocalOrderIdempotencyKeyIndex.Designer.cs` (EF Core migration designer file)
+- [MODIFY] `POS.Desktop/Data/Migrations/Local/PosLocalDbContextModelSnapshot.cs` (Updated database snapshot incorporating unique index)
+- [MODIFY] `POS.Desktop/Data/Configurations/Local/LocalOrderConfiguration.cs` (Added unique index configuration on TenantId + IdempotencyKey to satisfy database-level uniqueness requirement and enforce save concurrency constraint catches)
+- [MODIFY] `POS.Desktop/Services/Payments/PaymentService.cs` (Enforced strict mandatory idempotency key check; early lookup before cart-empty; added deterministic SHA-256 fingerprint matching of TenantId, cart lines variants, itemIds, gross/tax/net prices, totals, tenders, and guest name/phone; bypassed fingerprint on empty-cart retries; integrated unique SQLite duplicate key constraint rollback recovery)
+- [MODIFY] `POS.Desktop.Tests/Services/Payments/PaymentServiceTests.cs` (Updated 15 existing test cases to supply mandatory unique idempotency key; added 5 new integration tests verifying missing key rejection, successful fingerprint storage, post-success empty cart retry bypass, same key conflict, and concurrent unique index race collision safe reloads)
+- [MODIFY] `docs/antigravity-context/POS_DESKTOP_CURRENT_CONTEXT.md` (Updated context file with Group 3 / Task 5.4.8 completed status, database migrations, and verifications)
 
 ### Group 2 (Tasks 5.4.5 to 5.4.7 - completed)
 - [ADD] `POS.Desktop/Services/Receipts/IReceiptRenderer.cs` (Decoupled receipt rendering contract)
@@ -185,20 +194,24 @@ The `openShift()` function in `shift_open.html` transition flow:
 - **Tender Overpayment Rules:** Prevents non-cash overpayment change drift. Correctly rejects non-cash overpayment unless cash is present to absorb change.
 - **Atomic Order Side Effects (Group 2):** Enqueued `SyncOutbox` order completed events and `PrintQueue` receipt print jobs directly inside the `PaymentService` SQLite transaction, ensuring atomic consistency for completing sales.
 - **Built-in plain text formatting (Group 2):** Spacing count is dynamically calculated and protected with a safe helper using `Math.Max(0, count)` inside `ReceiptRenderer.cs` to prevent negative width string instantiation errors.
+- **Enforced Mandated Idempotency Key (Group 3):** To prevent silent double-charge bypass, all payment completions strictly require a non-blank `IdempotencyKey`, throwing `IDEMPOTENCY_KEY_REQUIRED` early if missing. No random Guid fallback is generated.
+- **Early Lookup & Empty Cart Post-Success Bypass (Group 3):** The idempotency check is performed right after operational authorization context validation, and *before* cart-empty validation. Since the draft cart is cleared upon success, retried completed orders bypass fingerprint matching if the active cart is empty, safely returning the original enqueued outcome.
+- **Deterministic SHA-256 Payload Fingerprinting (Group 3):** Fingerprint matches TenantId, LocationId, TerminalId, ShiftId, BusinessDate, cart lines details (ItemId, VariantId, Quantity, UnitPrice, GrossAmount, DiscountAmount, TaxAmount, NetAmount), cart totals, normalized tenders, and normalized guest details to reject requests with different payloads as `IDEMPOTENCY_CONFLICT`.
+- **SQLite Concurrency Index Race Rollback & Safe Reload (Group 3):** DB update exceptions due to SQLite UNIQUE constraint violations on the `IdempotencyKey` index are intercepted. The transaction is rolled back, the committed order is safely reloaded, fingerprint payload verification is applied, and the original result is returned cleanly.
 
-## Verification Summary (Milestone 5.4 Group 2)
+## Verification Summary (Milestone 5.4 Group 3)
 
 ### Builds
 - `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: **0 errors / 0 warnings**
 - `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
 
 ### Tests
-- `dotnet test POS.Desktop.Tests`: **320/320 passed** (all 316 existing + 4 new comprehensive integration, outbox, receipt rendering, and rollback tests passed successfully)
+- `dotnet test POS.Desktop.Tests`: **325/325 passed** (all 316 existing + 4 Group 2 + 5 new comprehensive idempotency/concurrency integration tests passed successfully)
 - `dotnet test POS.Tests`: **49/49 passed** (all 49 central API/core tests passed successfully)
 
 ### Git hygiene
 - `git diff --check`: Zero whitespace/layout errors
-- `git status --short --untracked-files=all`: Verified clean state.
+- `git status --short --untracked-files=all`: Verified clean state (only `PaymentService.cs`, `PaymentServiceTests.cs`, `LocalOrderConfiguration.cs`, `PosLocalDbContextModelSnapshot.cs`, and `POS_DESKTOP_CURRENT_CONTEXT.md` modified; new index migration files added).
 
 ### SHA-256 sync check (all 5 milestone screens)
 | File | Assets hash | Result |
@@ -228,7 +241,6 @@ The `openShift()` function in `shift_open.html` transition flow:
 
 ## Deferred Items
 - WebView2 UI bridge routing and bridge endpoints integration for payments (`payment_screen.html` wiring) is deferred to Group 4 / Task 5.4.9.
-- Idempotency key double-payment check optimization is deferred to Group 3 / Task 5.4.8.
 
 ## Next Recommended Group
-- **Milestone 5.4 Group 3 (Task 5.4.8 - Idempotency Hardening)**
+- **Milestone 5.4 Group 4 (Task 5.4.9 - payment_screen.html wiring)**

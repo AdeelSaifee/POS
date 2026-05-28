@@ -56,7 +56,17 @@ public sealed class PaymentService : IPaymentService
             throw new ArgumentNullException(nameof(request));
         }
 
-        // 1. Confirm terminal is provisioned
+        // 1. Confirm IdempotencyKey is strictly mandatory (prevents silent double-charge bypass)
+        if (string.IsNullOrWhiteSpace(request.IdempotencyKey))
+        {
+            _logger.LogWarning("Payment failed: IdempotencyKey is missing.");
+            return new PaymentCompletionResult(
+                Success: false,
+                ErrorCode: "IDEMPOTENCY_KEY_REQUIRED",
+                ErrorMessage: "An idempotency key is required to complete this order.");
+        }
+
+        // 2. Confirm terminal is provisioned
         if (!_provisionedTerminalContext.IsProvisioned)
         {
             _logger.LogWarning("Payment failed: Terminal is not provisioned.");
@@ -70,7 +80,7 @@ public sealed class PaymentService : IPaymentService
         int currentLocationId = _provisionedTerminalContext.CurrentLocationId;
         int currentTerminalId = _provisionedTerminalContext.CurrentTerminalId;
 
-        // 2. Confirm active operator session exists
+        // 3. Confirm active operator session exists
         if (!_sessionService.IsActive || _sessionService.CurrentSession == null)
         {
             _logger.LogWarning("Payment failed: No active operator session.");
@@ -82,7 +92,7 @@ public sealed class PaymentService : IPaymentService
 
         var currentSession = _sessionService.CurrentSession;
 
-        // 3. Confirm LocalTerminalSession exists and is open
+        // 4. Confirm LocalTerminalSession exists and is open
         var terminalSession = await _db.LocalTerminalSessions
             .FirstOrDefaultAsync(s => s.TerminalId == currentTerminalId && s.Status == TerminalSessionStatus.Open, cancellationToken);
 
@@ -109,7 +119,7 @@ public sealed class PaymentService : IPaymentService
                 ErrorMessage: "Operator not found in database.");
         }
 
-        // 4. Confirm active open LocalShift exists
+        // 5. Confirm active open LocalShift exists
         var activeShift = await _db.LocalShifts
             .FirstOrDefaultAsync(s => s.LocationId == currentLocationId && s.TerminalId == currentTerminalId && s.Status == ShiftStatus.Open, cancellationToken);
 
@@ -122,8 +132,53 @@ public sealed class PaymentService : IPaymentService
                 ErrorMessage: "No active shift is open on this terminal.");
         }
 
-        // 5. Confirm cart is not empty and total is greater than zero
+        // 6. Early Idempotency Lookup (Executed BEFORE cart validations to support empty cart retries)
+        var existingOrder = await _db.LocalOrders
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.TenantId == currentTenantId && o.IdempotencyKey == request.IdempotencyKey, cancellationToken);
+
         var cartState = await _orderService.GetCartStateAsync(cancellationToken);
+
+        if (existingOrder != null)
+        {
+            // Verify fingerprint only if incoming request/cart has lines available
+            if (cartState != null && cartState.Lines.Count > 0)
+            {
+                var incomingFingerprint = BuildPaymentCompletionFingerprint(currentTenantId, cartState, request, currentLocationId, currentTerminalId, activeShift.Id, activeShift.BusinessDate);
+                var savedFingerprint = ExtractPayloadFingerprint(existingOrder.MetadataJson);
+
+                if (incomingFingerprint != savedFingerprint)
+                {
+                    _logger.LogWarning("Payment failed: Idempotency conflict detected for key '{IdempotencyKey}'", request.IdempotencyKey);
+                    return new PaymentCompletionResult(
+                        Success: false,
+                        ErrorCode: "IDEMPOTENCY_CONFLICT",
+                        ErrorMessage: "An order with this idempotency key already exists with a different payload.");
+                }
+            }
+
+            // Normal retry after successful completion: return saved result complete with print/outbox IDs
+            _logger.LogInformation("Payment completed: Returning existing completed order from idempotency key '{IdempotencyKey}'", request.IdempotencyKey);
+
+            var printJob = await _db.PrintQueue
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.OrderId == existingOrder.Id && p.PrintJobType == "Receipt", cancellationToken);
+
+            var outboxEvent = await _db.SyncOutbox
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.EventId == existingOrder.Id && s.EventType == "OrderCompleted", cancellationToken);
+
+            return new PaymentCompletionResult(
+                Success: true,
+                OrderId: existingOrder.Id,
+                ReceiptNumber: existingOrder.ReceiptNumber,
+                ChangeAmount: existingOrder.ChangeAmount,
+                ReceiptText: printJob?.RenderedContent,
+                PrintJobId: printJob?.Id,
+                OutboxEventId: outboxEvent?.Id);
+        }
+
+        // 7. Confirm cart is not empty and total is greater than zero
         if (cartState == null || cartState.Lines.Count == 0)
         {
             _logger.LogWarning("Payment failed: Active cart is empty.");
@@ -142,7 +197,7 @@ public sealed class PaymentService : IPaymentService
                 ErrorMessage: "Cart total must be greater than zero.");
         }
 
-        // 6. Validate tender list and amounts
+        // 8. Validate tender list and amounts
         if (request.Tenders == null || request.Tenders.Count == 0)
         {
             _logger.LogWarning("Payment failed: No tenders supplied in payment completion request.");
@@ -164,7 +219,7 @@ public sealed class PaymentService : IPaymentService
             }
         }
 
-        // 7. Verify tender methods exist
+        // 9. Verify tender methods exist
         var tenderMethodIds = request.Tenders.Select(t => t.TenderMethodId).Distinct().ToList();
         var dbTenderMethods = await _db.LocalTenderMethods
             .Where(m => tenderMethodIds.Contains(m.Id))
@@ -179,7 +234,7 @@ public sealed class PaymentService : IPaymentService
                 ErrorMessage: "One or more payment/tender methods are invalid.");
         }
 
-        // 8. Confirm total paid covers total due
+        // 10. Confirm total paid covers total due
         decimal totalTendered = MoneyRounder.Round(request.Tenders.Sum(t => t.Amount));
         decimal totalDue = cartState.TotalAmount;
 
@@ -192,7 +247,7 @@ public sealed class PaymentService : IPaymentService
                 ErrorMessage: "The total payment amount does not cover the balance due.");
         }
 
-        // 9. Compute change amount and enforce non-cash overpayment rejection
+        // 11. Compute change amount and enforce non-cash overpayment rejection
         decimal changeAmount = 0m;
         if (totalTendered > totalDue)
         {
@@ -214,7 +269,7 @@ public sealed class PaymentService : IPaymentService
             changeAmount = MoneyRounder.Round(totalTendered - totalDue);
         }
 
-        // 10. Generate next order sequence and receipt number
+        // 12. Generate next order sequence and receipt number
         long nextOrderSequence = 1;
         var lastOrder = await _db.LocalOrders
             .AsNoTracking()
@@ -230,29 +285,11 @@ public sealed class PaymentService : IPaymentService
         var businessDate = activeShift.BusinessDate;
         var receiptNumber = $"{businessDate:yyyyMMdd}-{currentTerminalId}-{nextOrderSequence:D5}";
 
-        // 11. Enforce idempotency key check if provided
-        var safeIdempotencyKey = string.IsNullOrWhiteSpace(request.IdempotencyKey)
-            ? Guid.NewGuid().ToString("N")
-            : request.IdempotencyKey;
+        // Compute payload fingerprint for new completion
+        var payloadFingerprint = BuildPaymentCompletionFingerprint(currentTenantId, cartState, request, currentLocationId, currentTerminalId, activeShift.Id, businessDate);
+        var metadataJson = BuildMetadataJson(payloadFingerprint);
 
-        if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
-        {
-            var existingOrder = await _db.LocalOrders
-                .AsNoTracking()
-                .FirstOrDefaultAsync(o => o.TenantId == currentTenantId && o.IdempotencyKey == request.IdempotencyKey, cancellationToken);
-
-            if (existingOrder != null)
-            {
-                _logger.LogInformation("Payment completed: Returning existing order from idempotency key '{IdempotencyKey}'", request.IdempotencyKey);
-                return new PaymentCompletionResult(
-                    Success: true,
-                    OrderId: existingOrder.Id,
-                    ReceiptNumber: existingOrder.ReceiptNumber,
-                    ChangeAmount: existingOrder.ChangeAmount);
-            }
-        }
-
-        // 12. Create LocalOrder, LocalOrderLines, and LocalPayments
+        // 13. Create LocalOrder, LocalOrderLines, and LocalPayments
         var correlationId = Guid.NewGuid().ToString("N");
         var orderId = Guid.NewGuid();
 
@@ -289,8 +326,8 @@ public sealed class PaymentService : IPaymentService
             CompletedOn = DateTimeOffset.UtcNow,
             VoidedOn = null,
             SyncedOn = null,
-            MetadataJson = null,
-            IdempotencyKey = safeIdempotencyKey,
+            MetadataJson = metadataJson,
+            IdempotencyKey = request.IdempotencyKey,
             CorrelationId = correlationId,
             IsActive = true,
             CreatedBy = currentSession.DisplayName,
@@ -391,7 +428,7 @@ public sealed class PaymentService : IPaymentService
             payments.Add(localPayment);
         }
 
-        // 13. Execute atomic SQLite transaction commit
+        // 14. Execute atomic SQLite transaction commit with Concurrency Unique Constraint Race Handler
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         string receiptText;
         SyncOutbox syncOutbox;
@@ -571,11 +608,58 @@ public sealed class PaymentService : IPaymentService
         catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
+
+            // Handle unique key index collision race condition gracefully
+            if (IsUniqueConstraintViolation(ex))
+            {
+                _logger.LogWarning(ex, "Transaction duplicate key collision detected for key '{IdempotencyKey}'. Attempting concurrency reload.", request.IdempotencyKey);
+
+                // Reload the existing committed order by key
+                var reloadedOrder = await _db.LocalOrders
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(o => o.TenantId == currentTenantId && o.IdempotencyKey == request.IdempotencyKey, cancellationToken);
+
+                if (reloadedOrder != null)
+                {
+                    // Fingerprint payload consistency check
+                    if (cartState != null && cartState.Lines.Count > 0)
+                    {
+                        var incomingFingerprint = BuildPaymentCompletionFingerprint(currentTenantId, cartState, request, currentLocationId, currentTerminalId, activeShift.Id, activeShift.BusinessDate);
+                        var savedFingerprint = ExtractPayloadFingerprint(reloadedOrder.MetadataJson);
+
+                        if (incomingFingerprint != savedFingerprint)
+                        {
+                            return new PaymentCompletionResult(
+                                Success: false,
+                                ErrorCode: "IDEMPOTENCY_CONFLICT",
+                                ErrorMessage: "An order with this idempotency key already exists with a different payload.");
+                        }
+                    }
+
+                    var printJob = await _db.PrintQueue
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.OrderId == reloadedOrder.Id && p.PrintJobType == "Receipt", cancellationToken);
+
+                    var outboxEvent = await _db.SyncOutbox
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(s => s.EventId == reloadedOrder.Id && s.EventType == "OrderCompleted", cancellationToken);
+
+                    return new PaymentCompletionResult(
+                        Success: true,
+                        OrderId: reloadedOrder.Id,
+                        ReceiptNumber: reloadedOrder.ReceiptNumber,
+                        ChangeAmount: reloadedOrder.ChangeAmount,
+                        ReceiptText: printJob?.RenderedContent,
+                        PrintJobId: printJob?.Id,
+                        OutboxEventId: outboxEvent?.Id);
+                }
+            }
+
             _logger.LogError(ex, "Transaction failed and rolled back while completing order.");
             throw;
         }
 
-        // 14. Clear active C# draft cart only after successful save
+        // 15. Clear active C# draft cart only after successful save
         try
         {
             await _orderService.ClearCartAsync(cancellationToken);
@@ -593,6 +677,98 @@ public sealed class PaymentService : IPaymentService
             ReceiptText: receiptText,
             PrintJobId: printQueue.Id,
             OutboxEventId: syncOutbox.Id);
+    }
+
+    private string BuildPaymentCompletionFingerprint(
+        int tenantId,
+        CartStateDto cartState,
+        PaymentCompletionRequest request,
+        int locationId,
+        int terminalId,
+        Guid shiftId,
+        DateOnly businessDate)
+    {
+        var details = new
+        {
+            TenantId = tenantId,
+            LocationId = locationId,
+            TerminalId = terminalId,
+            ShiftId = shiftId,
+            BusinessDate = businessDate,
+            Lines = cartState.Lines.Select(l => new
+            {
+                ItemId = l.ItemId,
+                VariantId = l.VariantId,
+                Quantity = l.Quantity,
+                UnitPrice = l.UnitPrice,
+                GrossAmount = l.GrossAmount,
+                DiscountAmount = l.DiscountAmount,
+                TaxAmount = l.TaxAmount,
+                NetAmount = l.NetAmount
+            }).OrderBy(l => l.ItemId).ThenBy(l => l.VariantId).ToList(),
+            Totals = new
+            {
+                cartState.SubtotalAmount,
+                cartState.DiscountAmount,
+                cartState.TaxAmount,
+                cartState.TotalAmount
+            },
+            Tenders = request.Tenders.Select(t => new
+            {
+                t.TenderMethodId,
+                Amount = MoneyRounder.Round(t.Amount),
+                ExternalPaymentReference = t.ExternalPaymentReference ?? string.Empty
+            }).OrderBy(t => t.TenderMethodId).ThenBy(t => t.Amount).ThenBy(t => t.ExternalPaymentReference).ToList(),
+            Guest = new
+            {
+                GuestName = request.GuestName?.Trim() ?? string.Empty,
+                GuestPhone = request.GuestPhone?.Trim() ?? string.Empty
+            }
+        };
+
+        var json = JsonSerializer.Serialize(details);
+        return ComputeSha256Hash(json);
+    }
+
+    private string? ExtractPayloadFingerprint(string? metadataJson)
+    {
+        if (string.IsNullOrWhiteSpace(metadataJson)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(metadataJson);
+            if (doc.RootElement.TryGetProperty("PayloadFingerprint", out var prop))
+            {
+                return prop.GetString();
+            }
+        }
+        catch
+        {
+            // Safe fallback
+        }
+        return null;
+    }
+
+    private string BuildMetadataJson(string fingerprint)
+    {
+        return JsonSerializer.Serialize(new { PayloadFingerprint = fingerprint });
+    }
+
+    private bool IsUniqueConstraintViolation(Exception ex)
+    {
+        if (ex is DbUpdateException dbEx)
+        {
+            var inner = dbEx.InnerException;
+            while (inner != null)
+            {
+                if (inner.Message.Contains("UNIQUE constraint failed") ||
+                    (inner.Message.Contains("SqliteException") && inner.Message.Contains("19")))
+                {
+                    return true;
+                }
+                inner = inner.InnerException;
+            }
+        }
+        return false;
     }
 
     private static string ComputeSha256Hash(string rawData)

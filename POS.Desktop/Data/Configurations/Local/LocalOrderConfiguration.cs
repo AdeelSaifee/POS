@@ -151,5 +151,9 @@ public class LocalOrderConfiguration : IEntityTypeConfiguration<LocalOrder>
         builder.HasIndex(x => new { x.TenantId, x.ReceiptNumber })
             .IsUnique()
             .HasDatabaseName("UX_LocalOrders_Tenant_ReceiptNumber");
+
+        builder.HasIndex(x => new { x.TenantId, x.IdempotencyKey })
+            .IsUnique()
+            .HasDatabaseName("UX_LocalOrders_Tenant_IdempotencyKey");
     }
 }

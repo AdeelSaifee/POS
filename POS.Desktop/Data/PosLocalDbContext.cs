@@ -73,6 +73,8 @@ public class PosLocalDbContext : DbContext
 
     public DbSet<LocalPayment> LocalPayments => Set<LocalPayment>();
 
+    public DbSet<LocalCashDrawerMovement> LocalCashDrawerMovements => Set<LocalCashDrawerMovement>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -143,6 +145,9 @@ public class PosLocalDbContext : DbContext
             .HasQueryFilter(x => x.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<LocalPayment>()
+            .HasQueryFilter(x => x.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<LocalCashDrawerMovement>()
             .HasQueryFilter(x => x.TenantId == CurrentTenantId);
     }
 }

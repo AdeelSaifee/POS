@@ -1,10 +1,22 @@
-# POS Desktop UI Integration - Current Session Context
+﻿# POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 5 / Milestone 5.4 - Payment & completion service — **COMPLETED**
-- **Group**: Group 5 (Task 5.4.10 - completed)
+- **Milestone**: Phase 5 / Milestone 5.5 - Cash control service â€” **IN PROGRESS**
+- **Group**: Group 1 (Tasks 5.5.1 to 5.5.3 - completed)
 
-## Status of All Milestone 5.4 Tasks (Current)
+## Status of All Milestone 5.5 Tasks (Current)
+- `[x]` Task 5.5.1 - Define ICashControlService
+- `[x]` Task 5.5.2 - Write CashDrawerMovement / local cash drawer movement persistence
+- `[x]` Task 5.5.3 - Attach reason codes
+- `[ ]` Task 5.5.4 - Enforce manager PIN
+- `[ ]` Task 5.5.5 - Compute drawer balance
+- `[ ]` Task 5.5.6 - Compute threshold alerts
+- `[ ]` Task 5.5.7 - Add handlers + ledger query
+- `[ ]` Task 5.5.8 - Wire cash_control.html + remove pos_safe_drops
+- `[ ]` Task 5.5.9 - Tie movements to active shift
+- `[ ]` Task 5.5.10 - Test drops/injections + alerts
+
+## Status of All Milestone 5.4 Tasks
 - `[x]` Task 5.4.1 - Define IPaymentService (Tender, change, completion contract)
 - `[x]` Task 5.4.2 - Record Payment per TenderMethod (Persist tenders cash/card/wallet/split)
 - `[x]` Task 5.4.3 - Compute cash change (Change = tendered - due, MoneyRounder-policy)
@@ -42,20 +54,32 @@
 
 ## Files Created/Changed in this Milestone
 
-### Group 5 (Task 5.4.10 - completed)
-- [MODIFY] `POS.Desktop.Tests/Shell/PaymentBridgeHandlerTests.cs` (+3 tests: missing `tenderMethodId` → MALFORMED_REQUEST; `guestName` mapped to `PaymentCompletionRequest.GuestName`; multiple tenders all mapped with amounts and external references)
+### Group 1 (Tasks 5.5.1 to 5.5.3 - completed)
+- [ADD] `POS.Desktop/Services/CashControl/ICashControlService.cs` (Defines core RecordMovementAsync generic contract and request/result records)
+- [ADD] `POS.Desktop/Services/CashControl/CashControlService.cs` (Implements RecordMovementAsync validation, pre-flight idempotency lookup, and transaction-isolated persistence)
+- [ADD] `POS.Desktop/Data/LocalEntities/LocalCashDrawerMovement.cs` (Append-only SQLite entity for local cash control persistence)
+- [ADD] `POS.Desktop/Data/Configurations/Local/LocalCashDrawerMovementConfiguration.cs` (EF Core mapping with positive and non-empty check constraints, unique sequence/idempotency keys, and shift query indexes)
+- [ADD] `POS.Desktop/Data/Migrations/Local/20260528140231_AddLocalCashDrawerMovementsTable.cs` (SQLite local database migration)
+- [ADD] `POS.Desktop.Tests/Services/CashControl/CashControlServiceTests.cs` (Comprehensive 12-test suite for unprovisioned, session, shift, amount, reason code, idempotency conflict, and append-only drop validations)
+- [MODIFY] `POS.Desktop/Data/PosLocalDbContext.cs` (Registered DbSet and CurrentTenantId query filter)
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs` (Registered ICashControlService as a Scoped business service)
 
-### Test count: 365 passing (was 362 after 5.4.9; +3 targeted bridge handler tests)
+### Test count: 377 passing (was 365; +12 new cash control tests)
+
+### Group 5 (Task 5.4.10 - completed)
+- [MODIFY] `POS.Desktop.Tests/Shell/PaymentBridgeHandlerTests.cs` (+3 tests: missing `tenderMethodId` â†’ MALFORMED_REQUEST; `guestName` mapped to `PaymentCompletionRequest.GuestName`; multiple tenders all mapped with amounts and external references)
+
+### Prior Test count: 365 passing (was 362 after 5.4.9; +3 targeted bridge handler tests)
 
 ### Group 4 (Task 5.4.9 - completed, post-review fixes applied)
 - [MODIFY] `POS.Desktop/Shell/PosWebMessageRouter.cs` (Added `payment.getTenderMethods` and `payment.complete` bridge handlers; added `using POS.Desktop.Data`, `using POS.Desktop.Services.Payments`, `using Microsoft.EntityFrameworkCore`)
-- [MODIFY] `POS.Desktop/Assets/ui/payment_screen.html` (Removed `sessionStorage` cart + demo fallback; removed `localStorage` terminal config read; removed `simulateCardPay`/`simulateWalletPay` with setTimeout; added `bridgeRequest()` helper; robust tender resolution via `getCashTenderMethod()`/`getCardTenderMethod()`/`getWalletTenderMethod()` with property-based fallbacks; stable per-attempt external refs via `getOrCreateCardRef()`/`getOrCreateWalletRef()` (`TXN-CARD-…`/`TXN-WALLET-…`); idempotency reset on every cash key, CLEAR, back, setExact, quick-amount select, split input change, wallet phone change, tender tab change; wallet phone sent as `guestPhone` in `payment.complete`; `approveWalletStub` guards against missing wallet method; `renderOrderSummaryFromState()` drives totals from backend; `buildReceipt()` removed)
-- [SYNC] `docs/ui-prototype/screens/payment_screen.html` (Byte-identical copy — SHA-256 verified)
+- [MODIFY] `POS.Desktop/Assets/ui/payment_screen.html` (Removed `sessionStorage` cart + demo fallback; removed `localStorage` terminal config read; removed `simulateCardPay`/`simulateWalletPay` with setTimeout; added `bridgeRequest()` helper; robust tender resolution via `getCashTenderMethod()`/`getCardTenderMethod()`/`getWalletTenderMethod()` with property-based fallbacks; stable per-attempt external refs via `getOrCreateCardRef()`/`getOrCreateWalletRef()` (`TXN-CARD-â€¦`/`TXN-WALLET-â€¦`); idempotency reset on every cash key, CLEAR, back, setExact, quick-amount select, split input change, wallet phone change, tender tab change; wallet phone sent as `guestPhone` in `payment.complete`; `approveWalletStub` guards against missing wallet method; `renderOrderSummaryFromState()` drives totals from backend; `buildReceipt()` removed)
+- [SYNC] `docs/ui-prototype/screens/payment_screen.html` (Byte-identical copy â€” SHA-256 verified)
 - [ADD] `POS.Desktop.Tests/Shell/PaymentBridgeHandlerTests.cs` (15 tests: endpoint registration, tender method DB query + sort, payload validation, success path, idempotency key mapping, external reference mapping, wallet guestPhone mapping, stable card ref mapping, service failure propagation, exception safe handling)
 - [ADD] `POS.Desktop.Tests/Shell/PaymentScreenStaticTests.cs` (24 static HTML tests: forbidden patterns, required bridge calls, stub functions, robust resolution helpers, stable ref helpers, wallet fallback body check, idempotency reset breadth, SHA-256 parity)
 - [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs` (Added assertions for `payment.getTenderMethods` and `payment.complete`; updated registered type count from 20 to 22)
 
-### Fix 4 confirmed — no code change needed
+### Fix 4 confirmed â€” no code change needed
 `LocalTenderMethod` has `HasQueryFilter(x => x.TenantId == CurrentTenantId)` in `PosLocalDbContext`. No `IsActive` field exists; all tenant-filtered rows are active. Current handler is correct.
 
 ### Test count after 5.4.9: 362 passing (was 325)
@@ -178,14 +202,14 @@ A `"ShiftOpen"` section was added to `appsettings.json`:
 ```
 
 ### Sanitization Rules
-- `CashDrawerLimit <= 0` → replaced with `DefaultCashDrawerLimit`
-- `AutoSafeDropThreshold <= 0` → replaced with `DefaultAutoSafeDropThreshold`
+- `CashDrawerLimit <= 0` â†’ replaced with `DefaultCashDrawerLimit`
+- `AutoSafeDropThreshold <= 0` â†’ replaced with `DefaultAutoSafeDropThreshold`
 - Null/whitespace checklist items removed; values trimmed; capped at `MaxChecklistItems` (10)
 
 ## Checkout Navigation Confirmation (Task 5.2.9)
 The `openShift()` function in `shift_open.html` transition flow:
 1. `shift.open` bridge call succeeds
-2. `.success-overlay.open` class applied → overlay fades in
+2. `.success-overlay.open` class applied â†’ overlay fades in
 3. Progress bar animates to 100% after 50ms
 4. `window.location.href = 'main_checkout.html'` fires after 1600ms
 
@@ -244,24 +268,24 @@ The `openShift()` function in `shift_open.html` transition flow:
 ## Search Checks (all operational screens)
 
 ### shift_open.html
-- `PKR 25,000` / `PKR 20,000` hardcoded text: ✗ Not present
-- `shift.getOpenPolicy` call: ✓ Present
-- `shift.open` call: ✓ Present
-- `id="cash-limit-text"` / `id="safe-drop-threshold-text"` / `id="shift-checklist"` placeholders: ✓ Present
-- `success-overlay` and `main_checkout.html` redirect: ✓ Present
+- `PKR 25,000` / `PKR 20,000` hardcoded text: âœ— Not present
+- `shift.getOpenPolicy` call: âœ“ Present
+- `shift.open` call: âœ“ Present
+- `id="cash-limit-text"` / `id="safe-drop-threshold-text"` / `id="shift-checklist"` placeholders: âœ“ Present
+- `success-overlay` and `main_checkout.html` redirect: âœ“ Present
 
 ### All 4 operational gate screens (main_checkout, payment_screen, cash_control, shift_close)
-- `shift.getCurrent` gate call: ✓ Present
-- `isOpen` check used for gate logic: ✓ Present
-- `shift_open.html` redirect on gate failure: ✓ Present
-- `localStorage` / `sessionStorage` used for gating: ✗ Not present
-- Raw exception text shown to cashier: ✗ Not present
+- `shift.getCurrent` gate call: âœ“ Present
+- `isOpen` check used for gate logic: âœ“ Present
+- `shift_open.html` redirect on gate failure: âœ“ Present
+- `localStorage` / `sessionStorage` used for gating: âœ— Not present
+- Raw exception text shown to cashier: âœ— Not present
 
 ## Deferred Items
 - Real pinpad/hardware integration deferred to Phase 7.6
 - Real printer wiring deferred to Phase 7.3
 
-## Verification Summary (Milestone 5.4 Group 5 — Task 5.4.10)
+## Verification Summary (Milestone 5.4 Group 5 â€” Task 5.4.10)
 
 ### Builds
 - `dotnet build POS.Desktop.Tests`: **0 errors / 0 warnings**
@@ -273,15 +297,15 @@ The `openShift()` function in `shift_open.html` transition flow:
 ### Static checks (payment_screen.html)
 | Check | Result |
 |---|---|
-| `sessionStorage.getItem('pos_cart')` absent | ✓ True |
-| `simulateCardPay` absent | ✓ True |
-| `simulateWalletPay` absent | ✓ True |
-| Fake 1800ms timeout absent | ✓ True |
-| Fake 2200ms timeout absent | ✓ True |
-| `order.getCart` call present | ✓ True |
-| `payment.getTenderMethods` call present | ✓ True |
-| `payment.complete` call present | ✓ True |
-| `receiptText` usage present | ✓ True |
+| `sessionStorage.getItem('pos_cart')` absent | âœ“ True |
+| `simulateCardPay` absent | âœ“ True |
+| `simulateWalletPay` absent | âœ“ True |
+| Fake 1800ms timeout absent | âœ“ True |
+| Fake 2200ms timeout absent | âœ“ True |
+| `order.getCart` call present | âœ“ True |
+| `payment.getTenderMethods` call present | âœ“ True |
+| `payment.complete` call present | âœ“ True |
+| `receiptText` usage present | âœ“ True |
 
 ### SHA-256 parity
 - `POS.Desktop/Assets/ui/payment_screen.html`: `AB8B001613275593DDAE4055B3CEBE1927928EC90AB957E93CA2C8FBA2D281B6`
@@ -294,5 +318,23 @@ The `openShift()` function in `shift_open.html` transition flow:
 - No production code modified
 - Milestone 5.4: **COMPLETE** (all 10 tasks)
 
+## Verification Summary (Milestone 5.5 Group 1)
+
+### Database-Level Safety Constraints
+- `CK_LocalCashDrawerMovement_TerminalSequence`: Ensures `TerminalSequence > 0`.
+- `CK_LocalCashDrawerMovement_ShiftId`: Guards against empty Guid (`ShiftId <> '00000000-0000-0000-0000-000000000000'`).
+
+### Next Steps / Review Notes
+- Cash drop reason code seed availability remains a follow-up before UI/bridge wiring if central sync does not provide CashControl reason codes.
+
+### Builds
+- `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: **0 errors / 0 warnings**
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests`: **377/377 passed** (365 existing + 12 new cash control tests)
+- `dotnet test POS.Tests`: **49/49 passed** (49 central API/core tests)
+
 ## Next Recommended Milestone
-- **Phase 5 / Milestone 5.5** (or next milestone per `DESKTOP_UI_MILESTONE_TASKS.md`)
+- **Phase 5 / Milestone 5.5 Group 2** (Task 5.5.4 onwards)
+

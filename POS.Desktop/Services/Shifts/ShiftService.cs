@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using POS.Desktop.Data;
 using POS.Desktop.Data.LocalEntities;
 using POS.Desktop.Services.Session;
@@ -21,17 +22,20 @@ public sealed class ShiftService : IShiftService
     private readonly ISessionService _sessionService;
     private readonly IProvisionedTerminalContext _provisionedTerminalContext;
     private readonly ILogger<ShiftService> _logger;
+    private readonly IOptions<ShiftOpenPolicyOptions> _policyOptions;
 
     public ShiftService(
         PosLocalDbContext db,
         ISessionService sessionService,
         IProvisionedTerminalContext provisionedTerminalContext,
-        ILogger<ShiftService> logger)
+        ILogger<ShiftService> logger,
+        IOptions<ShiftOpenPolicyOptions> policyOptions)
     {
         _db = db ?? throw new ArgumentNullException(nameof(db));
         _sessionService = sessionService ?? throw new ArgumentNullException(nameof(sessionService));
         _provisionedTerminalContext = provisionedTerminalContext ?? throw new ArgumentNullException(nameof(provisionedTerminalContext));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _policyOptions = policyOptions ?? throw new ArgumentNullException(nameof(policyOptions));
     }
 
     /// <inheritdoc />
@@ -194,5 +198,33 @@ public sealed class ShiftService : IShiftService
             OpeningFloat: openShift.OpeningCashAmount,
             Status: openShift.Status.ToString()
         );
+    }
+
+    /// <inheritdoc />
+    public Task<ShiftOpenPolicyResult> GetOpenPolicyAsync(CancellationToken cancellationToken = default)
+    {
+        var opts = _policyOptions.Value;
+
+        var cashLimit = opts.CashDrawerLimit > 0
+            ? opts.CashDrawerLimit
+            : ShiftOpenPolicyOptions.DefaultCashDrawerLimit;
+
+        var threshold = opts.AutoSafeDropThreshold > 0
+            ? opts.AutoSafeDropThreshold
+            : ShiftOpenPolicyOptions.DefaultAutoSafeDropThreshold;
+
+        var rawChecklist = opts.Checklist ?? [];
+        var checklist = rawChecklist
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Select(item => item.Trim())
+            .Take(ShiftOpenPolicyOptions.MaxChecklistItems)
+            .ToList();
+
+        if (checklist.Count == 0)
+        {
+            checklist = [..ShiftOpenPolicyOptions.DefaultChecklist()];
+        }
+
+        return Task.FromResult(new ShiftOpenPolicyResult(cashLimit, threshold, checklist));
     }
 }

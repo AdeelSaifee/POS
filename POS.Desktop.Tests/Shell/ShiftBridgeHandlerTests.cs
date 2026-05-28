@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -53,6 +54,7 @@ public sealed class ShiftBridgeHandlerTests : IDisposable
         services.AddSingleton<IProvisionedTerminalContext>(terminalContext);
         services.AddDbContext<PosLocalDbContext>(opt => opt.UseSqlite(_connection));
         services.AddScoped<IShiftService, ShiftService>();
+        services.Configure<ShiftOpenPolicyOptions>(opts => { }); // uses safe class-level defaults
 
         var provider = services.BuildServiceProvider();
         var scopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
@@ -349,5 +351,81 @@ public sealed class ShiftBridgeHandlerTests : IDisposable
         Assert.NotNull(response.Error);
         Assert.Equal("SHIFT_QUERY_FAILED", response.Error.Code);
         Assert.Equal("Failed to query current shift status.", response.Error.Message);
+    }
+
+    // ── Task 5.2.8 — shift.getOpenPolicy bridge handler tests ────────────────
+
+    [Fact]
+    public async Task HandleGetShiftOpenPolicyAsync_ReturnsSuccess_WithConfiguredValues()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ISessionService, OperatorSessionService>();
+        services.AddSingleton<IAuthService, StubAuthService>();
+        services.AddSingleton<IProvisionedTerminalContext>(new ProvisionedTerminalContext(new ProvisioningRecord(1, 101, 999)));
+        services.AddDbContext<PosLocalDbContext>(opt => opt.UseSqlite(_connection));
+        services.AddScoped<IShiftService, ShiftService>();
+        services.Configure<ShiftOpenPolicyOptions>(opts =>
+        {
+            opts.CashDrawerLimit = 35000m;
+            opts.AutoSafeDropThreshold = 28000m;
+            opts.Checklist = ["Check A", "Check B"];
+        });
+
+        var provider = services.BuildServiceProvider();
+        var scopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
+        var router = new PosWebMessageRouter(scopeFactory, NullLogger<PosWebMessageRouter>.Instance);
+
+        var request = MakeRequest("shift.getOpenPolicy");
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.True(response.Ok);
+        Assert.Null(response.Error);
+        Assert.NotNull(response.Payload);
+
+        var payloadJson = JsonSerializer.Serialize(response.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = JsonDocument.Parse(payloadJson);
+
+        Assert.Equal(35000m, doc.RootElement.GetProperty("cashDrawerLimit").GetDecimal());
+        Assert.Equal(28000m, doc.RootElement.GetProperty("autoSafeDropThreshold").GetDecimal());
+
+        var checklist = doc.RootElement.GetProperty("checklist");
+        Assert.Equal(JsonValueKind.Array, checklist.ValueKind);
+        Assert.Equal(2, checklist.GetArrayLength());
+        Assert.Equal("Check A", checklist[0].GetString());
+        Assert.Equal("Check B", checklist[1].GetString());
+    }
+
+    [Fact]
+    public async Task HandleGetShiftOpenPolicyAsync_ReturnsSuccess_WithSafeDefaults_WhenOptionsUnconfigured()
+    {
+        // Arrange — uses BuildRouterAndServicesAsync which registers default options
+        var (router, _, _) = await BuildRouterAndServicesAsync(tenantId: 1, isProvisioned: true);
+
+        var request = MakeRequest("shift.getOpenPolicy");
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.True(response.Ok);
+        Assert.Null(response.Error);
+        Assert.NotNull(response.Payload);
+
+        var payloadJson = JsonSerializer.Serialize(response.Payload, BridgeJsonSerializerOptions.Default);
+        using var doc = JsonDocument.Parse(payloadJson);
+
+        Assert.Equal(ShiftOpenPolicyOptions.DefaultCashDrawerLimit,
+            doc.RootElement.GetProperty("cashDrawerLimit").GetDecimal());
+        Assert.Equal(ShiftOpenPolicyOptions.DefaultAutoSafeDropThreshold,
+            doc.RootElement.GetProperty("autoSafeDropThreshold").GetDecimal());
+
+        var checklist = doc.RootElement.GetProperty("checklist");
+        Assert.Equal(JsonValueKind.Array, checklist.ValueKind);
+        Assert.Equal(ShiftOpenPolicyOptions.DefaultChecklist().Count, checklist.GetArrayLength());
     }
 }

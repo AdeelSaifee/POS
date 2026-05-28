@@ -22,4 +22,13 @@ public interface IShiftService
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A result containing current open shift details or false if none exists.</returns>
     Task<ShiftDetailsResult> GetCurrentShiftAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the configured shift-open policy (cash limits and pre-shift checklist).
+    /// Does not require an active session or open shift.
+    /// Always returns safe defaults if configuration is missing or partial.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A sanitised policy result ready for UI display.</returns>
+    Task<ShiftOpenPolicyResult> GetOpenPolicyAsync(CancellationToken cancellationToken = default);
 }

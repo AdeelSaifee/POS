@@ -90,6 +90,12 @@ public sealed class PosWebMessageRouter
             sp.GetRequiredService<IShiftService>(),
             req,
             ct));
+
+        // Task 5.2.8: Get shift-open policy (limits + checklist) from config.
+        Register("shift.getOpenPolicy", sp => (req, ct) => HandleGetShiftOpenPolicyAsync(
+            sp.GetRequiredService<IShiftService>(),
+            req,
+            ct));
     }
 
     /// <summary>
@@ -686,6 +692,43 @@ public sealed class PosWebMessageRouter
                 requestId: request.RequestId,
                 code: "SHIFT_QUERY_FAILED",
                 message: "Failed to query current shift status."
+            );
+        }
+    }
+
+    /// <summary>
+    /// Handles the shift.getOpenPolicy message.
+    /// Returns configured cash-drawer limits and pre-shift checklist from appsettings.
+    /// Does not require an active session or open shift.
+    /// Never exposes internal exception details to the client.
+    /// </summary>
+    private async Task<BridgeResponseEnvelope> HandleGetShiftOpenPolicyAsync(
+        IShiftService shiftService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var policy = await shiftService.GetOpenPolicyAsync(cancellationToken);
+            return BridgeResponseEnvelope.Success(
+                type: request.Type,
+                requestId: request.RequestId,
+                payload: new
+                {
+                    cashDrawerLimit = policy.CashDrawerLimit,
+                    autoSafeDropThreshold = policy.AutoSafeDropThreshold,
+                    checklist = policy.Checklist
+                }
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve shift open policy.");
+            return BridgeResponseEnvelope.Failure(
+                type: request.Type,
+                requestId: request.RequestId,
+                code: "POLICY_FETCH_FAILED",
+                message: "Failed to retrieve shift open policy."
             );
         }
     }

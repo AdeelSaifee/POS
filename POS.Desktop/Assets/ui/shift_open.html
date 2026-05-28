@@ -397,7 +397,7 @@
         <div class="policy-icon"><span class="icon">account_balance_wallet</span></div>
         <div>
           <div class="policy-title">Cash Drawer Limit</div>
-          <div class="policy-desc">Operating limit is <strong>PKR 25,000</strong>. Excess cash must be deposited before transactions resume.</div>
+          <div class="policy-desc">Operating limit is <strong id="cash-limit-text">Loading…</strong>. Excess cash must be deposited before transactions resume.</div>
         </div>
       </div>
 
@@ -405,7 +405,7 @@
         <div class="policy-icon"><span class="icon">security</span></div>
         <div>
           <div class="policy-title">Auto Safe-Drop Threshold</div>
-          <div class="policy-desc">System triggers a mandatory safe-drop alert at <strong>PKR 20,000</strong> to minimize counter risk.</div>
+          <div class="policy-desc">System triggers a mandatory safe-drop alert at <strong id="safe-drop-threshold-text">Loading…</strong> to minimize counter risk.</div>
         </div>
       </div>
 
@@ -419,11 +419,7 @@
 
       <div style="margin-top:4px">
         <div class="checklist-title">Pre-Shift Checklist</div>
-        <div class="check-item"><span class="icon">check_circle</span>Physical cash counted &amp; verified</div>
-        <div class="check-item"><span class="icon">check_circle</span>Barcode scanner powered on</div>
-        <div class="check-item"><span class="icon">check_circle</span>Receipt printer has paper loaded</div>
-        <div class="check-item"><span class="icon">check_circle</span>Card terminal connected &amp; tested</div>
-        <div class="check-item"><span class="icon">check_circle</span>Product catalog synced &amp; up to date</div>
+        <div id="shift-checklist"></div>
       </div>
     </div>
 
@@ -653,10 +649,79 @@ async function clearDesktopSession(reason) {
   localStorage.removeItem('terminal_operator');
 }
 
+// ── Shift Open Policy (Task 5.2.8) ───────────────────────────────────────────
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderShiftPolicy(policy) {
+  const fmt = new Intl.NumberFormat('en-PK');
+
+  const cashLimitEl = document.getElementById('cash-limit-text');
+  if (cashLimitEl) cashLimitEl.textContent = 'PKR ' + fmt.format(policy.cashDrawerLimit);
+
+  const safeDropEl = document.getElementById('safe-drop-threshold-text');
+  if (safeDropEl) safeDropEl.textContent = 'PKR ' + fmt.format(policy.autoSafeDropThreshold);
+
+  const checklistEl = document.getElementById('shift-checklist');
+  if (checklistEl && Array.isArray(policy.checklist) && policy.checklist.length > 0) {
+    checklistEl.innerHTML = policy.checklist
+      .map(item => '<div class="check-item"><span class="icon">check_circle</span>' + escapeHtml(item) + '</div>')
+      .join('');
+  } else {
+    renderShiftPolicyDefaults();
+  }
+}
+
+function renderShiftPolicyDefaults() {
+  // Safe UI fallback defaults matching ShiftOpenPolicyOptions defaults.
+  const fmt = new Intl.NumberFormat('en-PK');
+
+  const cashLimitEl = document.getElementById('cash-limit-text');
+  if (cashLimitEl) cashLimitEl.textContent = 'PKR ' + fmt.format(25000);
+
+  const safeDropEl = document.getElementById('safe-drop-threshold-text');
+  if (safeDropEl) safeDropEl.textContent = 'PKR ' + fmt.format(20000);
+
+  const checklistEl = document.getElementById('shift-checklist');
+  if (checklistEl) {
+    const defaults = [
+      'Physical cash counted &amp; verified',
+      'Barcode scanner powered on',
+      'Receipt printer has paper loaded',
+      'Card terminal connected &amp; tested',
+      'Product catalog synced &amp; up to date'
+    ];
+    checklistEl.innerHTML = defaults
+      .map(item => '<div class="check-item"><span class="icon">check_circle</span>' + item + '</div>')
+      .join('');
+  }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('date-display').textContent = today;
   document.getElementById('date-field').textContent   = today;
+
+  // Task 5.2.8: Load shift open policy from config via bridge.
+  // Non-blocking: renders safe UI fallback defaults on any failure.
+  try {
+    if (window.posBridge && window.posBridge.isAvailable && window.posBridge.isAvailable()) {
+      const policy = await window.posBridge.request('shift.getOpenPolicy', null);
+      renderShiftPolicy(policy);
+    } else {
+      renderShiftPolicyDefaults();
+    }
+  } catch (e) {
+    console.error('[Policy] Failed to load shift open policy:', e);
+    renderShiftPolicyDefaults();
+  }
 
   let opName = 'Operator';
   let opColor = '#10B981';

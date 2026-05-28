@@ -12,6 +12,7 @@ using POS.Desktop.Services.Session;
 using POS.Desktop.Services.Auth;
 using POS.Desktop.Services.Shifts;
 using POS.Desktop.Shell;
+using Microsoft.Extensions.Options;
 using System.IO;
 
 namespace POS.Desktop.Configuration;
@@ -72,6 +73,7 @@ public static class DesktopHostBuilder
                 services.AddScoped<ITerminalProvisioningStore, EfTerminalProvisioningStore>();
                 services.AddSingleton<TerminalProvisioningStartupLoader>();
                 services.AddScoped<IShiftService, ShiftService>();
+                services.Configure<ShiftOpenPolicyOptions>(hostContext.Configuration.GetSection("ShiftOpen"));
 
                 // Register context first as DbContext depends on it.
                 // ProvisioningConfigLoader seeds the context with the appsettings.json value (normally

@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using POS.Desktop.Data.LocalEntities;
 using POS.Desktop.Services.Provisioning;
 using POS.Desktop.Services.Session;
@@ -63,7 +65,7 @@ public class ShiftServiceTests : IDisposable
         sessionService.StartSession(inMemorySession);
 
         var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.OpenShiftAsync(5000m);
@@ -95,7 +97,7 @@ public class ShiftServiceTests : IDisposable
         using var db = _dbHarness.CreateUnprovisionedDbContext();
         var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
         var provisioningContext = new ProvisionedTerminalContext(); // Unprovisioned by default
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.OpenShiftAsync(5000m);
@@ -114,7 +116,7 @@ public class ShiftServiceTests : IDisposable
         using var db = _dbHarness.CreateProvisionedDbContext(tenantId);
         var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance); // No active session
         var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, 101, 999));
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.OpenShiftAsync(5000m);
@@ -144,7 +146,7 @@ public class ShiftServiceTests : IDisposable
         ));
 
         var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.OpenShiftAsync(5000m);
@@ -189,7 +191,7 @@ public class ShiftServiceTests : IDisposable
         ));
 
         var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.OpenShiftAsync(5000m);
@@ -234,7 +236,7 @@ public class ShiftServiceTests : IDisposable
         ));
 
         var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.OpenShiftAsync(5000m);
@@ -281,7 +283,7 @@ public class ShiftServiceTests : IDisposable
         ));
 
         var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.OpenShiftAsync(invalidFloat);
@@ -341,7 +343,7 @@ public class ShiftServiceTests : IDisposable
         ));
 
         var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.OpenShiftAsync(5000m);
@@ -402,7 +404,7 @@ public class ShiftServiceTests : IDisposable
         ));
 
         var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.OpenShiftAsync(5000m);
@@ -453,7 +455,7 @@ public class ShiftServiceTests : IDisposable
 
         var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
         var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.GetCurrentShiftAsync();
@@ -476,7 +478,7 @@ public class ShiftServiceTests : IDisposable
 
         var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
         var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.GetCurrentShiftAsync();
@@ -493,7 +495,7 @@ public class ShiftServiceTests : IDisposable
         using var db = _dbHarness.CreateUnprovisionedDbContext();
         var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
         var provisioningContext = new ProvisionedTerminalContext(); // Unprovisioned by default
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.GetCurrentShiftAsync();
@@ -544,7 +546,7 @@ public class ShiftServiceTests : IDisposable
 
         var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
         var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.GetCurrentShiftAsync();
@@ -604,7 +606,7 @@ public class ShiftServiceTests : IDisposable
         ));
 
         var provisioningContext = new ProvisionedTerminalContext(new ProvisioningRecord(tenantId, locationId, terminalId));
-        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance);
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, Microsoft.Extensions.Options.Options.Create(new ShiftOpenPolicyOptions()));
 
         // Act
         var result = await shiftService.OpenShiftAsync(5000m);
@@ -613,5 +615,129 @@ public class ShiftServiceTests : IDisposable
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Shift);
         Assert.Equal(ShiftStatus.Open, result.Shift.Status);
+    }
+
+    // ── Task 5.2.8 — GetOpenPolicyAsync tests ────────────────────────────────
+
+    [Fact]
+    public async Task GetOpenPolicyAsync_ReturnsConfiguredValues()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateUnprovisionedDbContext();
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var provisioningContext = new ProvisionedTerminalContext();
+        var opts = Options.Create(new ShiftOpenPolicyOptions
+        {
+            CashDrawerLimit = 30000m,
+            AutoSafeDropThreshold = 22000m,
+            Checklist = ["Step A", "Step B", "Step C"]
+        });
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, opts);
+
+        // Act
+        var result = await shiftService.GetOpenPolicyAsync();
+
+        // Assert
+        Assert.Equal(30000m, result.CashDrawerLimit);
+        Assert.Equal(22000m, result.AutoSafeDropThreshold);
+        Assert.Equal(3, result.Checklist.Count);
+        Assert.Equal("Step A", result.Checklist[0]);
+        Assert.Equal("Step C", result.Checklist[2]);
+    }
+
+    [Fact]
+    public async Task GetOpenPolicyAsync_ReturnsDefaults_WhenCashDrawerLimitZero()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateUnprovisionedDbContext();
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var provisioningContext = new ProvisionedTerminalContext();
+        var opts = Options.Create(new ShiftOpenPolicyOptions { CashDrawerLimit = 0m });
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, opts);
+
+        // Act
+        var result = await shiftService.GetOpenPolicyAsync();
+
+        // Assert
+        Assert.Equal(ShiftOpenPolicyOptions.DefaultCashDrawerLimit, result.CashDrawerLimit);
+    }
+
+    [Fact]
+    public async Task GetOpenPolicyAsync_ReturnsDefaults_WhenThresholdZero()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateUnprovisionedDbContext();
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var provisioningContext = new ProvisionedTerminalContext();
+        var opts = Options.Create(new ShiftOpenPolicyOptions { AutoSafeDropThreshold = 0m });
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, opts);
+
+        // Act
+        var result = await shiftService.GetOpenPolicyAsync();
+
+        // Assert
+        Assert.Equal(ShiftOpenPolicyOptions.DefaultAutoSafeDropThreshold, result.AutoSafeDropThreshold);
+    }
+
+    [Fact]
+    public async Task GetOpenPolicyAsync_ReturnsDefaults_WhenChecklistEmpty()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateUnprovisionedDbContext();
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var provisioningContext = new ProvisionedTerminalContext();
+        var opts = Options.Create(new ShiftOpenPolicyOptions { Checklist = [] });
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, opts);
+
+        // Act
+        var result = await shiftService.GetOpenPolicyAsync();
+
+        // Assert
+        var defaults = ShiftOpenPolicyOptions.DefaultChecklist();
+        Assert.Equal(defaults.Count, result.Checklist.Count);
+        Assert.Equal(defaults[0], result.Checklist[0]);
+    }
+
+    [Fact]
+    public async Task GetOpenPolicyAsync_SanitizesChecklist_RemovesNullAndWhitespace()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateUnprovisionedDbContext();
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var provisioningContext = new ProvisionedTerminalContext();
+        var opts = Options.Create(new ShiftOpenPolicyOptions
+        {
+            Checklist = [null!, "  ", "Valid Item", "  Trimmed  ", ""]
+        });
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, opts);
+
+        // Act
+        var result = await shiftService.GetOpenPolicyAsync();
+
+        // Assert — only 2 valid items survive after null/whitespace removal
+        Assert.Equal(2, result.Checklist.Count);
+        Assert.Equal("Valid Item", result.Checklist[0]);
+        Assert.Equal("Trimmed", result.Checklist[1]);
+    }
+
+    [Fact]
+    public async Task GetOpenPolicyAsync_CapsChecklist_At10Items()
+    {
+        // Arrange
+        using var db = _dbHarness.CreateUnprovisionedDbContext();
+        var sessionService = new OperatorSessionService(NullLogger<OperatorSessionService>.Instance);
+        var provisioningContext = new ProvisionedTerminalContext();
+        var fifteenItems = new List<string>();
+        for (int i = 1; i <= 15; i++) fifteenItems.Add($"Item {i}");
+        var opts = Options.Create(new ShiftOpenPolicyOptions { Checklist = fifteenItems });
+        var shiftService = new ShiftService(db, sessionService, provisioningContext, NullLogger<ShiftService>.Instance, opts);
+
+        // Act
+        var result = await shiftService.GetOpenPolicyAsync();
+
+        // Assert
+        Assert.Equal(ShiftOpenPolicyOptions.MaxChecklistItems, result.Checklist.Count);
+        Assert.Equal("Item 1", result.Checklist[0]);
+        Assert.Equal("Item 10", result.Checklist[9]);
     }
 }

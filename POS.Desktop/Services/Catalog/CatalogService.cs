@@ -114,6 +114,18 @@ public sealed class CatalogService : ICatalogService
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<CatalogItemDto?> FindByVariantIdAsync(
+        int variantId,
+        CancellationToken cancellationToken = default)
+    {
+        if (variantId <= 0)
+            return null;
+
+        return await BuildItemQuery()
+            .Where(x => x.VariantId == variantId)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     // ------------------------------------------------------------------
     // Query builder
     // ------------------------------------------------------------------

@@ -31,4 +31,10 @@ public interface ICatalogService
     /// Returns null when no match is found or the identifier is blank.
     /// </summary>
     Task<CatalogItemDto?> FindByIdentifierAsync(string identifierValue, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finds a single item by its variant ID.
+    /// Returns null when no match is found or the variant ID is invalid.
+    /// </summary>
+    Task<CatalogItemDto?> FindByVariantIdAsync(int variantId, CancellationToken cancellationToken = default);
 }

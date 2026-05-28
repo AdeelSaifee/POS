@@ -2,13 +2,13 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 5 / Milestone 5.3 - Order / cart service
-- **Group**: Group 1 (Tasks 5.3.1 and 5.3.2) - Completed
+- **Group**: Group 2 (Tasks 5.3.3 and 5.3.4 - completed)
 
 ## Status of All Milestone 5.3 Tasks
 - `[x]` Task 5.3.1 - Define IOrderService
 - `[x]` Task 5.3.2 - Decide draft persistence
-- `[ ]` Task 5.3.3 - Implement add/qty/remove
-- `[ ]` Task 5.3.4 - Implement discount handling
+- `[x]` Task 5.3.3 - Implement add/qty/remove
+- `[x]` Task 5.3.4 - Implement discount handling
 - `[ ]` Task 5.3.5 - Implement totals calculation
 - `[ ]` Task 5.3.6 - Implement tax via TaxRule
 - `[ ]` Task 5.3.7 - Centralize money rounding
@@ -30,15 +30,25 @@
 
 ## Files Created/Changed in this Milestone
 
-### Group 1 (Tasks 5.3.1 and 5.3.2 — uncommitted)
+### Group 2 (Tasks 5.3.3 and 5.3.4 - completed)
+- [ADD] `POS.Desktop/Services/Orders/IDraftCartStore.cs`
+- [ADD] `POS.Desktop/Services/Orders/DraftCartStore.cs`
+- [ADD] `POS.Desktop/Services/Orders/OrderService.cs`
+- [ADD] `POS.Desktop/Services/Orders/OrderValidationException.cs`
+- [ADD] `POS.Desktop.Tests/Services/Orders/OrderServiceTests.cs`
+- [MODIFY] `POS.Desktop/Services/Catalog/ICatalogService.cs`
+- [MODIFY] `POS.Desktop/Services/Catalog/CatalogService.cs`
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs`
+
+### Group 1 (Tasks 5.3.1 and 5.3.2 - committed/pushed)
 - [ADD] `POS.Desktop/Services/Orders/IOrderService.cs`
 - [ADD] `POS.Desktop/Services/Orders/CartStateDto.cs`
 - [ADD] `POS.Desktop/Services/Orders/CartLineDto.cs`
 
-### Group 5 (Task 5.2.10 — committed)
-- [SYNC-FIX] `docs/ui-prototype/screens/main_checkout.html` — stale copy (hardcoded ITEMS[]/CATEGORIES[]) synced from authoritative Assets version
+### Group 5 (Task 5.2.10 - committed)
+- [SYNC-FIX] `docs/ui-prototype/screens/main_checkout.html` - stale copy (hardcoded ITEMS[]/CATEGORIES[]) synced from authoritative Assets version
 
-### Group 4 (Tasks 5.2.8, 5.2.9 — committed: `ad24f24`)
+### Group 4 (Tasks 5.2.8, 5.2.9 - committed: `ad24f24`)
 - [ADD] `POS.Desktop/Services/Shifts/ShiftOpenPolicyOptions.cs`
 - [ADD] `POS.Desktop/Services/Shifts/ShiftOpenPolicyResult.cs`
 - [MODIFY] `POS.Desktop/Services/Shifts/IShiftService.cs`
@@ -108,7 +118,7 @@ A `"ShiftOpen"` section was added to `appsettings.json`:
 ```
 
 ### Typed Options
-`POS.Desktop/Services/Shifts/ShiftOpenPolicyOptions.cs` — constants `DefaultCashDrawerLimit`, `DefaultAutoSafeDropThreshold`, `MaxChecklistItems` (10), and `DefaultChecklist()` ensure a single authoritative source for defaults used by both the service and tests.
+`POS.Desktop/Services/Shifts/ShiftOpenPolicyOptions.cs` - constants `DefaultCashDrawerLimit`, `DefaultAutoSafeDropThreshold`, `MaxChecklistItems` (10), and `DefaultChecklist()` ensure a single authoritative source for defaults used by both the service and tests.
 
 ### Bridge Endpoint
 `shift.getOpenPolicy` registered in `PosWebMessageRouter`. Requires no active session or open shift. Returns:
@@ -140,25 +150,26 @@ The `openShift()` function in `shift_open.html` already had the correct flow fro
 No changes were required to this flow.
 
 ## Important Decisions & Gate Behaviour
+- **Singleton DraftCartStore & Scoped OrderService:** To manage cart state across multiple bridge requests within transient message scopes, the cart's backing store (`DraftCartStore`) is registered as a thread-safe process-lifetime `Singleton`. The business logic layer (`OrderService`) is registered as `Scoped` so that it can inject scoped services (like `ICatalogService` and database contexts) safely without creating captive dependencies.
 - **Database Gated Authority:** All operational screens (`main_checkout.html`, `payment_screen.html`, `cash_control.html`, `shift_close.html`) now asynchronously request the `"shift.getCurrent"` bridge endpoint on `DOMContentLoaded`. If the SQLite database does not record an open active shift (`isOpen: false`), they show a user-friendly error toast (`Please open your shift first.`) and redirect to `shift_open.html` after a `1.5-second` delay.
 - **Fail Safe / Locked Terminal:** If the bridge transport is unavailable, terminal session context is invalid, or the terminal is unprovisioned, the screens fail closed/locked and redirect immediately to `shift_open.html` without exposing internal exception details.
 - **Consistent Bridge Contracts:** Leveraged the `"shift.getCurrent"` message type across all operational flows, returning structured success payloads of type `ShiftDetailsResult`.
 - **Strict Location Isolation Gating:** Both `OpenShiftAsync` and `GetCurrentShiftAsync` filter open shifts and sequences strictly by location and terminal identifier (`LocationId == CurrentLocationId` and `TerminalId == CurrentTerminalId`), ensuring shifts opened at different locations do not bleed through.
 - **Identical Copies:** Kept `POS.Desktop/Assets/ui/*.html` and `docs/ui-prototype/screens/*.html` identically synchronized. All 5 milestone-touched screens SHA-256 verified identical after Group 5 sync fix.
 
-## Verification Summary (Milestone 5.2 Group 5 — FINAL)
+## Verification Summary (Milestone 5.3 Group 2)
 
 ### Builds
 - `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: **0 errors / 0 warnings**
 - `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
 
 ### Tests
-- `dotnet test POS.Desktop.Tests`: **250/250 passed**
+- `dotnet test POS.Desktop.Tests`: **268/268 passed** (includes 18 new unit tests for `OrderService`)
 - `dotnet test POS.Tests`: **49/49 passed**
 
 ### Git hygiene
 - `git diff --check`: Zero whitespace/layout errors
-- `git status`: Clean (no uncommitted changes prior to Group 1)
+- `git status`: Only context update + new/modified Group 2 files (uncommitted)
 
 ### SHA-256 sync check (all 5 milestone screens)
 | File | Assets hash | Result |
@@ -171,7 +182,7 @@ No changes were required to this flow.
 | **All files synchronized** | | **True** |
 
 ### Bug found and fixed in Group 5
-- **`docs/ui-prototype/screens/main_checkout.html` was stale** — still contained hardcoded `ITEMS[]` / `CATEGORIES[]` arrays from before Group 3. The `POS.Desktop/Assets/ui/main_checkout.html` (authoritative) already had bridge-backed catalog loading (`catalogItems` / `catalogCategories`). Fixed by syncing the docs copy from Assets. SHA-256 verified identical after fix.
+- **`docs/ui-prototype/screens/main_checkout.html` was stale** - still contained hardcoded `ITEMS[]` / `CATEGORIES[]` arrays from before Group 3. The `POS.Desktop/Assets/ui/main_checkout.html` (authoritative) already had bridge-backed catalog loading (`catalogItems` / `catalogCategories`). Fixed by syncing the docs copy from Assets. SHA-256 verified identical after fix.
 
 ### Runtime GUI verification
 Runtime smoke test through the WebView2 host requires launching the desktop application, which cannot be performed from the CLI session. Code review, bridge contract tests, and all automated tests confirm correct behavior.
@@ -201,7 +212,7 @@ Runtime smoke test through the WebView2 host requires launching the desktop appl
 | Raw exception text shown to cashier | ✗ Not present |
 
 ### Deferred items (not bugs for 5.2)
-- `pos_shift_float` / `pos_shift_open` references in `cash_control.html` and `shift_close.html` are demo metric artifacts inside `updateMetrics()` / `loadMetrics()` / `executeShiftClose()` — NOT access gates. Deferred to Milestones 5.5 and 5.6.
+- `pos_shift_float` / `pos_shift_open` references in `cash_control.html` and `shift_close.html` are demo metric artifacts inside `updateMetrics()` / `loadMetrics()` / `executeShiftClose()` - NOT access gates. Deferred to Milestones 5.5 and 5.6.
 
 ## Next Recommended Group
-- **Group 2**: Tasks 5.3.3 to 5.3.4 only — Implement add/qty/remove and discount handling.
+- **Group 3 - Tasks 5.3.5 to 5.3.7 only - totals calculation, TaxRule tax, and centralized money rounding.**

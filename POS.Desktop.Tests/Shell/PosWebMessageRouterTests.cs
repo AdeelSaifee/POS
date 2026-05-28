@@ -43,6 +43,16 @@ public class PosWebMessageRouterTests
         Assert.True(router.CanHandle("catalog.listItems"));
         Assert.True(router.CanHandle("catalog.searchItems"));
         Assert.True(router.CanHandle("catalog.lookupByIdentifier"));
+        Assert.True(router.CanHandle("shift.open"));
+        Assert.True(router.CanHandle("shift.getCurrent"));
+        Assert.True(router.CanHandle("shift.getOpenPolicy"));
+        Assert.True(router.CanHandle("order.getCart"));
+        Assert.True(router.CanHandle("order.addItem"));
+        Assert.True(router.CanHandle("order.updateLineQuantity"));
+        Assert.True(router.CanHandle("order.removeItem"));
+        Assert.True(router.CanHandle("order.clearCart"));
+        Assert.True(router.CanHandle("order.applyDiscount"));
+        Assert.True(router.CanHandle("order.removeDiscount"));
     }
 
     [Fact]
@@ -127,7 +137,14 @@ public class PosWebMessageRouterTests
         Assert.Contains("shift.open", types);
         Assert.Contains("shift.getCurrent", types);
         Assert.Contains("shift.getOpenPolicy", types);
-        Assert.Equal(13, types.Count);
+        Assert.Contains("order.getCart", types);
+        Assert.Contains("order.addItem", types);
+        Assert.Contains("order.updateLineQuantity", types);
+        Assert.Contains("order.removeItem", types);
+        Assert.Contains("order.clearCart", types);
+        Assert.Contains("order.applyDiscount", types);
+        Assert.Contains("order.removeDiscount", types);
+        Assert.Equal(20, types.Count);
     }
 
     [Fact]

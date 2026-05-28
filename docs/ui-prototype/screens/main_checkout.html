@@ -972,6 +972,7 @@ const CAT_COLORS = {
 // --- STATE -------------------------------------------------------
 // activeCategoryId: null = All Items; numeric ID = specific bridge category.
 let currentCart    = [];
+let latestCartState = null;
 let activeCategoryId = null;
 let activeDiscount = 0;
 let activeVoidLineItem = null;
@@ -980,6 +981,34 @@ let qtyOverrideTemp = '';
 let selectedLineId  = null;
 let orderSeq = 42;
 let _searchTimer = null;
+
+function updateLocalCartState(state) {
+  latestCartState = state;
+  if (state && Array.isArray(state.lines)) {
+    currentCart = state.lines.map(line => ({
+      id: String(line.id || line.variantId),
+      itemId: line.itemId,
+      variantId: line.variantId,
+      name: line.name,
+      qty: line.quantity,
+      price: line.unitPrice,
+      unit: line.unit || '',
+      cat: line.categoryCode || 'catalog'
+    }));
+  } else {
+    currentCart = [];
+  }
+}
+
+async function loadCartFromBridge() {
+  try {
+    const state = await bridgeRequest('order.getCart', null);
+    updateLocalCartState(state);
+  } catch (e) {
+    console.error('[Cart] Failed to load cart:', e);
+    showToast('Failed to load cart from service.', 'error');
+  }
+}
 
 // ─── UTILS ───────────────────────────────────
 function fmt(n) { return 'PKR ' + new Intl.NumberFormat('en-PK').format(n); }
@@ -1116,18 +1145,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   orderSeq = Math.floor(Math.random() * 9000) + 1000;
   document.getElementById('order-number-display').textContent = '#' + orderSeq;
 
-  // Load cart
-  const savedCart = sessionStorage.getItem('pos_cart');
-  if (savedCart) {
-    try {
-      currentCart = JSON.parse(savedCart);
-    } catch (e) {
-      currentCart = [];
-    }
-  } else {
-    currentCart = [];
-    saveCartToSession();
-  }
+  // Load cart from bridge
+  await loadCartFromBridge();
 
   // Load customer
   const cust = sessionStorage.getItem('pos_attached_customer');
@@ -1151,7 +1170,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   window.posBridgeTransport?.sendPing?.("main_checkout");
 });
 
-function saveCartToSession() { sessionStorage.setItem('pos_cart', JSON.stringify(currentCart)); }
+function saveCartToSession() {}
 
 // --- CATEGORIES --------------------------------------------------
 // Renders the category chip row from catalogCategories (bridge-loaded).
@@ -1289,39 +1308,35 @@ async function simulateBarcodeScan() {
 // --- CART --------------------------------------------------------
 // addToCart accepts a full CatalogItemDto from the catalog cache or a bridge
 // lookupByIdentifier response. Cart line id = String(variantId) for uniqueness.
-function addToCart(item) {
+async function addToCart(item) {
   if (!item) return;
-  const variantId = String(item.variantId);
-  const ex = currentCart.find(l => l.id === variantId);
-  if (ex) {
-    ex.qty++;
-    showToast(escapeHtml(item.itemName) + ' qty updated', 'success');
-  } else {
-    currentCart.push({
-      id:        variantId,
-      itemId:    item.itemId,
-      variantId: item.variantId,
-      name:      item.itemName,
-      qty:       1,
-      price:     item.unitPrice,
-      unit:      item.unitCode,
-      cat:       item.categoryCode || item.categoryName || 'catalog'
-    });
+  try {
+    const state = await bridgeRequest('order.addItem', { variantId: Number(item.variantId), quantity: 1 });
+    updateLocalCartState(state);
     showToast('Added: ' + escapeHtml(item.itemName), 'success');
+    renderCart();
+    renderGrid();
+  } catch (e) {
+    showToast(e.message || 'Failed to add item.', 'warning');
+    console.error('[Cart] addItem failed:', e);
   }
-  saveCartToSession();
-  renderCart();
-  renderGrid();
 }
 
-function changeLineQty(itemId, delta) {
+async function changeLineQty(itemId, delta) {
   const line = currentCart.find(l => l.id === itemId);
   if (!line) return;
-  if (line.qty + delta <= 0) { promptVoidItem(itemId); return; }
-  line.qty += delta;
-  saveCartToSession();
-  renderCart();
-  renderGrid();
+  const targetQty = line.qty + delta;
+  if (targetQty <= 0) { promptVoidItem(itemId); return; }
+
+  try {
+    const state = await bridgeRequest('order.updateLineQuantity', { variantId: Number(line.variantId), quantity: targetQty });
+    updateLocalCartState(state);
+    renderCart();
+    renderGrid();
+  } catch (e) {
+    showToast(e.message || 'Failed to update quantity.', 'warning');
+    console.error('[Cart] updateLineQuantity failed:', e);
+  }
 }
 
 function renderCart() {
@@ -1338,8 +1353,7 @@ function renderCart() {
         <p style="font-size:12px;color:#94A3B8;margin:4px 0 0;">Scan barcode or tap an item to add</p>
       </div>`;
     document.getElementById('cart-item-count').textContent = '0 Items';
-    updateTotals(0);
-    updatePayBtn(0);
+    updateTotals();
     return;
   }
 
@@ -1368,19 +1382,18 @@ function renderCart() {
   });
 
   document.getElementById('cart-item-count').textContent = `${totalQty} Item${totalQty !== 1 ? 's' : ''}`;
-  computeCartTotals();
+  updateTotals();
 }
 
 function computeCartTotals() {
-  const subtotal = currentCart.reduce((s, l) => s + l.qty * l.price, 0);
-  updateTotals(subtotal);
+  updateTotals();
 }
 
-function updateTotals(subtotal) {
-  const discountAmt = activeDiscount;
-  const afterDisc   = Math.max(0, subtotal - discountAmt);
-  const tax         = Math.round(afterDisc * 0.05);
-  const grand       = afterDisc + tax;
+function updateTotals() {
+  const subtotal = latestCartState ? latestCartState.subtotalAmount : 0;
+  const discountAmt = latestCartState ? latestCartState.discountAmount : 0;
+  const tax = latestCartState ? latestCartState.taxAmount : 0;
+  const grand = latestCartState ? latestCartState.totalAmount : 0;
 
   document.getElementById('summary-subtotal').textContent = fmt(subtotal);
   document.getElementById('summary-discount').textContent = discountAmt > 0 ? `— ${fmt(discountAmt)}` : '— PKR 0';
@@ -1402,36 +1415,67 @@ function updatePayBtn(grand) {
 }
 
 // ─── DISCOUNT ────────────────────────────────
-function applyDiscount() {
+async function applyDiscount() {
   const val  = parseFloat(document.getElementById('discount-input').value) || 0;
   const type = document.getElementById('discount-type').value;
-  const subtotal = currentCart.reduce((s, l) => s + l.qty * l.price, 0);
-  activeDiscount = type === 'pct' ? Math.round(subtotal * val / 100) : val;
-  showToast(`Discount applied: ${fmt(activeDiscount)}`, 'success');
-  computeCartTotals();
+
+  if (val <= 0) {
+    try {
+      const state = await bridgeRequest('order.removeDiscount', null);
+      updateLocalCartState(state);
+      renderCart();
+      showToast('Discount removed.', 'success');
+      document.getElementById('discount-input').value = '';
+    } catch (e) {
+      showToast(e.message || 'Failed to remove discount.', 'warning');
+      console.error('[Cart] removeDiscount failed:', e);
+    }
+    return;
+  }
+
+  const discountType = type === 'flat' ? 'amount' : 'pct';
+  try {
+    const state = await bridgeRequest('order.applyDiscount', { discountType: discountType, discountValue: val });
+    updateLocalCartState(state);
+    renderCart();
+    showToast(`Discount applied.`, 'success');
+  } catch (e) {
+    showToast(e.message || 'Failed to apply discount.', 'warning');
+    console.error('[Cart] applyDiscount failed:', e);
+  }
 }
 
 // ─── VOID ────────────────────────────────────
-function voidEntireOrder() {
+async function voidEntireOrder() {
   if (!currentCart.length) { showToast('Cart is already empty.', 'info'); return; }
   if (!confirm('Void the entire order? This cannot be undone.')) return;
-  currentCart = [];
-  activeDiscount = 0;
-  saveCartToSession();
-  renderCart();
-  renderGrid();
-  showToast('Order voided.', 'warning');
+  try {
+    const state = await bridgeRequest('order.clearCart', null);
+    updateLocalCartState(state);
+    renderCart();
+    renderGrid();
+    showToast('Order voided.', 'warning');
+  } catch (e) {
+    showToast(e.message || 'Failed to void order.', 'warning');
+    console.error('[Cart] clearCart failed:', e);
+  }
 }
 
-function holdActiveOrder() {
+async function holdActiveOrder() {
   if (!currentCart.length) { showToast('Nothing to hold.', 'info'); return; }
+  // Save current cart snapshot to session storage as a deferred/temporary hold feature.
+  // Note: pos_held_order is not the active cart source of truth and will be revisited later.
   sessionStorage.setItem('pos_held_order', JSON.stringify(currentCart));
-  currentCart = [];
-  activeDiscount = 0;
-  saveCartToSession();
-  renderCart();
-  renderGrid();
-  showToast('Order placed on hold.', 'info');
+  try {
+    const state = await bridgeRequest('order.clearCart', null);
+    updateLocalCartState(state);
+    renderCart();
+    renderGrid();
+    showToast('Order placed on hold.', 'info');
+  } catch (e) {
+    showToast(e.message || 'Failed to hold order.', 'warning');
+    console.error('[Cart] hold clearCart failed:', e);
+  }
 }
 
 function promptVoidItem(itemId) {
@@ -1460,15 +1504,21 @@ function promptVoidItem(itemId) {
   openModal('void-item-modal');
 }
 
-function executeVoidImmediately() {
+async function executeVoidImmediately() {
   if (!activeVoidLineItem) return;
-  currentCart = currentCart.filter(l => l.id !== activeVoidLineItem);
-  activeVoidLineItem = null;
-  saveCartToSession();
-  renderCart();
-  renderGrid();
-  closeModal('void-item-modal');
-  showToast('Item removed from order.', 'warning');
+  const variantId = parseInt(activeVoidLineItem, 10);
+  try {
+    const state = await bridgeRequest('order.removeItem', { variantId: variantId });
+    updateLocalCartState(state);
+    activeVoidLineItem = null;
+    renderCart();
+    renderGrid();
+    closeModal('void-item-modal');
+    showToast('Item removed from order.', 'warning');
+  } catch (e) {
+    showToast(e.message || 'Failed to remove item.', 'warning');
+    console.error('[Cart] removeItem failed:', e);
+  }
 }
 
 function closeVoidItemModal() { closeModal('void-item-modal'); activeVoidLineItem = null; }
@@ -1500,16 +1550,22 @@ function updateManagerPinDisplay() {
     }
   }
 }
-function submitManagerOverride() {
+async function submitManagerOverride() {
   if (tempManagerPin !== '1234') { showToast('Wrong manager PIN.', 'error'); return; }
   closeModal('manager-approval-modal');
   if (activeVoidLineItem) {
-    currentCart = currentCart.filter(l => l.id !== activeVoidLineItem);
-    activeVoidLineItem = null;
-    saveCartToSession();
-    renderCart();
-    renderGrid();
-    showToast('Manager override approved. Item removed.', 'success');
+    const variantId = parseInt(activeVoidLineItem, 10);
+    try {
+      const state = await bridgeRequest('order.removeItem', { variantId: variantId });
+      updateLocalCartState(state);
+      activeVoidLineItem = null;
+      renderCart();
+      renderGrid();
+      showToast('Manager override approved. Item removed.', 'success');
+    } catch (e) {
+      showToast(e.message || 'Failed to remove item.', 'warning');
+      console.error('[Cart] removeItem failed:', e);
+    }
   }
 }
 function closeManagerApprovalModal() { closeModal('manager-approval-modal'); }
@@ -1562,10 +1618,19 @@ function pressQtyPad(d) {
   document.getElementById('qty-override-input').value = qtyOverrideTemp || '0';
 }
 function clearQtyPad() { qtyOverrideTemp = ''; document.getElementById('qty-override-input').value = '0'; }
-function submitQtyOverride() {
+async function submitQtyOverride() {
   const qty = parseInt(qtyOverrideTemp) || 1;
-  const line = currentCart.find(l => l.id === selectedLineId);
-  if (line) { line.qty = qty; saveCartToSession(); renderCart(); renderGrid(); }
+  if (!selectedLineId) return;
+  const variantId = parseInt(selectedLineId, 10);
+  try {
+    const state = await bridgeRequest('order.updateLineQuantity', { variantId: variantId, quantity: qty });
+    updateLocalCartState(state);
+    renderCart();
+    renderGrid();
+  } catch (e) {
+    showToast(e.message || 'Failed to update quantity.', 'warning');
+    console.error('[Cart] updateLineQuantity failed:', e);
+  }
   closeModal('qty-override-modal');
 }
 function closeQtyOverrideModal() { closeModal('qty-override-modal'); }

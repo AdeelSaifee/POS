@@ -11,6 +11,7 @@ using POS.Desktop.Services.Session;
 using POS.Desktop.Services.Auth;
 using POS.Desktop.Services.Provisioning;
 using POS.Desktop.Services.Shifts;
+using POS.Desktop.Services.Orders;
 using POS.Shared.Contracts;
 
 namespace POS.Desktop.Shell;
@@ -94,6 +95,36 @@ public sealed class PosWebMessageRouter
         // Task 5.2.8: Get shift-open policy (limits + checklist) from config.
         Register("shift.getOpenPolicy", sp => (req, ct) => HandleGetShiftOpenPolicyAsync(
             sp.GetRequiredService<IShiftService>(),
+            req,
+            ct));
+
+        // Task 5.3.8: Cart/Order endpoints
+        Register("order.getCart", sp => (req, ct) => HandleGetCartAsync(
+            sp.GetRequiredService<IOrderService>(),
+            req,
+            ct));
+        Register("order.addItem", sp => (req, ct) => HandleAddItemAsync(
+            sp.GetRequiredService<IOrderService>(),
+            req,
+            ct));
+        Register("order.updateLineQuantity", sp => (req, ct) => HandleUpdateLineQuantityAsync(
+            sp.GetRequiredService<IOrderService>(),
+            req,
+            ct));
+        Register("order.removeItem", sp => (req, ct) => HandleRemoveItemAsync(
+            sp.GetRequiredService<IOrderService>(),
+            req,
+            ct));
+        Register("order.clearCart", sp => (req, ct) => HandleClearCartAsync(
+            sp.GetRequiredService<IOrderService>(),
+            req,
+            ct));
+        Register("order.applyDiscount", sp => (req, ct) => HandleApplyDiscountAsync(
+            sp.GetRequiredService<IOrderService>(),
+            req,
+            ct));
+        Register("order.removeDiscount", sp => (req, ct) => HandleRemoveDiscountAsync(
+            sp.GetRequiredService<IOrderService>(),
             req,
             ct));
     }
@@ -730,6 +761,204 @@ public sealed class PosWebMessageRouter
                 code: "POLICY_FETCH_FAILED",
                 message: "Failed to retrieve shift open policy."
             );
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandleGetCartAsync(
+        IOrderService orderService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var cartState = await orderService.GetCartStateAsync(cancellationToken);
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, cartState);
+        }
+        catch (OrderValidationException ex)
+        {
+            return BridgeResponseEnvelope.Failure(
+                request.Type,
+                request.RequestId,
+                ex.ErrorCode,
+                ex.SafeMessage);
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandleAddItemAsync(
+        IOrderService orderService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        if (!request.Payload.HasValue || request.Payload.Value.ValueKind != JsonValueKind.Object)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was missing or invalid.");
+        }
+
+        var payload = request.Payload.Value;
+        if (!payload.TryGetProperty("variantId", out var variantIdProp) ||
+            variantIdProp.ValueKind != JsonValueKind.Number ||
+            !variantIdProp.TryGetInt32(out var variantId))
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'variantId' is required and must be an integer number.");
+        }
+
+        int quantity = 1;
+        if (payload.TryGetProperty("quantity", out var quantityProp) && quantityProp.ValueKind != JsonValueKind.Null)
+        {
+            if (quantityProp.ValueKind != JsonValueKind.Number || !quantityProp.TryGetInt32(out quantity))
+            {
+                return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'quantity' must be an integer number.");
+            }
+        }
+
+        try
+        {
+            var cartState = await orderService.AddItemAsync(variantId, quantity, cancellationToken);
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, cartState);
+        }
+        catch (OrderValidationException ex)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, ex.ErrorCode, ex.SafeMessage);
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandleUpdateLineQuantityAsync(
+        IOrderService orderService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        if (!request.Payload.HasValue || request.Payload.Value.ValueKind != JsonValueKind.Object)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was missing or invalid.");
+        }
+
+        var payload = request.Payload.Value;
+        if (!payload.TryGetProperty("variantId", out var variantIdProp) ||
+            variantIdProp.ValueKind != JsonValueKind.Number ||
+            !variantIdProp.TryGetInt32(out var variantId))
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'variantId' is required and must be an integer number.");
+        }
+
+        if (!payload.TryGetProperty("quantity", out var quantityProp) ||
+            quantityProp.ValueKind != JsonValueKind.Number ||
+            !quantityProp.TryGetInt32(out var quantity))
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'quantity' is required and must be an integer number.");
+        }
+
+        try
+        {
+            var cartState = await orderService.UpdateLineQuantityAsync(variantId, quantity, cancellationToken);
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, cartState);
+        }
+        catch (OrderValidationException ex)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, ex.ErrorCode, ex.SafeMessage);
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandleRemoveItemAsync(
+        IOrderService orderService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        if (!request.Payload.HasValue || request.Payload.Value.ValueKind != JsonValueKind.Object)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was missing or invalid.");
+        }
+
+        var payload = request.Payload.Value;
+        if (!payload.TryGetProperty("variantId", out var variantIdProp) ||
+            variantIdProp.ValueKind != JsonValueKind.Number ||
+            !variantIdProp.TryGetInt32(out var variantId))
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'variantId' is required and must be an integer number.");
+        }
+
+        try
+        {
+            var cartState = await orderService.RemoveItemAsync(variantId, cancellationToken);
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, cartState);
+        }
+        catch (OrderValidationException ex)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, ex.ErrorCode, ex.SafeMessage);
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandleClearCartAsync(
+        IOrderService orderService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var cartState = await orderService.ClearCartAsync(cancellationToken);
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, cartState);
+        }
+        catch (OrderValidationException ex)
+        {
+            return BridgeResponseEnvelope.Failure(
+                request.Type,
+                request.RequestId,
+                ex.ErrorCode,
+                ex.SafeMessage);
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandleApplyDiscountAsync(
+        IOrderService orderService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        if (!request.Payload.HasValue || request.Payload.Value.ValueKind != JsonValueKind.Object)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Payload was missing or invalid.");
+        }
+
+        var payload = request.Payload.Value;
+        if (!payload.TryGetProperty("discountType", out var typeProp) || typeProp.ValueKind != JsonValueKind.String)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'discountType' is required and must be a string.");
+        }
+        var discountType = typeProp.GetString() ?? string.Empty;
+
+        if (!payload.TryGetProperty("discountValue", out var valProp) ||
+            valProp.ValueKind != JsonValueKind.Number ||
+            !valProp.TryGetDecimal(out var discountValue))
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, "MALFORMED_REQUEST", "Parameter 'discountValue' is required and must be a number.");
+        }
+
+        try
+        {
+            var cartState = await orderService.ApplyDiscountAsync(discountType, discountValue, cancellationToken);
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, cartState);
+        }
+        catch (OrderValidationException ex)
+        {
+            return BridgeResponseEnvelope.Failure(request.Type, request.RequestId, ex.ErrorCode, ex.SafeMessage);
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandleRemoveDiscountAsync(
+        IOrderService orderService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var cartState = await orderService.RemoveDiscountAsync(cancellationToken);
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, cartState);
+        }
+        catch (OrderValidationException ex)
+        {
+            return BridgeResponseEnvelope.Failure(
+                request.Type,
+                request.RequestId,
+                ex.ErrorCode,
+                ex.SafeMessage);
         }
     }
 }

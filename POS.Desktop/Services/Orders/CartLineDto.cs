@@ -56,6 +56,26 @@ public sealed record CartLineDto
     public decimal NetAmount { get; init; }
 
     /// <summary>
+    /// The snapshot tax rule ID for this item.
+    /// </summary>
+    public int? TaxRuleId { get; init; }
+
+    /// <summary>
+    /// The snapshot tax code.
+    /// </summary>
+    public string? TaxCode { get; init; }
+
+    /// <summary>
+    /// The snapshot tax rate percentage.
+    /// </summary>
+    public decimal? TaxRate { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the price is tax-inclusive.
+    /// </summary>
+    public bool IsTaxIncluded { get; init; }
+
+    /// <summary>
     /// The unit of measure code.
     /// </summary>
     public string Unit { get; init; } = string.Empty;

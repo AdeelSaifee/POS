@@ -2,16 +2,16 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 5 / Milestone 5.3 - Order / cart service
-- **Group**: Group 2 (Tasks 5.3.3 and 5.3.4 - completed)
+- **Group**: Group 3 (Tasks 5.3.5 to 5.3.7 - completed)
 
 ## Status of All Milestone 5.3 Tasks
 - `[x]` Task 5.3.1 - Define IOrderService
 - `[x]` Task 5.3.2 - Decide draft persistence
 - `[x]` Task 5.3.3 - Implement add/qty/remove
 - `[x]` Task 5.3.4 - Implement discount handling
-- `[ ]` Task 5.3.5 - Implement totals calculation
-- `[ ]` Task 5.3.6 - Implement tax via TaxRule
-- `[ ]` Task 5.3.7 - Centralize money rounding
+- `[x]` Task 5.3.5 - Implement totals calculation
+- `[x]` Task 5.3.6 - Implement tax via TaxRule
+- `[x]` Task 5.3.7 - Centralize money rounding
 - `[ ]` Task 5.3.8 - Add cart bridge handlers
 - `[ ]` Task 5.3.9 - Wire main_checkout cart + remove pos_cart
 - `[ ]` Task 5.3.10 - Unit test cart math + tax
@@ -29,6 +29,12 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Group 3 (Tasks 5.3.5, 5.3.6, and 5.3.7 - completed)
+- [ADD] `POS.Desktop/Services/Orders/MoneyRounder.cs`
+- [MODIFY] `POS.Desktop/Services/Orders/CartLineDto.cs`
+- [MODIFY] `POS.Desktop/Services/Orders/OrderService.cs`
+- [MODIFY] `POS.Desktop.Tests/Services/Orders/OrderServiceTests.cs`
 
 ### Group 2 (Tasks 5.3.3 and 5.3.4 - completed)
 - [ADD] `POS.Desktop/Services/Orders/IDraftCartStore.cs`
@@ -156,20 +162,34 @@ No changes were required to this flow.
 - **Consistent Bridge Contracts:** Leveraged the `"shift.getCurrent"` message type across all operational flows, returning structured success payloads of type `ShiftDetailsResult`.
 - **Strict Location Isolation Gating:** Both `OpenShiftAsync` and `GetCurrentShiftAsync` filter open shifts and sequences strictly by location and terminal identifier (`LocationId == CurrentLocationId` and `TerminalId == CurrentTerminalId`), ensuring shifts opened at different locations do not bleed through.
 - **Identical Copies:** Kept `POS.Desktop/Assets/ui/*.html` and `docs/ui-prototype/screens/*.html` identically synchronized. All 5 milestone-touched screens SHA-256 verified identical after Group 5 sync fix.
+- **MoneyRounder Policy:** Money calculations use decimal math only. Values are rounded to 2 decimal places using `MidpointRounding.AwayFromZero` commercial rounding, centralized in the helper class `POS.Desktop/Services/Orders/MoneyRounder.cs`.
+- **Tax Calculation Rules:**
+  - **Tax-Exclusive Prices:**
+    - `taxableBase = grossAmount - lineDiscount`
+    - `taxAmount = taxableBase * taxRate / 100` (rounded)
+    - `netAmount = taxableBase + taxAmount` (rounded)
+  - **Tax-Inclusive Prices:**
+    - `taxableBase = grossAmount - lineDiscount`
+    - `taxAmount = taxableBase - (taxableBase / (1 + taxRate / 100))` (rounded)
+    - `netAmount = taxableBase`
+  - **Null/Zero/Negative Tax Rates:**
+    - `taxAmount = 0`
+    - `netAmount = taxableBase`
+- **Proportional Discount Distribution:** Cart-level discounts are distributed proportionally across cart lines before tax based on each line's share of the total gross subtotal. To ensure the sum of line discounts exactly equals the cart-level discount, the last line absorbs any rounding remainder.
 
-## Verification Summary (Milestone 5.3 Group 2)
+## Verification Summary (Milestone 5.3 Group 3)
 
 ### Builds
 - `dotnet build POS.Desktop/POS.Desktop.csproj --configuration Debug`: **0 errors / 0 warnings**
 - `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
 
 ### Tests
-- `dotnet test POS.Desktop.Tests`: **268/268 passed** (includes 18 new unit tests for `OrderService`)
+- `dotnet test POS.Desktop.Tests`: **277/277 passed**
 - `dotnet test POS.Tests`: **49/49 passed**
 
 ### Git hygiene
 - `git diff --check`: Zero whitespace/layout errors
-- `git status`: Only context update + new/modified Group 2 files (uncommitted)
+- `git status`: Only context update + new/modified Group 3 files before commit
 
 ### SHA-256 sync check (all 5 milestone screens)
 | File | Assets hash | Result |
@@ -215,4 +235,4 @@ Runtime smoke test through the WebView2 host requires launching the desktop appl
 - `pos_shift_float` / `pos_shift_open` references in `cash_control.html` and `shift_close.html` are demo metric artifacts inside `updateMetrics()` / `loadMetrics()` / `executeShiftClose()` - NOT access gates. Deferred to Milestones 5.5 and 5.6.
 
 ## Next Recommended Group
-- **Group 3 - Tasks 5.3.5 to 5.3.7 only - totals calculation, TaxRule tax, and centralized money rounding.**
+- **Group 4 - Tasks 5.3.8 to 5.3.9 only - add cart bridge handlers and wire main_checkout cart while removing pos_cart.**

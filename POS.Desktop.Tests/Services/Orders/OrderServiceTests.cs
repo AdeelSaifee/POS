@@ -459,4 +459,319 @@ public sealed class OrderServiceTests : IDisposable
         var ex2 = await Assert.ThrowsAsync<OrderValidationException>(() => orderService.ApplyDiscountAsync("invalid_type", 10m));
         Assert.Equal("INVALID_DISCOUNT_TYPE", ex2.ErrorCode);
     }
+
+    private async Task SeedItemWithTaxAsync(
+        PosLocalDbContext db,
+        int itemId,
+        int variantId,
+        string name,
+        decimal price,
+        int? taxRuleId,
+        string? taxCode,
+        decimal? taxRate,
+        bool isTaxIncluded,
+        bool isSellable = true)
+    {
+        var uom = await db.LocalUnitsOfMeasure.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == 1);
+        if (uom == null)
+        {
+            uom = new LocalUnitOfMeasure
+            {
+                Id = 1,
+                TenantId = _tenantId,
+                Code = "PCS",
+                Name = "Pieces"
+            };
+            db.LocalUnitsOfMeasure.Add(uom);
+        }
+
+        if (taxRuleId.HasValue)
+        {
+            var taxRule = await db.LocalTaxRules.IgnoreQueryFilters().FirstOrDefaultAsync(t => t.Id == taxRuleId.Value);
+            if (taxRule == null)
+            {
+                taxRule = new LocalTaxRule
+                {
+                    Id = taxRuleId.Value,
+                    TenantId = _tenantId,
+                    Code = taxCode ?? $"TAX{taxRuleId}",
+                    Name = $"Tax Rule {taxRuleId}",
+                    Rate = taxRate ?? 0m,
+                    CalculationMode = isTaxIncluded ? TaxCalculationMode.Inclusive : TaxCalculationMode.Exclusive
+                };
+                db.LocalTaxRules.Add(taxRule);
+            }
+        }
+
+        var item = new LocalItem
+        {
+            Id = itemId,
+            TenantId = _tenantId,
+            ItemCode = $"ITEM{itemId}",
+            Name = name,
+            Status = ItemStatus.Active
+        };
+        db.LocalItems.Add(item);
+
+        var variant = new LocalItemVariant
+        {
+            Id = variantId,
+            TenantId = _tenantId,
+            ItemId = itemId,
+            VariantCode = $"VAR{variantId}",
+            IsDefault = true,
+            IsSellable = isSellable,
+            Status = ItemStatus.Active,
+            UnitOfMeasureId = 1,
+            TaxRuleId = taxRuleId
+        };
+        db.LocalItemVariants.Add(variant);
+
+        var priceRow = new LocalItemPrice
+        {
+            Id = variantId,
+            TenantId = _tenantId,
+            ItemVariantId = variantId,
+            PriceListId = 1,
+            UnitPrice = price,
+            IsTaxIncluded = isTaxIncluded
+        };
+        db.LocalItemPrices.Add(priceRow);
+
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task RecalculateTotals_NoTaxItem_CalculatesCorrectly()
+    {
+        // Arrange
+        using var db = CreateDbContext();
+        await SeedItemWithTaxAsync(db, 10, 100, "Item No Tax", 150m, taxRuleId: null, taxCode: null, taxRate: null, isTaxIncluded: false);
+        var store = new DraftCartStore();
+        var catalogService = new CatalogService(db);
+        var orderService = new OrderService(store, catalogService);
+
+        // Act
+        var state = await orderService.AddItemAsync(100, 2);
+
+        // Assert
+        Assert.Single(state.Lines);
+        var line = state.Lines.First();
+        Assert.Equal(300m, line.GrossAmount);
+        Assert.Equal(0m, line.DiscountAmount);
+        Assert.Equal(0m, line.TaxAmount);
+        Assert.Equal(300m, line.NetAmount);
+
+        Assert.Equal(300m, state.SubtotalAmount);
+        Assert.Equal(0m, state.DiscountAmount);
+        Assert.Equal(0m, state.TaxAmount);
+        Assert.Equal(300m, state.TotalAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateTotals_FivePercentTaxExclusive_CalculatesCorrectly()
+    {
+        // Arrange
+        using var db = CreateDbContext();
+        await SeedItemWithTaxAsync(db, 10, 100, "Item 5% Excl", 100m, taxRuleId: 1, taxCode: "VAT5", taxRate: 5m, isTaxIncluded: false);
+        var store = new DraftCartStore();
+        var catalogService = new CatalogService(db);
+        var orderService = new OrderService(store, catalogService);
+
+        // Act
+        var state = await orderService.AddItemAsync(100, 2);
+
+        // Assert
+        var line = state.Lines.First();
+        Assert.Equal(200m, line.GrossAmount);
+        Assert.Equal(0m, line.DiscountAmount);
+        Assert.Equal(10m, line.TaxAmount);
+        Assert.Equal(210m, line.NetAmount);
+
+        Assert.Equal(200m, state.SubtotalAmount);
+        Assert.Equal(0m, state.DiscountAmount);
+        Assert.Equal(10m, state.TaxAmount);
+        Assert.Equal(210m, state.TotalAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateTotals_EighteenPercentTaxExclusive_CalculatesCorrectly()
+    {
+        // Arrange
+        using var db = CreateDbContext();
+        await SeedItemWithTaxAsync(db, 10, 100, "Item 18% Excl", 150m, taxRuleId: 2, taxCode: "VAT18", taxRate: 18m, isTaxIncluded: false);
+        var store = new DraftCartStore();
+        var catalogService = new CatalogService(db);
+        var orderService = new OrderService(store, catalogService);
+
+        // Act
+        var state = await orderService.AddItemAsync(100, 1);
+
+        // Assert
+        var line = state.Lines.First();
+        Assert.Equal(150m, line.GrossAmount);
+        Assert.Equal(27m, line.TaxAmount);
+        Assert.Equal(177m, line.NetAmount);
+
+        Assert.Equal(150m, state.SubtotalAmount);
+        Assert.Equal(27m, state.TaxAmount);
+        Assert.Equal(177m, state.TotalAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateTotals_TaxIncluded_CalculatesCorrectly()
+    {
+        // Arrange
+        using var db = CreateDbContext();
+        await SeedItemWithTaxAsync(db, 10, 100, "Item 10% Incl", 110m, taxRuleId: 3, taxCode: "VAT10I", taxRate: 10m, isTaxIncluded: true);
+        var store = new DraftCartStore();
+        var catalogService = new CatalogService(db);
+        var orderService = new OrderService(store, catalogService);
+
+        // Act
+        var state = await orderService.AddItemAsync(100, 1);
+
+        // Assert
+        var line = state.Lines.First();
+        Assert.Equal(110m, line.GrossAmount);
+        Assert.Equal(10m, line.TaxAmount);
+        Assert.Equal(110m, line.NetAmount);
+
+        Assert.Equal(110m, state.SubtotalAmount);
+        Assert.Equal(10m, state.TaxAmount);
+        Assert.Equal(110m, state.TotalAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateTotals_MixedTaxRates_CalculatesCorrectly()
+    {
+        // Arrange
+        using var db = CreateDbContext();
+        await SeedItemWithTaxAsync(db, 10, 100, "Item 5% Excl", 100m, taxRuleId: 1, taxCode: "VAT5", taxRate: 5m, isTaxIncluded: false);
+        await SeedItemWithTaxAsync(db, 11, 101, "Item 10% Incl", 110m, taxRuleId: 3, taxCode: "VAT10I", taxRate: 10m, isTaxIncluded: true);
+        var store = new DraftCartStore();
+        var catalogService = new CatalogService(db);
+        var orderService = new OrderService(store, catalogService);
+
+        // Act
+        await orderService.AddItemAsync(100, 1);
+        var state = await orderService.AddItemAsync(101, 1);
+
+        // Assert
+        Assert.Equal(210m, state.SubtotalAmount);
+
+        var line1 = state.Lines.First(l => l.VariantId == 100);
+        Assert.Equal(100m, line1.GrossAmount);
+        Assert.Equal(5m, line1.TaxAmount);
+        Assert.Equal(105m, line1.NetAmount);
+
+        var line2 = state.Lines.First(l => l.VariantId == 101);
+        Assert.Equal(110m, line2.GrossAmount);
+        Assert.Equal(10m, line2.TaxAmount);
+        Assert.Equal(110m, line2.NetAmount);
+
+        Assert.Equal(15m, state.TaxAmount);
+        Assert.Equal(215m, state.TotalAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateTotals_FixedAmountDiscount_DistributesProportiallyBeforeTax()
+    {
+        // Arrange
+        using var db = CreateDbContext();
+        await SeedItemWithTaxAsync(db, 10, 100, "Item 1", 100m, taxRuleId: 1, taxCode: "VAT10", taxRate: 10m, isTaxIncluded: false);
+        await SeedItemWithTaxAsync(db, 11, 101, "Item 2", 200m, taxRuleId: 2, taxCode: "VAT20", taxRate: 20m, isTaxIncluded: false);
+        var store = new DraftCartStore();
+        var catalogService = new CatalogService(db);
+        var orderService = new OrderService(store, catalogService);
+
+        await orderService.AddItemAsync(100, 1);
+        await orderService.AddItemAsync(101, 1);
+
+        // Act
+        var state = await orderService.ApplyDiscountAsync("amount", 30m);
+
+        // Assert
+        var line1 = state.Lines.First(l => l.VariantId == 100);
+        Assert.Equal(10m, line1.DiscountAmount);
+        Assert.Equal(9m, line1.TaxAmount);
+        Assert.Equal(99m, line1.NetAmount);
+
+        var line2 = state.Lines.First(l => l.VariantId == 101);
+        Assert.Equal(20m, line2.DiscountAmount);
+        Assert.Equal(36m, line2.TaxAmount);
+        Assert.Equal(216m, line2.NetAmount);
+
+        Assert.Equal(300m, state.SubtotalAmount);
+        Assert.Equal(30m, state.DiscountAmount);
+        Assert.Equal(45m, state.TaxAmount);
+        Assert.Equal(315m, state.TotalAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateTotals_PercentageDiscount_DistributesProportiallyBeforeTax()
+    {
+        // Arrange
+        using var db = CreateDbContext();
+        await SeedItemWithTaxAsync(db, 10, 100, "Item 1", 100m, taxRuleId: 1, taxCode: "VAT10", taxRate: 10m, isTaxIncluded: false);
+        await SeedItemWithTaxAsync(db, 11, 101, "Item 2", 200m, taxRuleId: 2, taxCode: "VAT20", taxRate: 20m, isTaxIncluded: false);
+        var store = new DraftCartStore();
+        var catalogService = new CatalogService(db);
+        var orderService = new OrderService(store, catalogService);
+
+        await orderService.AddItemAsync(100, 1);
+        await orderService.AddItemAsync(101, 1);
+
+        // Act
+        var state = await orderService.ApplyDiscountAsync("pct", 10m);
+
+        // Assert
+        var line1 = state.Lines.First(l => l.VariantId == 100);
+        Assert.Equal(10m, line1.DiscountAmount);
+        Assert.Equal(9m, line1.TaxAmount);
+        Assert.Equal(99m, line1.NetAmount);
+
+        var line2 = state.Lines.First(l => l.VariantId == 101);
+        Assert.Equal(20m, line2.DiscountAmount);
+        Assert.Equal(36m, line2.TaxAmount);
+        Assert.Equal(216m, line2.NetAmount);
+
+        Assert.Equal(300m, state.SubtotalAmount);
+        Assert.Equal(30m, state.DiscountAmount);
+        Assert.Equal(45m, state.TaxAmount);
+        Assert.Equal(315m, state.TotalAmount);
+    }
+
+    [Fact]
+    public async Task RecalculateTotals_DiscountDistributionRoundingRemainder_IsAbsorbedByLastLine()
+    {
+        // Arrange
+        using var db = CreateDbContext();
+        await SeedItemWithTaxAsync(db, 10, 100, "Item 1", 100m, taxRuleId: null, taxCode: null, taxRate: null, isTaxIncluded: false);
+        await SeedItemWithTaxAsync(db, 11, 101, "Item 2", 100m, taxRuleId: null, taxCode: null, taxRate: null, isTaxIncluded: false);
+        await SeedItemWithTaxAsync(db, 12, 102, "Item 3", 100m, taxRuleId: null, taxCode: null, taxRate: null, isTaxIncluded: false);
+        var store = new DraftCartStore();
+        var catalogService = new CatalogService(db);
+        var orderService = new OrderService(store, catalogService);
+
+        await orderService.AddItemAsync(100, 1);
+        await orderService.AddItemAsync(101, 1);
+        await orderService.AddItemAsync(102, 1);
+
+        // Act
+        var state = await orderService.ApplyDiscountAsync("amount", 10m);
+
+        // Assert
+        var line1 = state.Lines.First(l => l.VariantId == 100);
+        Assert.Equal(3.33m, line1.DiscountAmount);
+
+        var line2 = state.Lines.First(l => l.VariantId == 101);
+        Assert.Equal(3.33m, line2.DiscountAmount);
+
+        var line3 = state.Lines.First(l => l.VariantId == 102);
+        Assert.Equal(3.34m, line3.DiscountAmount);
+
+        Assert.Equal(10m, state.DiscountAmount);
+        Assert.Equal(290m, state.TotalAmount);
+    }
 }

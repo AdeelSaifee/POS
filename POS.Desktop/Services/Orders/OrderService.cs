@@ -90,7 +90,11 @@ public sealed class OrderService : IOrderService
                     TaxAmount = 0m,
                     NetAmount = quantity * item.UnitPrice,
                     Unit = item.UnitCode,
-                    CategoryCode = item.CategoryCode ?? string.Empty
+                    CategoryCode = item.CategoryCode ?? string.Empty,
+                    TaxRuleId = item.TaxRuleId,
+                    TaxCode = item.TaxCode,
+                    TaxRate = item.TaxRate,
+                    IsTaxIncluded = item.IsTaxIncluded
                 };
                 lines.Add(newLine);
             }
@@ -211,7 +215,7 @@ public sealed class OrderService : IOrderService
                 throw new OrderValidationException("Cannot apply discount to an empty cart.", "EMPTY_CART_DISCOUNT");
             }
 
-            decimal subtotal = currentState.Lines.Sum(l => l.Quantity * l.UnitPrice);
+            decimal subtotal = currentState.Lines.Sum(l => MoneyRounder.Round(l.Quantity * l.UnitPrice));
 
             if (discountType == "amount")
             {
@@ -254,60 +258,118 @@ public sealed class OrderService : IOrderService
         string discountType,
         decimal discountValue)
     {
-        decimal subtotal = 0m;
-        var updatedLines = new List<CartLineDto>();
+        if (lines.Count == 0)
+        {
+            return new CartStateDto
+            {
+                SubtotalAmount = 0m,
+                DiscountAmount = 0m,
+                TaxAmount = 0m,
+                TotalAmount = 0m,
+                Lines = Array.Empty<CartLineDto>(),
+                DiscountType = string.Empty,
+                DiscountValue = 0m
+            };
+        }
 
+        // 1. Calculate Gross Amounts and Subtotal
+        decimal subtotalAmount = 0m;
+        var linesWithGross = new List<(CartLineDto Line, decimal Gross)>();
         foreach (var line in lines)
         {
-            var quantity = line.Quantity;
-            var unitPrice = line.UnitPrice;
-            var grossAmount = quantity * unitPrice;
+            decimal gross = MoneyRounder.Round(line.Quantity * line.UnitPrice);
+            subtotalAmount += gross;
+            linesWithGross.Add((line, gross));
+        }
 
-            subtotal += grossAmount;
+        // 2. Calculate Cart-Level Discount
+        decimal cartDiscount = 0m;
+        if (discountType == "pct")
+        {
+            cartDiscount = MoneyRounder.Round(subtotalAmount * discountValue / 100m);
+        }
+        else if (discountType == "amount")
+        {
+            cartDiscount = MoneyRounder.Round(discountValue);
+        }
+
+        // Clamp discount to subtotal
+        cartDiscount = Math.Min(cartDiscount, subtotalAmount);
+
+        // 3. Proportional Discount Distribution & Line calculations
+        var updatedLines = new List<CartLineDto>();
+        decimal allocatedDiscountSum = 0m;
+
+        for (int i = 0; i < linesWithGross.Count; i++)
+        {
+            var (line, grossAmount) = linesWithGross[i];
+
+            decimal lineDiscount = 0m;
+            if (cartDiscount > 0m && subtotalAmount > 0m)
+            {
+                if (i == linesWithGross.Count - 1)
+                {
+                    // Last line absorbs the remainder
+                    lineDiscount = MoneyRounder.Round(cartDiscount - allocatedDiscountSum);
+                }
+                else
+                {
+                    decimal share = (grossAmount / subtotalAmount) * cartDiscount;
+                    lineDiscount = MoneyRounder.Round(share);
+                    allocatedDiscountSum += lineDiscount;
+                }
+            }
+
+            decimal taxableBase = MoneyRounder.Round(grossAmount - lineDiscount);
+
+            decimal taxRate = line.TaxRate ?? 0m;
+            decimal taxAmount = 0m;
+            decimal netAmount = 0m;
+
+            if (taxRate <= 0m)
+            {
+                taxAmount = 0m;
+                netAmount = taxableBase;
+            }
+            else if (line.IsTaxIncluded)
+            {
+                // Tax-inclusive
+                decimal calculatedTax = taxableBase - (taxableBase / (1m + taxRate / 100m));
+                taxAmount = MoneyRounder.Round(calculatedTax);
+                netAmount = taxableBase; // Net amount equals taxable base (inclusive of tax)
+            }
+            else
+            {
+                // Tax-exclusive
+                decimal calculatedTax = taxableBase * (taxRate / 100m);
+                taxAmount = MoneyRounder.Round(calculatedTax);
+                netAmount = MoneyRounder.Round(taxableBase + taxAmount);
+            }
 
             updatedLines.Add(line with
             {
                 GrossAmount = grossAmount,
-                DiscountAmount = 0m,
-                TaxAmount = 0m,
-                NetAmount = grossAmount
+                DiscountAmount = lineDiscount,
+                TaxAmount = taxAmount,
+                NetAmount = netAmount
             });
         }
 
-        decimal cartDiscount = 0m;
-        if (updatedLines.Count > 0)
+        // 4. Calculate final cart-level totals
+        decimal totalTaxAmount = 0m;
+        decimal totalNetAmount = 0m;
+        foreach (var uLine in updatedLines)
         {
-            if (discountType == "pct")
-            {
-                // Round to 2 decimal places using standard C# AwayFromZero rounding
-                cartDiscount = Math.Round(subtotal * discountValue / 100m, 2, MidpointRounding.AwayFromZero);
-            }
-            else if (discountType == "amount")
-            {
-                cartDiscount = discountValue;
-            }
-
-            if (cartDiscount > subtotal)
-            {
-                cartDiscount = subtotal;
-            }
+            totalTaxAmount += uLine.TaxAmount;
+            totalNetAmount += uLine.NetAmount;
         }
-        else
-        {
-            cartDiscount = 0m;
-            discountType = string.Empty;
-            discountValue = 0m;
-        }
-
-        decimal tax = 0m; // Group 2 tax placeholder
-        decimal total = subtotal - cartDiscount + tax;
 
         return new CartStateDto
         {
-            SubtotalAmount = subtotal,
+            SubtotalAmount = subtotalAmount,
             DiscountAmount = cartDiscount,
-            TaxAmount = tax,
-            TotalAmount = total,
+            TaxAmount = MoneyRounder.Round(totalTaxAmount),
+            TotalAmount = MoneyRounder.Round(totalNetAmount),
             Lines = updatedLines,
             DiscountType = discountType,
             DiscountValue = discountValue

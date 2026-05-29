@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,10 +10,12 @@ namespace POS.Desktop.Services.Sync;
 /// <param name="Success">True if a valid token was acquired; otherwise, false.</param>
 /// <param name="Token">The acquired JWT bearer token string, or null on failure.</param>
 /// <param name="ErrorMessage">An operator-safe error description if acquisition failed.</param>
+/// <param name="ExpiresAtUtc">The expiration timestamp in UTC if available.</param>
 public sealed record DeviceTokenResult(
     bool Success,
     string? Token = null,
-    string? ErrorMessage = null
+    string? ErrorMessage = null,
+    DateTimeOffset? ExpiresAtUtc = null
 );
 
 /// <summary>
@@ -22,9 +25,16 @@ public interface IDeviceTokenProvider
 {
     /// <summary>
     /// Acquires a valid device access token asynchronously.
-    /// This method is responsible for returning a cached token if valid, or transparently refreshing it.
+    /// This method is responsible for returning a cached token if valid.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A structured result carrying the JWT token or error details.</returns>
     Task<DeviceTokenResult> GetTokenAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Forces a refresh of the device access token, bypassing any cached tokens.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A structured result carrying the refreshed JWT token or error details.</returns>
+    Task<DeviceTokenResult> ForceRefreshAsync(CancellationToken cancellationToken = default);
 }

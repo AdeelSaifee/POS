@@ -2,14 +2,14 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 6 / Milestone 6.2 - Device-authenticated HTTP client
-- **Group**: Group 1 (Tasks 6.2.1 to 6.2.2 - completed)
+- **Group**: Group 2 (Tasks 6.2.3 to 6.2.5 - completed)
 
-## Status of All Milestone 6.2 Tasks (Group 1 COMPLETE)
+## Status of All Milestone 6.2 Tasks (Group 2 COMPLETE)
 - `[x]` Task 6.2.1 - Add API base URL config
 - `[x]` Task 6.2.2 - Define the sync client interface
-- `[ ]` Task 6.2.3 - Implement the client (Not started)
-- `[ ]` Task 6.2.4 - Acquire a device token (Not started)
-- `[ ]` Task 6.2.5 - Implement token refresh (Not started)
+- `[x]` Task 6.2.3 - Implement the client
+- `[x]` Task 6.2.4 - Acquire a device token
+- `[x]` Task 6.2.5 - Implement token refresh
 - `[ ]` Task 6.2.6 - Register the typed HttpClient (Not started)
 - `[ ]` Task 6.2.7 - Map failures to typed results (Not started)
 - `[ ]` Task 6.2.8 - Handle timeouts/skew (Not started)
@@ -78,6 +78,13 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.2 - Group 2 (Tasks 6.2.3 to 6.2.5 - completed)
+- [ADD] `POS.Desktop/Services/Sync/SyncIngestClient.cs` (Core sync ingest client implementation utilizing HttpClient to POST outbox batches to /api/sync/ingest, intercepting headers with Bearer tokens, mapping network timeouts and socket failures to SyncIngestClientResult DTOs)
+- [ADD] `POS.Desktop/Services/Sync/FixedDeviceTokenProvider.cs` (A safe, in-memory IDeviceTokenProvider implementation for testing and development environments that does not store credentials, read configurations, generate JWTs, or access private keys)
+- [MODIFY] `POS.Desktop/Services/Sync/IDeviceTokenProvider.cs` (Refined contract adding ForceRefreshAsync and optional ExpiresAtUtc to support transparent expiration checks and refresh stubs)
+- [ADD] `POS.Desktop.Tests/Services/Sync/DeviceTokenProviderTests.cs` (Focused tests validating fixed token validity, expiration, in-memory refresh stubs, and blank token handling)
+- [ADD] `POS.Desktop.Tests/Services/Sync/SyncIngestClientTests.cs` (Comprehensive client tests using FakeHttpMessageHandler verifying HTTP POST routing, authorization headers, offline connectivity mapping, timeout/cancellation errors, and deserialization failures)
 
 ### Phase 6 / Milestone 6.2 - Group 1 (Tasks 6.2.1 & 6.2.2 - completed)
 - [ADD] `POS.Desktop/Services/Sync/SyncClientOptions.cs` (Configuration options model with built-in validation helpers for absolute URI, leading slash on IngestPath, positive TimeoutSeconds, and positive ClockSkewSeconds)
@@ -579,4 +586,27 @@ The `openShift()` function in `shift_open.html` transition flow:
 
 ## Next Recommended Milestone
 - **Phase 6 / Milestone 6.2 - Group 2** (Implementation of the HTTP sync client and device token/refresh provider flows)
+
+## Verification Summary (Milestone 6.2 Group 2)
+
+### Design Decisions & Implementation Details
+- **Sync Ingest Client Implemented**: Created `SyncIngestClient.cs` performing safe POST requests to `POST /api/sync/ingest`. It validates parameters, retrieves the device token, formats absolute request URIs, handles serialization/deserialization, and intercepts status code errors. No raw exceptions, network errors, or uncaught messages escape the client interface bounds or leak into result payloads; unexpected exceptions are caught and mapped to a generic operator-safe error message. No security token value, full request body payload, or event payload JSON is logged.
+- **Decoupled Safe Token Provider**: Refined `IDeviceTokenProvider.cs` to add custom expiration and `ForceRefreshAsync` parameters. Implemented `FixedDeviceTokenProvider.cs` using a simple in-memory structure without file persistence, secrets, or signature keys.
+- **Safe Refresh Semantics**: Integrated automatic expiration checking (supporting `ExpiresAtUtc`) and a custom test-refresh callback delegate. Exposes standard "Device token refresh source is not configured." message on default force refreshes.
+- **Extensive Unit Test Harness**: Added 22 unit tests across `DeviceTokenProviderTests.cs` and `SyncIngestClientTests.cs` (including safety verification tests for masking unexpected exceptions behind a generic operator-safe message) using `FakeHttpMessageHandler` to mock HTTP status outcomes (400, 401, 403, 409, 500, 501), socket exceptions, timeouts, and JSON parse failures.
+- **Explicit Scope Boundaries Enforced**:
+  - No DI registration or delegating handler was added in `DesktopHostBuilder.cs` (Group 3 concern).
+  - Background workers (`SyncProcessor`) and SQLite outbox drainage (`SyncOutbox`) remain completely unstarted.
+  - POS.Api was untouched, and no database migrations were created.
+  - Zero server signing keys, static configuration tokens, or device credentials are owned by the client project.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **44/44 passed** (+22 new Group 2 tests after the exception masking safety fix)
+- `dotnet test POS.slnx --configuration Debug`: **563/563 passed** (495 desktop tests + 68 API integration tests)
+
+## Next Recommended Milestone
+- **Phase 6 / Milestone 6.2 - Group 3** (WPF Generic Host DI Registration + Authorization Delegating Handler + Timeout Hardening)
 

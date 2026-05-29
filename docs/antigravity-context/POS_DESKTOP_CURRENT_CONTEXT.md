@@ -1,8 +1,20 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 6 / Milestone 6.1 - POS.Api sync ingest endpoint - **100% COMPLETE**
-- **Group**: Group 5 (Task 6.1.10 - completed)
+- **Milestone**: Phase 6 / Milestone 6.2 - Device-authenticated HTTP client
+- **Group**: Group 1 (Tasks 6.2.1 to 6.2.2 - completed)
+
+## Status of All Milestone 6.2 Tasks (Group 1 COMPLETE)
+- `[x]` Task 6.2.1 - Add API base URL config
+- `[x]` Task 6.2.2 - Define the sync client interface
+- `[ ]` Task 6.2.3 - Implement the client (Not started)
+- `[ ]` Task 6.2.4 - Acquire a device token (Not started)
+- `[ ]` Task 6.2.5 - Implement token refresh (Not started)
+- `[ ]` Task 6.2.6 - Register the typed HttpClient (Not started)
+- `[ ]` Task 6.2.7 - Map failures to typed results (Not started)
+- `[ ]` Task 6.2.8 - Handle timeouts/skew (Not started)
+- `[ ]` Task 6.2.9 - Smoke test ingest call (Not started)
+- `[ ]` Task 6.2.10 - Ensure no UI-thread blocking (Not started)
 
 ## Status of All Milestone 6.1 Tasks (100% COMPLETE)
 - `[x]` Task 6.1.1 - Design the ingest contract (Shared contract records in POS.Shared)
@@ -66,6 +78,15 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.2 - Group 1 (Tasks 6.2.1 & 6.2.2 - completed)
+- [ADD] `POS.Desktop/Services/Sync/SyncClientOptions.cs` (Configuration options model with built-in validation helpers for absolute URI, leading slash on IngestPath, positive TimeoutSeconds, and positive ClockSkewSeconds)
+- [ADD] `POS.Desktop/Services/Sync/ISyncIngestClient.cs` (Typed client contract using POS.Shared sync DTOs for non-blocking outbox ingest execution)
+- [ADD] `POS.Desktop/Services/Sync/SyncIngestClientError.cs` (Safe error model and enum covering Configuration, Offline, Timeout, Unauthorized, Forbidden, Conflict, Validation, ServerError, and Unexpected categories)
+- [ADD] `POS.Desktop/Services/Sync/SyncIngestClientResult.cs` (Structured outcome carrier with success state, SyncIngestResponse, and structured SyncIngestClientError; provides Succeeded and Failed factory methods)
+- [ADD] `POS.Desktop/Services/Sync/IDeviceTokenProvider.cs` (Optional abstract token provider interface and DeviceTokenResult record for decoupled JWT acquisition planning)
+- [ADD] `POS.Desktop.Tests/Services/Sync/SyncClientOptionsTests.cs` (Unit test suite with 22 validation scenarios verifying configuration edge cases, outcome factories, and error model safety bounds)
+- [MODIFY] `POS.Desktop/appsettings.json` (Added configuration parameters block for "Sync" specifying base URL, relative ingest route, 15-second timeout, and 300-second clock skew)
 
 ### Phase 6 / Milestone 6.1 - Group 5 (Task 6.1.10 - completed)
 - [ADD] `docs/sync/SYNC_INGEST_ENDPOINT.md` (Authoritative sync ingest endpoint contract documentation detailing POST /api/sync/ingest routing, JWT authorization policies, identity mismatch constraints, request/response models, safe replays equivalence verification, batch validations, and deferred transformation logic)
@@ -531,6 +552,31 @@ The `openShift()` function in `shift_open.html` transition flow:
 ### Tests
 - **Not Run**: Tests were not run for this group because it is a documentation-only and context-only change. The existing 68/68 test suite remains fully correct and functional.
 
+## Verification Summary (Milestone 6.2 Group 1)
+
+### Design Decisions & Implementation Details
+- **Sync Configuration Section Added**: Added the `"Sync"` configuration block to `appsettings.json` specifying default localhost API URL (`https://localhost:5001`), default relative ingest route (`/api/sync/ingest`), 15-second request timeout limit, and 300-second clock skew tolerance margin. No production secrets, JWT signing keys, static tokens, or device credentials are configured.
+- **Sync Client Options Model**: Created `SyncClientOptions.cs` in `POS.Desktop/Services/Sync/` with self-contained, robust parameters validation checking. It rejects non-http/https absolute URLs, blank routes, non-positive or unbounded timeouts, and negative or unbounded clock skew margins.
+- **Typed Synchronization Client Interface**: Established `ISyncIngestClient.cs` using the core `POS.Shared` synchronization DTO records, providing a pristine, decoupled, non-blocking network boundary layer.
+- **Category-Safe Error Model**: Implemented `SyncIngestClientError.cs` defining a non-sensitive `SyncIngestClientErrorType` enum categorizing errors into `Configuration`, `Offline`, `Timeout`, `Unauthorized`, `Forbidden`, `Conflict`, `Validation`, `ServerError`, and `Unexpected`. This completely prevents raw network exceptions from leaking to the UI thread.
+- **Outcome Result Wrapper**: Created `SyncIngestClientResult.cs` providing type-safe `Succeeded(response)` and `Failed(error)` static factories to wrap operational results.
+- **Optional Clean Token Interface**: Drafted `IDeviceTokenProvider.cs` with an abstract token contract returning `DeviceTokenResult` (Success/Token/ErrorMessage record) to lay a robust groundwork for future JWT bearer integration.
+- **Focused Unit Test Suite**: Added a comprehensive unit test suite in `SyncClientOptionsTests.cs` (22 test scenarios across 8 test methods) verifying absolute URI formatting, bounds, result factories, and error safety.
+- **Explicit Scope Boundaries Enforced**:
+  - No HTTP client implementation was started.
+  - No token acquisition or refresh flow was built.
+  - No DI registration or delegating handler was configured.
+  - Background hosted sync worker (`SyncProcessor`) and SQLite outbox drainage (`SyncOutbox`) were not started.
+  - POS.Api was untouched, and no database migrations were created.
+  - Zero server signing keys or JWT generation logic exist in the desktop project.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **22/22 passed**
+- `dotnet test POS.slnx --configuration Debug`: **541/541 passed** (473 desktop tests + 68 API integration tests)
+
 ## Next Recommended Milestone
-- **Phase 6 / Milestone 6.2 - Device-authenticated HTTP client** (Design of the desktop push/pull background sync processor and clients)
+- **Phase 6 / Milestone 6.2 - Group 2** (Implementation of the HTTP sync client and device token/refresh provider flows)
 

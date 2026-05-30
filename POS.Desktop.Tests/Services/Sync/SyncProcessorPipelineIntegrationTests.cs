@@ -480,4 +480,318 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
         Assert.Equal(PaymentReconciliationStatus.ResolvedCaptured, updatedQueueRow.Status);
         Assert.Equal("SYNC_ACK", updatedQueueRow.LastResultCode);
     }
+
+    private sealed class ZeroBackoffRetryPolicy : ISyncRetryPolicy
+    {
+        public bool IsTransient(SyncIngestClientErrorType errorType) => true;
+        public TimeSpan CalculateBackoff(int consecutiveFailureCount) => TimeSpan.Zero;
+    }
+
+    private sealed class TransientFailureFakeSyncIngestClient : ISyncIngestClient
+    {
+        private int _calls;
+        private readonly TaskCompletionSource _secondCallGate;
+
+        public TransientFailureFakeSyncIngestClient(TaskCompletionSource secondCallGate)
+        {
+            _secondCallGate = secondCallGate;
+        }
+
+        public async Task<SyncIngestClientResult> IngestAsync(
+            SyncIngestRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var callNumber = Interlocked.Increment(ref _calls);
+            if (callNumber == 1)
+            {
+                var error = new SyncIngestClientError(
+                    SyncIngestClientErrorType.Offline,
+                    "Central API is offline.",
+                    "OFFLINE_ERR");
+                return SyncIngestClientResult.Failed(error);
+            }
+            else
+            {
+                await _secondCallGate.Task.ConfigureAwait(false);
+
+                var acks = request.Events
+                    .Select(ev => new SyncIngestEventAck(
+                        ev.EventId,
+                        ev.IdempotencyKey,
+                        ev.TerminalSequence,
+                        "Received",
+                        null,
+                        null))
+                    .ToList();
+
+                var response = new SyncIngestResponse(
+                    AckId: Guid.NewGuid(),
+                    ChunkSequence: request.ChunkSequence,
+                    ChunkIdempotencyKey: request.ChunkIdempotencyKey,
+                    Status: "Received",
+                    EventCount: request.Events.Count,
+                    Events: acks,
+                    ErrorCode: null,
+                    ErrorMessage: null);
+
+                return SyncIngestClientResult.Succeeded(response);
+            }
+        }
+    }
+
+    private sealed class TransientSignalingSyncAckApplier : ISyncAckApplier
+    {
+        private readonly IServiceProvider _serviceProvider;
+        private readonly TaskCompletionSource<SyncAckApplyResult> _failureTcs;
+        private readonly TaskCompletionSource<SyncAckApplyResult> _successTcs;
+
+        public TransientSignalingSyncAckApplier(
+            IServiceProvider serviceProvider,
+            TaskCompletionSource<SyncAckApplyResult> failureTcs,
+            TaskCompletionSource<SyncAckApplyResult> successTcs)
+        {
+            _serviceProvider = serviceProvider;
+            _failureTcs = failureTcs;
+            _successTcs = successTcs;
+        }
+
+        public async Task<SyncAckApplyResult> ApplySuccessAsync(
+            SyncOutboxBatch batch,
+            SyncIngestRequest request,
+            SyncIngestResponse response,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var concrete = _serviceProvider.GetRequiredService<EfSyncAckApplier>();
+                var result = await concrete.ApplySuccessAsync(batch, request, response, cancellationToken);
+                _successTcs.TrySetResult(result);
+                return result;
+            }
+            catch (OperationCanceledException oce)
+            {
+                _successTcs.TrySetCanceled(oce.CancellationToken);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _successTcs.TrySetException(ex);
+                throw;
+            }
+        }
+
+        public async Task<SyncAckApplyResult> ApplyFailureAsync(
+            SyncOutboxBatch batch,
+            SyncIngestRequest request,
+            SyncIngestClientError? error,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var concrete = _serviceProvider.GetRequiredService<EfSyncAckApplier>();
+                var result = await concrete.ApplyFailureAsync(batch, request, error, cancellationToken);
+                _failureTcs.TrySetResult(result);
+                return result;
+            }
+            catch (OperationCanceledException oce)
+            {
+                _failureTcs.TrySetCanceled(oce.CancellationToken);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _failureTcs.TrySetException(ex);
+                throw;
+            }
+        }
+    }
+
+    private ServiceProvider BuildTransientPipelineServiceProvider(
+        TestProvisionedTerminalContext ctx,
+        SyncProcessorOptions options,
+        ISyncIngestClient fakeClient,
+        TaskCompletionSource<SyncAckApplyResult> failureTcs,
+        TaskCompletionSource<SyncAckApplyResult> successTcs)
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IProvisionedTerminalContext>(ctx);
+        services.AddSingleton(options);
+        services.AddDbContext<PosLocalDbContext>((_, o) => o.UseSqlite(_connection));
+        services.AddScoped<ISyncOutboxBatchReader, EfSyncOutboxBatchReader>();
+        services.AddSingleton<ISyncIngestRequestBuilder, SyncIngestRequestBuilder>();
+        services.AddSingleton<ISyncIngestClient>(fakeClient);
+        services.AddSingleton<ISyncRetryPolicy, ZeroBackoffRetryPolicy>();
+
+        services.AddScoped<EfSyncAckApplier>();
+        services.AddScoped<ISyncQuarantineService, SyncQuarantineService>();
+        services.AddScoped<ISyncPaymentReconciliationService, SyncPaymentReconciliationService>();
+        services.AddScoped<ISyncAckApplier>(sp =>
+            new TransientSignalingSyncAckApplier(sp, failureTcs, successTcs));
+
+        return services.BuildServiceProvider();
+    }
+
+    [Fact]
+    public async Task SyncProcessor_TransientFailureThenEventualSuccess_RecoversSuccessfullyAndReconcilesPayments()
+    {
+        // Arrange
+        var ctx = new TestProvisionedTerminalContext();
+        var options = new SyncProcessorOptions
+        {
+            BatchSize = 50,
+            PollIntervalSeconds = 60,
+            MaxRetryAttempts = 5
+        };
+
+        var orderId = Guid.NewGuid();
+        var paymentId = Guid.NewGuid();
+        var tenderMethodId = 2; // Card tender method
+
+        using (var seedDb = CreateDbContext(ctx))
+        {
+            var payment = new LocalPayment
+            {
+                Id = paymentId,
+                TenantId = ctx.CurrentTenantId,
+                OrderId = orderId,
+                LocationId = ctx.CurrentLocationId,
+                TerminalId = ctx.CurrentTerminalId,
+                TenderMethodId = tenderMethodId,
+                BusinessDate = new DateOnly(2026, 5, 30),
+                TerminalSequence = 101,
+                PaymentType = PaymentType.Sale,
+                Status = PaymentStatus.Paid,
+                Amount = 150m,
+                RequiresReconciliation = true,
+                ProcessedOn = DateTimeOffset.UtcNow,
+                IsActive = true,
+                CreatedBy = "test",
+                CreatedOn = DateTimeOffset.UtcNow
+            };
+
+            var queueRow = new PaymentReconciliationQueue
+            {
+                Id = Guid.NewGuid(),
+                TenantId = ctx.CurrentTenantId,
+                LocationId = ctx.CurrentLocationId,
+                TerminalId = ctx.CurrentTerminalId,
+                OrderId = orderId,
+                PaymentId = paymentId,
+                TenderMethodId = tenderMethodId,
+                ExternalPaymentReference = "TXN-CARD-99",
+                Status = PaymentReconciliationStatus.Pending,
+                AttemptCount = 0,
+                IdempotencyKey = $"reconciliation:payment:{paymentId}",
+                IsActive = true,
+                CreatedBy = "test",
+                CreatedOn = DateTimeOffset.UtcNow
+            };
+
+            var outboxRow = new SyncOutbox
+            {
+                Id = Guid.NewGuid(),
+                TenantId = ctx.CurrentTenantId,
+                LocationId = ctx.CurrentLocationId,
+                TerminalId = ctx.CurrentTerminalId,
+                BusinessDate = new DateOnly(2026, 5, 30),
+                TerminalSequence = 101,
+                EventType = "OrderCompleted",
+                EventId = orderId,
+                PayloadJson = "{\"orderId\":\"" + orderId + "\"}",
+                PayloadHash = "test-payload-hash-003",
+                IdempotencyKey = $"order-completed:{orderId}",
+                CorrelationId = "test-corr-id",
+                Status = SyncOutboxStatus.Pending,
+                IsActive = true,
+                AttemptCount = 0,
+                CreatedBy = "test",
+                CreatedOn = DateTimeOffset.UtcNow
+            };
+
+            seedDb.LocalPayments.Add(payment);
+            seedDb.PaymentReconciliationQueue.Add(queueRow);
+            seedDb.SyncOutbox.Add(outboxRow);
+            await seedDb.SaveChangesAsync();
+        }
+
+        var secondCallGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var fakeClient = new TransientFailureFakeSyncIngestClient(secondCallGate);
+
+        var failureTcs = new TaskCompletionSource<SyncAckApplyResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var successTcs = new TaskCompletionSource<SyncAckApplyResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await using var sp = BuildTransientPipelineServiceProvider(ctx, options, fakeClient, failureTcs, successTcs);
+        var processor = BuildProcessor(sp, ctx, options);
+
+        // Act
+        await processor.StartAsync(CancellationToken.None);
+
+        // 1. Wait until ApplyFailureAsync commits
+        var failureResult = await failureTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        // 2. Assert failed/retry state
+        Assert.True(failureResult.Success);
+        using (var assertDb = CreateDbContext(ctx))
+        {
+            var outbox = await assertDb.SyncOutbox.FirstOrDefaultAsync(x => x.EventId == orderId);
+            Assert.NotNull(outbox);
+            Assert.Equal(SyncOutboxStatus.Failed, outbox.Status);
+            Assert.Equal(1, outbox.AttemptCount);
+            Assert.NotNull(outbox.LastAttemptOn);
+            Assert.Equal("OFFLINE_ERR", outbox.LastErrorCode);
+            Assert.NotNull(outbox.LastErrorMessage);
+            Assert.Contains("offline", outbox.LastErrorMessage!.ToLowerInvariant());
+
+            var payment = await assertDb.LocalPayments.FindAsync(paymentId);
+            Assert.NotNull(payment);
+            Assert.True(payment.RequiresReconciliation);
+            Assert.Null(payment.ReconciledOn);
+
+            var queue = await assertDb.PaymentReconciliationQueue.FirstOrDefaultAsync(q => q.PaymentId == paymentId);
+            Assert.NotNull(queue);
+            Assert.Equal(PaymentReconciliationStatus.Pending, queue.Status);
+
+            var journalExists = await assertDb.LocalRecoveryJournal.AnyAsync();
+            Assert.False(journalExists);
+        }
+
+        // 3. Release gate to allow success retry
+        secondCallGate.TrySetResult();
+
+        // 4. Wait until ApplySuccessAsync commits
+        var successResult = await successTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        // Act Cleanup: stop processor
+        await processor.StopAsync(CancellationToken.None);
+
+        // 5. Assert final state
+        Assert.True(successResult.Success);
+        using (var assertDb = CreateDbContext(ctx))
+        {
+            var outbox = await assertDb.SyncOutbox.FirstOrDefaultAsync(x => x.EventId == orderId);
+            Assert.NotNull(outbox);
+            Assert.Equal(SyncOutboxStatus.Acked, outbox.Status);
+            Assert.Null(outbox.LastErrorCode);
+            Assert.Null(outbox.LastErrorMessage);
+            Assert.NotNull(outbox.AckedOn);
+
+            var cursor = await assertDb.SyncCursors
+                .FirstOrDefaultAsync(x => x.TerminalId == ctx.CurrentTerminalId && x.StreamName == "push:outbox");
+            Assert.NotNull(cursor);
+            Assert.True(cursor.LastAckedChunkSequence >= successResult.LastAckedChunkSequence);
+
+            var payment = await assertDb.LocalPayments.FindAsync(paymentId);
+            Assert.NotNull(payment);
+            Assert.False(payment.RequiresReconciliation);
+            Assert.NotNull(payment.ReconciledOn);
+
+            var queue = await assertDb.PaymentReconciliationQueue.FirstOrDefaultAsync(q => q.PaymentId == paymentId);
+            Assert.NotNull(queue);
+            Assert.Equal(PaymentReconciliationStatus.ResolvedCaptured, queue.Status);
+
+            var journalExists = await assertDb.LocalRecoveryJournal.AnyAsync();
+            Assert.False(journalExists);
+        }
+    }
 }

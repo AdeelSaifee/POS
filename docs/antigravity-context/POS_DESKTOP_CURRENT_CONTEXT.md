@@ -2,9 +2,9 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 6 / Milestone 6.4 - Retry, recovery & reconciliation
-- **Group**: Group 3 (Tasks 6.4.4, 6.4.5, 6.4.10 completed)
+- **Group**: Group 4 final verification completed / Milestone 6.4 complete
 
-## Status of All Milestone 6.4 Tasks
+## Status of All Milestone 6.4 Tasks (100% COMPLETE)
 - `[x]` Task 6.4.1 - Define a retry policy (Completed)
 - `[x]` Task 6.4.2 - Persist retry state (Completed)
 - `[x]` Task 6.4.3 - Bound retries / quarantine (Completed)
@@ -12,7 +12,7 @@
 - `[x]` Task 6.4.5 - Reconcile payment acks (Completed)
 - `[x]` Task 6.4.6 - Prevent failure hot-loops (Completed)
 - `[x]` Task 6.4.7 - Surface quarantined items (Completed)
-- `[ ]` Task 6.4.8 - Test transient → eventual success (Pending)
+- `[x]` Task 6.4.8 - Test transient → eventual success (Completed)
 - `[x]` Task 6.4.9 - Test poison handling (Completed)
 - `[x]` Task 6.4.10 - Test reconciliation closes loop (Completed)
 
@@ -103,6 +103,12 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.4 - Group 4 (Task 6.4.8 completed)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorPipelineIntegrationTests.cs` (added transient failure -> eventual success integration test)
+  - Verification: `dotnet build POS.slnx --configuration Debug` runs with 0 errors / 0 warnings.
+  - Verification: all tests passed (`dotnet test POS.slnx --configuration Debug`).
+  - No database migrations, no production behavior changes, no UI/bridge/API changes.
 
 ### Phase 6 / Milestone 6.4 - Group 1 (Tasks 6.4.1 and 6.4.6 completed)
 - [ADD] `POS.Desktop/Services/Sync/ISyncRetryPolicy.cs` (Interface defining sync retry backoff calculation and transient error check contract)
@@ -1098,3 +1104,27 @@ The `openShift()` function in `shift_open.html` transition flow:
 ## Next Recommended Milestone
 - **Phase 6 / Milestone 6.4: Group 3 COMPLETE** (Tasks 6.4.4, 6.4.5, and 6.4.10 complete)
 - **Next**: Group 4 (Task 6.4.8 - Test transient → eventual success)
+
+## Verification Summary (Milestone 6.4 Group 4 / Milestone Complete)
+
+### Design Decisions & Implementation Details
+- **Transient Recovery Integration Testing**: Added a comprehensive integration test `SyncProcessor_TransientFailureThenEventualSuccess_RecoversSuccessfullyAndReconcilesPayments` to simulate and prove out transient recovery.
+- **Race-Condition-Free Gates**: Used thread-safe `TaskCompletionSource` objects (a second-call gate in the mock client, failure/success callbacks in the applier) to prevent race conditions and eliminate arbitrary sleeps.
+- **Instant Retry Sweeps**: Supplied a `ZeroBackoffRetryPolicy` to execute the consecutive sweep immediately.
+- **State Auditing**: Confirmed that when transient failure occurs, outbox rows successfully update with attempts, errors, and failure status without triggering quarantine/dead-letter rules or corrupting payments.
+- **Durable Recovery & Cleanup**: Verified that once the endpoint is back online, subsequent retry sweeps successfully write `Acked` status, clear error logs, advance cursor offsets, and reconcile all matching external tenders.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **164/164 passed** (+1 new test case)
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncStaticAnalysisTests"`: **1/1 passed**
+- `dotnet test POS.slnx --configuration Debug`: **684/684 passed** (615 desktop tests + 69 API integration tests)
+
+### Git hygiene
+- `git diff --check`: Zero whitespace/layout errors
+
+## Next Recommended Milestone
+- **Phase 6 / Milestone 6.4 COMPLETE** (All 10 tasks complete)
+- **Next**: Phase 6 / Milestone 6.5 - Connectivity handling & sync observability

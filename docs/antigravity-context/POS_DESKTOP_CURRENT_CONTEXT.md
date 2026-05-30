@@ -2,20 +2,19 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 6 / Milestone 6.5 - Connectivity handling & sync observability
-- **Group**: Group 2 implementation completed / Milestone 6.5 Group 2 complete
+- **Group**: Group 3 verification completed / Milestone 6.5 complete (100% COMPLETE)
 
-## Status of All Milestone 6.5 Tasks (Group 2 COMPLETE)
+## Status of All Milestone 6.5 Tasks (Milestone 6.5 COMPLETE)
 - `[x]` Task 6.5.1 - Add connectivity detection (Completed)
 - `[x]` Task 6.5.2 - Pause processor when offline (Completed)
 - `[x]` Task 6.5.3 - Resume when online (Completed)
 - `[x]` Task 6.5.4 - Track pending/last-synced counts (Completed)
 - `[x]` Task 6.5.5 - Expose sync status via bridge (Completed)
 - `[x]` Task 6.5.6 - Add sync logging/metrics (Completed)
-- `[ ]` Task 6.5.7 - Ensure offline ops unaffected (Group 3 pending)
+- `[x]` Task 6.5.7 - Ensure offline ops unaffected (Completed)
 - `[x]` Task 6.5.8 - Keep checks off UI thread (Completed)
-- `[ ]` Task 6.5.9 - Test offline→online transition (Group 3 pending)
-- `[ ]` Task 6.5.10 - Verify no blocking on checks (Group 3 pending)
-
+- `[x]` Task 6.5.9 - Test offline→online transition (Completed)
+- `[x]` Task 6.5.10 - Verify no blocking on checks (Completed)
 
 ## Status of All Milestone 6.4 Tasks (100% COMPLETE)
 - `[x]` Task 6.4.1 - Define a retry policy (Completed)
@@ -116,6 +115,19 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.5 - Group 3 (Tasks 6.5.7, 6.5.9, 6.5.10 completed)
+- [MODIFY] `POS.Desktop.Tests/Services/Payments/PaymentServiceTests.cs` (Added `CompleteOrderAsync_WhenSyncConnectivityOffline_SucceedsAndPersistsLocalArtifacts` proving PaymentService remains local-first and network-independent)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorPipelineIntegrationTests.cs` (Added `SyncProcessor_OfflineOnlineTransition_DrainsBacklogAndAdvancesCursor` verifying deterministic backlog draining and cursor advancement on online reconnect)
+- [VERIFIED] `POS.Desktop.Tests/Services/Sync/SyncStaticAnalysisTests.cs` (Scans and verifies that all sync service files recursively are free of blocking synchronous calls)
+  - Verification: `dotnet build POS.slnx --configuration Debug` runs with 0 errors / 0 warnings.
+  - Verification: `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"` passes with 174/174 tests successful.
+  - Verification: `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~PaymentService"` passes with 21/21 tests successful.
+  - Verification: `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncStaticAnalysisTests"` passes with 1/1 test successful.
+  - Verification: `dotnet test POS.slnx --configuration Debug` passes with 696/696 tests successful (627 desktop tests + 69 API integration tests).
+  - Verification: `git diff --check` and `git status --short` verified successfully with no formatting anomalies.
+  - No production behavior changes, no database migrations, no UI screen changes, no POS.Api changes, no appsettings.json modifications.
+  - Next Recommended Milestone: Phase 6 / Milestone 6.6 POS.Api master-data pull endpoints (server side).
 
 ### Phase 6 / Milestone 6.5 - Group 2 (Tasks 6.5.4, 6.5.5, 6.5.6 completed)
 - [ADD] `POS.Desktop/Services/Sync/SyncStatusDto.cs` (Immutable record representing terminal synchronization status)

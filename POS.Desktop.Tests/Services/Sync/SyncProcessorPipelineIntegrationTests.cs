@@ -193,8 +193,24 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
 
     private sealed class FakeSyncConnectivityService : ISyncConnectivityService
     {
+        private TaskCompletionSource? _calledTcs;
+
         public bool IsConnected { get; set; } = true;
-        public Task<bool> IsConnectedAsync(CancellationToken cancellationToken = default) => Task.FromResult(IsConnected);
+
+        public Task<bool> IsConnectedAsync(CancellationToken cancellationToken = default)
+        {
+            if (!IsConnected)
+            {
+                _calledTcs?.TrySetResult();
+            }
+            return Task.FromResult(IsConnected);
+        }
+
+        public Task WaitForCallAsync()
+        {
+            _calledTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            return _calledTcs.Task;
+        }
     }
 
     /// <summary>
@@ -801,6 +817,54 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
 
             var journalExists = await assertDb.LocalRecoveryJournal.AnyAsync();
             Assert.False(journalExists);
+        }
+    }
+
+    [Fact]
+    public async Task SyncProcessor_OfflineOnlineTransition_DrainsBacklogAndAdvancesCursor()
+    {
+        var ctx = new TestProvisionedTerminalContext();
+        var options = new SyncProcessorOptions { BatchSize = 50, PollIntervalSeconds = 1 };
+        using (var seedDb = CreateDbContext(ctx))
+        {
+            seedDb.SyncOutbox.Add(MakePendingRow(tenantId: 1, locationId: 10, terminalId: 20, terminalSequence: 100));
+            seedDb.SyncOutbox.Add(MakePendingRow(tenantId: 1, locationId: 10, terminalId: 20, terminalSequence: 101));
+            seedDb.SyncOutbox.Add(MakePendingRow(tenantId: 1, locationId: 10, terminalId: 20, terminalSequence: 102));
+            await seedDb.SaveChangesAsync();
+        }
+        var fakeClient = new CapturingSyncIngestClient();
+        var ackTcs = new TaskCompletionSource<SyncAckApplyResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var sp = BuildPipelineServiceProvider(ctx, options, fakeClient, ackTcs);
+        var connectivityService = (FakeSyncConnectivityService)sp.GetRequiredService<ISyncConnectivityService>();
+        connectivityService.IsConnected = false;
+        var offlineCheckTask = connectivityService.WaitForCallAsync();
+        var processor = BuildProcessor(sp, ctx, options);
+        await processor.StartAsync(CancellationToken.None);
+        await offlineCheckTask.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(0, fakeClient.CallCount);
+        using (var assertDb = CreateDbContext(ctx))
+        {
+            var pendingCount = await assertDb.SyncOutbox.CountAsync(x => x.Status == SyncOutboxStatus.Pending);
+            Assert.Equal(3, pendingCount);
+        }
+        connectivityService.IsConnected = true;
+        var ackResult = await ackTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await processor.StopAsync(CancellationToken.None);
+        Assert.True(ackResult.Success);
+        Assert.Equal(3, ackResult.AckedRowCount);
+        Assert.Equal(1, fakeClient.CallCount);
+        using (var assertDb = CreateDbContext(ctx))
+        {
+            var pendingCount = await assertDb.SyncOutbox.CountAsync(x => x.Status == SyncOutboxStatus.Pending);
+            var ackedCount = await assertDb.SyncOutbox.CountAsync(x => x.Status == SyncOutboxStatus.Acked);
+            var deadLetterCount = await assertDb.SyncOutbox.CountAsync(x => x.Status == SyncOutboxStatus.DeadLetter);
+            Assert.Equal(0, pendingCount);
+            Assert.Equal(3, ackedCount);
+            Assert.Equal(0, deadLetterCount);
+            var cursor = await assertDb.SyncCursors.FirstOrDefaultAsync(x => x.TerminalId == 20 && x.StreamName == "push:outbox");
+            Assert.NotNull(cursor);
+            Assert.True(cursor.LastPushedChunkSequence >= ackResult.LastAckedChunkSequence);
+            Assert.True(cursor.LastAckedChunkSequence >= ackResult.LastAckedChunkSequence);
         }
     }
 }

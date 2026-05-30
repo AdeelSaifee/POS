@@ -1103,6 +1103,76 @@ public class PaymentServiceTests : IDisposable
         Assert.Equal(syncOutboxId, result.OutboxEventId);
     }
 
+    [Fact]
+    public async Task CompleteOrderAsync_WhenSyncConnectivityOffline_SucceedsAndPersistsLocalArtifacts()
+    {
+        // Arrange
+        var provRecord = new ProvisioningRecord(_tenantId, _locationId, _terminalId);
+        var provContext = new ProvisionedTerminalContext(provRecord);
+        using var db = CreateDbContext(provContext);
+        await SeedBaseDataAsync(db);
+
+        var stubOrderService = new StubOrderService
+        {
+            CartState = new CartStateDto
+            {
+                SubtotalAmount = 100m,
+                DiscountAmount = 0m,
+                TaxAmount = 5m,
+                TotalAmount = 105m,
+                Lines = new List<CartLineDto>
+                {
+                    new() { ItemId = 1, VariantId = 101, Name = "Item A", Quantity = 1, UnitPrice = 100m, GrossAmount = 100m, TaxAmount = 5m, NetAmount = 105m, Unit = "PCS" }
+                }
+            }
+        };
+
+        var stubSessionService = new StubSessionService
+        {
+            CurrentSession = new OperatorSession(_operatorId, "John Cashier", "Cashier", DateTimeOffset.UtcNow, _terminalId.ToString(), "STUB-SESS")
+        };
+
+        var paymentService = new PaymentService(db, stubOrderService, stubSessionService, provContext, new ReceiptRenderer(), NullLogger<PaymentService>.Instance);
+
+        var request = new PaymentCompletionRequest(
+            Tenders: new List<PaymentTenderRequest> { new(1, 105m) },
+            IdempotencyKey: Guid.NewGuid().ToString("N")
+        );
+
+        // Act
+        var result = await paymentService.CompleteOrderAsync(request);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.NotNull(result.OrderId);
+        Assert.NotNull(result.ReceiptNumber);
+
+        // Verify order saved in SQLite database
+        var savedOrder = await db.LocalOrders.FirstOrDefaultAsync(o => o.Id == result.OrderId);
+        Assert.NotNull(savedOrder);
+        Assert.Equal(OrderStatus.Completed, savedOrder.Status);
+        Assert.Equal(PaymentStatus.Paid, savedOrder.PaymentStatus);
+
+        // Verify payment saved in SQLite database
+        var savedPayment = await db.LocalPayments.FirstOrDefaultAsync(p => p.OrderId == result.OrderId);
+        Assert.NotNull(savedPayment);
+        Assert.Equal(105m, savedPayment.Amount);
+
+        // Verify SyncOutbox row exists and is Pending
+        var outboxRow = await db.SyncOutbox.FirstOrDefaultAsync(x => x.EventId == result.OrderId && x.EventType == "OrderCompleted");
+        Assert.NotNull(outboxRow);
+        Assert.Equal(SyncOutboxStatus.Pending, outboxRow.Status);
+        Assert.True(outboxRow.IsActive);
+
+        // Verify PrintQueue row exists and is Pending
+        var printQueueRow = await db.PrintQueue.FirstOrDefaultAsync(x => x.OrderId == result.OrderId);
+        Assert.NotNull(printQueueRow);
+        Assert.Equal(PrintQueueStatus.Pending, printQueueRow.Status);
+
+        // Verify cart cleared
+        Assert.True(stubOrderService.ClearCartCalled);
+    }
+
     private string BuildFingerprint(CartStateDto cartState, PaymentCompletionRequest request, Guid shiftId, DateOnly businessDate)
     {
         var details = new

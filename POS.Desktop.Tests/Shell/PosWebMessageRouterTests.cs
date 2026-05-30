@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using POS.Desktop.Bridge;
 using POS.Desktop.Services.Session;
 using POS.Desktop.Services.Auth;
+using POS.Desktop.Services.Sync;
 using POS.Desktop.Shell;
 using Xunit;
 
@@ -59,6 +60,7 @@ public class PosWebMessageRouterTests
         Assert.True(router.CanHandle("cash.recordMovement"));
         Assert.True(router.CanHandle("cash.getLedger"));
         Assert.True(router.CanHandle("cash.getReasonCodes"));
+        Assert.True(router.CanHandle("sync.getStatus"));
     }
 
     [Fact]
@@ -156,7 +158,9 @@ public class PosWebMessageRouterTests
         Assert.Contains("cash.recordMovement", types);
         Assert.Contains("cash.getLedger", types);
         Assert.Contains("cash.getReasonCodes", types);
-        Assert.Equal(26, types.Count);
+        Assert.Contains("sync.getStatus", types);
+        Assert.True(types.Count >= 27);
+        Assert.True(router.CanHandle("sync.getStatus"));
     }
 
     [Fact]
@@ -493,6 +497,56 @@ public class PosWebMessageRouterTests
             DisposeCount++;
             _currentScope?.Dispose();
             _currentScope = null;
+        }
+    }
+
+    [Fact]
+    public async Task RouteAsync_GetSyncStatus_ReturnsSuccessPayload()
+    {
+        // Arrange
+        var mockStatusService = new FakeSyncStatusService();
+        var router = CreateRouter(services =>
+        {
+            services.AddSingleton<ISyncStatusService>(mockStatusService);
+        });
+
+        var request = new BridgeRequestEnvelope
+        {
+            Version = "v1",
+            Type = "sync.getStatus",
+            RequestId = "req-status-1"
+        };
+
+        // Act
+        var response = await router.RouteAsync(request, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.True(response.Ok);
+        Assert.Equal("sync.getStatus", response.Type);
+        Assert.Equal("req-status-1", response.RequestId);
+        Assert.NotNull(response.Payload);
+        Assert.Null(response.Error);
+    }
+
+    private class FakeSyncStatusService : ISyncStatusService
+    {
+        public Task<SyncStatusDto> GetStatusAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new SyncStatusDto(
+                IsProvisioned: true,
+                IsOnline: true,
+                PendingOutboxCount: 5,
+                FailedOutboxCount: 1,
+                DeadLetterOutboxCount: 0,
+                RetryableOutboxCount: 6,
+                PendingReconciliationCount: 0,
+                OpenRecoveryJournalCount: 0,
+                LastPushedChunkSequence: 10,
+                LastAckedChunkSequence: 9,
+                LastAckedOn: DateTimeOffset.UtcNow,
+                LastErrorCode: null
+            ));
         }
     }
 }

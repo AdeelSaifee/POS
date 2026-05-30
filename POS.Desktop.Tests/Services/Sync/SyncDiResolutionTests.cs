@@ -37,6 +37,7 @@ public sealed class SyncDiResolutionTests
         var retryPolicy = sp.GetRequiredService<ISyncRetryPolicy>();
         var quarantineService = sp.GetRequiredService<ISyncQuarantineService>();
         var connectivityService = sp.GetRequiredService<ISyncConnectivityService>();
+        var statusService = sp.GetRequiredService<ISyncStatusService>();
         var hostedServices = sp.GetServices<IHostedService>();
 
         // Assert
@@ -52,12 +53,14 @@ public sealed class SyncDiResolutionTests
         Assert.NotNull(retryPolicy);
         Assert.NotNull(quarantineService);
         Assert.NotNull(connectivityService);
+        Assert.NotNull(statusService);
         Assert.IsType<SyncIngestRequestBuilder>(requestBuilder);
         Assert.IsType<EfSyncOutboxBatchReader>(batchReader);
         Assert.IsType<EfSyncAckApplier>(ackApplier);
         Assert.IsType<SyncRetryPolicy>(retryPolicy);
         Assert.IsType<SyncQuarantineService>(quarantineService);
         Assert.IsType<OsNetworkConnectivityService>(connectivityService);
+        Assert.IsType<EfSyncStatusService>(statusService);
         Assert.Contains(hostedServices, s => s is SyncProcessor);
 
         // Verify default options bindings are resolved from appsettings.json

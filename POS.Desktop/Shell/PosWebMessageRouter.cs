@@ -14,6 +14,7 @@ using POS.Desktop.Services.Shifts;
 using POS.Desktop.Services.Orders;
 using POS.Desktop.Services.Payments;
 using POS.Desktop.Services.CashControl;
+using POS.Desktop.Services.Sync;
 using POS.Desktop.Data;
 using POS.Shared.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -150,6 +151,9 @@ public sealed class PosWebMessageRouter
             ct));
         Register("cash.getReasonCodes", sp => (req, ct) => HandleCashGetReasonCodesAsync(
             sp.GetRequiredService<PosLocalDbContext>(), req, ct));
+
+        Register("sync.getStatus", sp => (req, ct) => HandleGetSyncStatusAsync(
+            sp.GetRequiredService<ISyncStatusService>(), req, ct));
     }
 
     /// <summary>
@@ -1451,6 +1455,24 @@ public sealed class PosWebMessageRouter
             _logger.LogError(ex, "Failed to get cash control reason codes.");
             return BridgeResponseEnvelope.Failure(
                 request.Type, request.RequestId, "REASON_CODES_FAILED", "Failed to load reason codes.");
+        }
+    }
+
+    private async Task<BridgeResponseEnvelope> HandleGetSyncStatusAsync(
+        ISyncStatusService syncStatusService,
+        BridgeRequestEnvelope request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var status = await syncStatusService.GetStatusAsync(cancellationToken).ConfigureAwait(false);
+            return BridgeResponseEnvelope.Success(request.Type, request.RequestId, status);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get sync status.");
+            return BridgeResponseEnvelope.Failure(
+                request.Type, request.RequestId, "SYNC_STATUS_FAILED", "Failed to load sync status.");
         }
     }
 }

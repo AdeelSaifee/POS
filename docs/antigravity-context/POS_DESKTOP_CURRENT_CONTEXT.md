@@ -2,15 +2,15 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 6 / Milestone 6.5 - Connectivity handling & sync observability
-- **Group**: Group 1 implementation completed / Milestone 6.5 Group 1 complete
+- **Group**: Group 2 implementation completed / Milestone 6.5 Group 2 complete
 
-## Status of All Milestone 6.5 Tasks (Group 1 COMPLETE)
+## Status of All Milestone 6.5 Tasks (Group 2 COMPLETE)
 - `[x]` Task 6.5.1 - Add connectivity detection (Completed)
 - `[x]` Task 6.5.2 - Pause processor when offline (Completed)
 - `[x]` Task 6.5.3 - Resume when online (Completed)
-- `[ ]` Task 6.5.4 - Track pending/last-synced counts (Group 2 pending)
-- `[ ]` Task 6.5.5 - Expose sync status via bridge (Group 2 pending)
-- `[ ]` Task 6.5.6 - Add sync logging/metrics (Group 2 pending)
+- `[x]` Task 6.5.4 - Track pending/last-synced counts (Completed)
+- `[x]` Task 6.5.5 - Expose sync status via bridge (Completed)
+- `[x]` Task 6.5.6 - Add sync logging/metrics (Completed)
 - `[ ]` Task 6.5.7 - Ensure offline ops unaffected (Group 3 pending)
 - `[x]` Task 6.5.8 - Keep checks off UI thread (Completed)
 - `[ ]` Task 6.5.9 - Test offline→online transition (Group 3 pending)
@@ -116,6 +116,23 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.5 - Group 2 (Tasks 6.5.4, 6.5.5, 6.5.6 completed)
+- [ADD] `POS.Desktop/Services/Sync/SyncStatusDto.cs` (Immutable record representing terminal synchronization status)
+- [ADD] `POS.Desktop/Services/Sync/ISyncStatusService.cs` (Defines the query contract for checking status/metrics cheaply and safely)
+- [ADD] `POS.Desktop/Services/Sync/EfSyncStatusService.cs` (Scoped service that aggregates counts from outbox, reconciliation, recovery, and cursors using AsNoTracking and context filters)
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs` (Registered ISyncStatusService as EfSyncStatusService with scoped lifetime in the DI container)
+- [MODIFY] `POS.Desktop/Shell/PosWebMessageRouter.cs` (Registered "sync.getStatus" bridge endpoint and added corresponding handler mapping)
+- [ADD] `POS.Desktop.Tests/Services/Sync/SyncStatusServiceTests.cs` (Integration tests checking unprovisioned state defaults, counts, retryable logic, sequencing, scoping boundaries, and safety properties)
+- [MODIFY] `POS.Desktop.Tests/Shell/PosWebMessageRouterTests.cs` (Added route assertions and RouteAsync_GetSyncStatus_ReturnsSuccessPayload integration routing checks)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncDiResolutionTests.cs` (Added resolution test for ISyncStatusService -> EfSyncStatusService)
+  - Verification: `dotnet build POS.slnx --configuration Debug` runs with 0 errors / 0 warnings.
+  - Verification: `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"` passes with 173/173 tests successful (5 status tests added).
+  - Verification: `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~PosWebMessageRouter"` passes with 20/20 tests successful (2 new router tests).
+  - Verification: `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncStaticAnalysisTests"` passes with 1/1 tests successful.
+  - Verification: `dotnet test POS.slnx --configuration Debug` passes with 694/694 tests successful (625 desktop tests + 69 API integration tests).
+  - Verification: `git diff --check` and `git status --short` verified successfully with no formatting anomalies.
+  - No database migrations, no UI screen changes, no POS.Api changes, no appsettings.json modifications.
 
 ### Phase 6 / Milestone 6.5 - Group 1 (Tasks 6.5.1, 6.5.2, 6.5.3, 6.5.8 completed)
 - [ADD] `POS.Desktop/Services/Sync/ISyncConnectivityService.cs` (Interface defining the contract for verifying network connectivity in a cheap, non-blocking manner)

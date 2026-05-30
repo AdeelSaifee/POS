@@ -2,9 +2,9 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 6 / Milestone 6.3 - Outbox drain processor
-- **Group**: Group 4 (Tasks 6.3.5 and 6.3.6 - completed)
+- **Group**: Group 5 (Task 6.3.10 - completed) — Milestone 6.3 100% COMPLETE
 
-## Status of All Milestone 6.3 Tasks (Group 4 COMPLETE)
+## Status of All Milestone 6.3 Tasks (ALL COMPLETE)
 - `[x]` Task 6.3.1 - Define the SyncProcessor (Completed)
 - `[x]` Task 6.3.2 - Register as a hosted service (Completed)
 - `[x]` Task 6.3.3 - Batch unsent outbox rows (Completed)
@@ -14,7 +14,7 @@
 - `[x]` Task 6.3.7 - Run off the UI thread (Completed)
 - `[x]` Task 6.3.8 - Tune batch size/interval (Completed)
 - `[x]` Task 6.3.9 - Pause cleanly on shutdown (Completed)
-- `[ ]` Task 6.3.10 - Test events reach central
+- `[x]` Task 6.3.10 - Test events reach central (Completed)
 
 ## Status of All Milestone 6.2 Tasks (Group 4 COMPLETE - 100% COMPLETE)
 - `[x]` Task 6.2.1 - Add API base URL config
@@ -90,6 +90,9 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.3 - Group 5 (Task 6.3.10 completed)
+- [ADD] `POS.Desktop.Tests/Services/Sync/SyncProcessorPipelineIntegrationTests.cs` (2 SyncProcessor-driven integration tests proving the complete desktop push pipeline end-to-end using real SQLite, real EF reader/builder/ack applier, fake capturing ISyncIngestClient, and TaskCompletionSource synchronization)
 
 ### Phase 6 / Milestone 6.3 - Group 4 (Tasks 6.3.5 and 6.3.6 completed)
 - [ADD] `POS.Desktop/Services/Sync/SyncAckApplyResult.cs` (Outcome carrier representing db mutations result)
@@ -771,5 +774,29 @@ The `openShift()` function in `shift_open.html` transition flow:
 - `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncStaticAnalysisTests"`: **1/1 passed** (no async-blocking warnings)
 - `dotnet test POS.slnx --configuration Debug`: **636/636 passed** (567 desktop tests + 69 API integration tests)
 
+## Verification Summary (Milestone 6.3 Group 5)
+
+### Design Decisions & Implementation Details
+- **SyncProcessor-driven integration test**: Task 6.3.10 is proven by `SyncProcessorPipelineIntegrationTests.cs`, which runs the real `SyncProcessor` background service against real in-memory SQLite. This exercises the full pipeline: `EfSyncOutboxBatchReader` → `SyncIngestRequestBuilder` → `CapturingSyncIngestClient` (fake) → `EfSyncAckApplier`.
+- **TaskCompletionSource synchronization**: The `SignalingSyncAckApplier` wrapper fires a `TaskCompletionSource<SyncAckApplyResult>` after `EfSyncAckApplier.ApplySuccessAsync` returns. The test awaits this TCS (bounded by 5 seconds), ensuring assertions run only AFTER the SQLite transaction is committed — not against a sleep timer.
+- **PollIntervalSeconds = 60**: After one cycle the processor parks in `Task.Delay(60s, stoppingToken)`. `StopAsync` cancels that delay immediately — tests do not wait 60 seconds.
+- **ServiceCollection wiring**: `EfSyncAckApplier` is registered as a concrete scoped type; `ISyncAckApplier` is bound to a factory that wraps it with `SignalingSyncAckApplier`, sharing a single TCS captured in the factory lambda closure. This avoids captive-dependency problems while allowing per-scope real applier instances.
+- **No true API-backed E2E**: Deferred. The API ingest behavior is already proven by 12 endpoint tests (`SyncIngestEndpointTests`) and a smoke test (`SyncIngestSmokeTests`). Group 5 focuses on the desktop pipeline; full connectivity integration is deferred to a later explicit milestone.
+- **No retry/backoff/quarantine**: Strictly out of scope for Milestone 6.3 (Milestone 6.4 concern).
+- **No production code changes**: All new code is test-local. `SyncProcessor`, `EfSyncAckApplier`, and all other production services are unchanged.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **118/118 passed** (+2 new SyncProcessor pipeline integration tests)
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncStaticAnalysisTests"`: **1/1 passed** (no async-blocking warnings; no new production sync files added)
+- `dotnet test POS.slnx --configuration Debug`: **638/638 passed** (569 desktop tests + 69 API integration tests)
+
+### Git hygiene
+- `git diff --check`: Zero whitespace/layout errors
+- `git status --short`: Only `SyncProcessorPipelineIntegrationTests.cs` (untracked new file) and `.claude/settings.local.json` (tool config, not production code)
+
 ## Next Recommended Milestone
-- **Phase 6 / Milestone 6.3 - Group 5 / Task 6.3.10: Test events reach central**
+- **Phase 6 / Milestone 6.3: COMPLETE** (all 10 tasks done)
+- **Next: Phase 6 / Milestone 6.4 — Retry and backoff / quarantine** (failed post handling, dead-letter, exponential backoff)

@@ -18,6 +18,7 @@ using POS.Desktop.Services.Receipts;
 using POS.Desktop.Shell;
 using Microsoft.Extensions.Options;
 using System.IO;
+using POS.Desktop.Services.Sync;
 
 namespace POS.Desktop.Configuration;
 
@@ -83,6 +84,27 @@ public static class DesktopHostBuilder
                 services.AddScoped<IPaymentService, PaymentService>();
                 services.AddScoped<ICashControlService, CashControlService>();
                 services.AddScoped<IReceiptRenderer, ReceiptRenderer>();
+
+                // Sync Services (Task 6.2.6)
+                services.Configure<SyncClientOptions>(hostContext.Configuration.GetSection("Sync"));
+                services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<SyncClientOptions>>().Value);
+                services.AddSingleton<IDeviceTokenProvider, UnconfiguredDeviceTokenProvider>();
+                services.AddHttpClient<ISyncIngestClient, SyncIngestClient>((serviceProvider, client) =>
+                {
+                    var options = serviceProvider.GetRequiredService<SyncClientOptions>();
+
+                    if (Uri.TryCreate(options.ApiBaseUrl, UriKind.Absolute, out var baseUri) &&
+                        (baseUri.Scheme == Uri.UriSchemeHttp || baseUri.Scheme == Uri.UriSchemeHttps))
+                    {
+                        client.BaseAddress = baseUri;
+                    }
+
+                    var timeoutSecs = options.TimeoutSeconds is > 0 and <= 300
+                        ? options.TimeoutSeconds
+                        : 15;
+
+                    client.Timeout = TimeSpan.FromSeconds(timeoutSecs);
+                });
 
                 // Register context first as DbContext depends on it.
                 // ProvisioningConfigLoader seeds the context with the appsettings.json value (normally

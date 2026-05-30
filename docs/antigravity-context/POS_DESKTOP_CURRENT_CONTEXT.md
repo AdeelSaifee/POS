@@ -2,17 +2,17 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 6 / Milestone 6.2 - Device-authenticated HTTP client
-- **Group**: Group 2 (Tasks 6.2.3 to 6.2.5 - completed)
+- **Group**: Group 3 (Tasks 6.2.6 to 6.2.8 - completed)
 
-## Status of All Milestone 6.2 Tasks (Group 2 COMPLETE)
+## Status of All Milestone 6.2 Tasks (Group 3 COMPLETE)
 - `[x]` Task 6.2.1 - Add API base URL config
 - `[x]` Task 6.2.2 - Define the sync client interface
 - `[x]` Task 6.2.3 - Implement the client
 - `[x]` Task 6.2.4 - Acquire a device token
 - `[x]` Task 6.2.5 - Implement token refresh
-- `[ ]` Task 6.2.6 - Register the typed HttpClient (Not started)
-- `[ ]` Task 6.2.7 - Map failures to typed results (Not started)
-- `[ ]` Task 6.2.8 - Handle timeouts/skew (Not started)
+- `[x]` Task 6.2.6 - Register the typed HttpClient (Completed)
+- `[x]` Task 6.2.7 - Map failures to typed results (Completed)
+- `[x]` Task 6.2.8 - Handle timeouts/skew (Completed)
 - `[ ]` Task 6.2.9 - Smoke test ingest call (Not started)
 - `[ ]` Task 6.2.10 - Ensure no UI-thread blocking (Not started)
 
@@ -78,6 +78,12 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.2 - Group 3 (Tasks 6.2.6 to 6.2.8 - completed)
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs` (Registered typed HttpClient `ISyncIngestClient` with safe, exception-free ApiBaseUrl Uri.TryCreate parsing and safely bounded timeout configuration, registered IDeviceTokenProvider as UnconfiguredDeviceTokenProvider, and bound configuration options)
+- [MODIFY] `POS.Desktop/POS.Desktop.csproj` (Added package reference to Microsoft.Extensions.Http to enable IHttpClientFactory AddHttpClient extension)
+- [ADD] `POS.Desktop/Services/Sync/UnconfiguredDeviceTokenProvider.cs` (Default unconfigured device token provider implementation to protect the client resolution boundary from container start-up failures)
+- [ADD] `POS.Desktop.Tests/Services/Sync/SyncDiResolutionTests.cs` (Integration tests verifying container resolution, options binding, boundary safety checks, and unconfigured token fallback result mappings)
 
 ### Phase 6 / Milestone 6.2 - Group 2 (Tasks 6.2.3 to 6.2.5 - completed)
 - [ADD] `POS.Desktop/Services/Sync/SyncIngestClient.cs` (Core sync ingest client implementation utilizing HttpClient to POST outbox batches to /api/sync/ingest, intercepting headers with Bearer tokens, mapping network timeouts and socket failures to SyncIngestClientResult DTOs)
@@ -607,6 +613,22 @@ The `openShift()` function in `shift_open.html` transition flow:
 - `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **44/44 passed** (+22 new Group 2 tests after the exception masking safety fix)
 - `dotnet test POS.slnx --configuration Debug`: **563/563 passed** (495 desktop tests + 68 API integration tests)
 
+## Verification Summary (Milestone 6.2 Group 3)
+
+### Design Decisions & Implementation Details
+- **Typed HttpClient Registered**: Registered `ISyncIngestClient` via typed client `AddHttpClient<ISyncIngestClient, SyncIngestClient>` inside `DesktopHostBuilder.cs` (Task 6.2.6). Enabled transitively via Microsoft.Extensions.Http package reference.
+- **Exception-Free DI Configuration**: Hardened client setup in DI container so that configuration anomalies (blank or structurally invalid URLs/timeouts) never throw exceptions at boot-time or DI resolution time. Invalid configurations are safely handled at call-time by `SyncIngestClient.IngestAsync`.
+- **Safe Timeout & Bounded Mappings**: The timeout is securely set from `TimeoutSeconds` if it is greater than 0 and less than or equal to 300 seconds, falling back to a safe, bounded standard of 15 seconds.
+- **Default Fail-Safe Token Provider**: Registered `IDeviceTokenProvider` as `UnconfiguredDeviceTokenProvider` to provide a clean fallback boundary that returns typed failure results indicating missing token sources without generating exceptions (Task 6.2.7).
+- **Thorough DI Integration Tests**: Added a new test class `SyncDiResolutionTests.cs` (3 test methods / 6 test cases) to verify host DI resolution, standard binding logic, timeout boundaries, fallback defaults, and result type mapping when configured with unconfigured token providers.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **50/50 passed** (+6 new Group 3 DI/container safety test cases)
+- `dotnet test POS.slnx --configuration Debug`: **569/569 passed** (501 desktop tests + 68 API integration tests)
+
 ## Next Recommended Milestone
-- **Phase 6 / Milestone 6.2 - Group 3** (WPF Generic Host DI Registration + Authorization Delegating Handler + Timeout Hardening)
+- **Phase 6 / Milestone 6.2 - Group 4** (Integration / Smoke test endpoints & UI Non-blocking verification)
 

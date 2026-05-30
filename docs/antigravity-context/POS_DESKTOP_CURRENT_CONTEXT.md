@@ -2,9 +2,9 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 6 / Milestone 6.2 - Device-authenticated HTTP client
-- **Group**: Group 3 (Tasks 6.2.6 to 6.2.8 - completed)
+- **Group**: Group 4 (Tasks 6.2.9 to 6.2.10 - completed)
 
-## Status of All Milestone 6.2 Tasks (Group 3 COMPLETE)
+## Status of All Milestone 6.2 Tasks (Group 4 COMPLETE - 100% COMPLETE)
 - `[x]` Task 6.2.1 - Add API base URL config
 - `[x]` Task 6.2.2 - Define the sync client interface
 - `[x]` Task 6.2.3 - Implement the client
@@ -13,8 +13,8 @@
 - `[x]` Task 6.2.6 - Register the typed HttpClient (Completed)
 - `[x]` Task 6.2.7 - Map failures to typed results (Completed)
 - `[x]` Task 6.2.8 - Handle timeouts/skew (Completed)
-- `[ ]` Task 6.2.9 - Smoke test ingest call (Not started)
-- `[ ]` Task 6.2.10 - Ensure no UI-thread blocking (Not started)
+- `[x]` Task 6.2.9 - Smoke test ingest call (Completed)
+- `[x]` Task 6.2.10 - Ensure no UI-thread blocking (Completed)
 
 ## Status of All Milestone 6.1 Tasks (100% COMPLETE)
 - `[x]` Task 6.1.1 - Design the ingest contract (Shared contract records in POS.Shared)
@@ -78,6 +78,11 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.2 - Group 4 (Tasks 6.2.9 & 6.2.10 - completed)
+- [ADD] `POS.Tests/IntegrationTests/SyncIngestSmokeTests.cs` (Direct API-side integration smoke test verifying that a valid POST request to /api/sync/ingest successfully authenticates via TestRequestAuthentication and is acknowledged as Received by the persistence engine)
+- [ADD] `POS.Desktop.Tests/Services/Sync/SyncStaticAnalysisTests.cs` (Static async-safety checks to prevent thread-blocking C# code by asserting no files inside `POS.Desktop/Services/Sync/` contain `.Result`, `.Wait(`, or `GetAwaiter().GetResult()`)
+- [VERIFY] `POS.Tests/POS.Tests.csproj` remains `net8.0` and references only `POS.Api` + `POS.Shared`; no `POS.Desktop` reference was added.
 
 ### Phase 6 / Milestone 6.2 - Group 3 (Tasks 6.2.6 to 6.2.8 - completed)
 - [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs` (Registered typed HttpClient `ISyncIngestClient` with safe, exception-free ApiBaseUrl Uri.TryCreate parsing and safely bounded timeout configuration, registered IDeviceTokenProvider as UnconfiguredDeviceTokenProvider, and bound configuration options)
@@ -629,6 +634,21 @@ The `openShift()` function in `shift_open.html` transition flow:
 - `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **50/50 passed** (+6 new Group 3 DI/container safety test cases)
 - `dotnet test POS.slnx --configuration Debug`: **569/569 passed** (501 desktop tests + 68 API integration tests)
 
+## Verification Summary (Milestone 6.2 Group 4)
+
+### Design Decisions & Implementation Details
+- **API-Side Smoke Verification**: Added `SyncIngestSmokeTests.cs` (Task 6.2.9) verifying direct API ingest call processing. This test uses the existing `TestRequestAuthentication.Apply` helper directly and successfully validates that a valid chunk request yields a `Received` response, without introducing any dependency from `POS.Tests` on `POS.Desktop`.
+- **Asynchronous Safety Check**: Created `SyncStaticAnalysisTests.cs` (Task 6.2.10) to automatically scan the C# sync services layer, asserting that no `.Result`, `.Wait(`, or `GetAwaiter().GetResult()` blocking operations are present in active production files.
+- **Pure API Target Integration**: Verified `POS.Tests/POS.Tests.csproj` remains `net8.0` with only `POS.Api` and `POS.Shared` project references, preserving pure non-WPF API test scope.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **51/51 passed** (+1 new static async-safety test case)
+- `dotnet test POS.Tests/POS.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncIngestSmokeTests"`: **1/1 passed** (+1 new API smoke test case)
+- `dotnet test POS.slnx --configuration Debug`: **571/571 passed** (502 desktop tests + 69 API integration tests)
+
 ## Next Recommended Milestone
-- **Phase 6 / Milestone 6.2 - Group 4** (Integration / Smoke test endpoints & UI Non-blocking verification)
+- **Phase 6 / Milestone 6.3 - Outbox drain processor** (Task 6.3.1 - Not started)
 

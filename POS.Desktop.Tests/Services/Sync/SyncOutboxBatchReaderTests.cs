@@ -147,7 +147,7 @@ public sealed class SyncOutboxBatchReaderTests : IDisposable
     }
 
     [Fact]
-    public async Task SyncOutboxBatchReader_ExcludesAckedFailedInFlightDeadLetterRows()
+    public async Task SyncOutboxBatchReader_ExcludesAckedInFlightDeadLetterRows_ButIncludesFailedRows()
     {
         // Arrange
         var context = new TestProvisionedTerminalContext();
@@ -168,8 +168,9 @@ public sealed class SyncOutboxBatchReaderTests : IDisposable
         var batch = await reader.ReadPendingBatchAsync();
 
         // Assert
-        Assert.Equal(1, batch.Count);
-        Assert.Equal(pending.Id, batch.Items[0].Id);
+        Assert.Equal(2, batch.Count);
+        Assert.Contains(batch.Items, x => x.Id == pending.Id);
+        Assert.Contains(batch.Items, x => x.Id == failed.Id);
     }
 
     [Fact]

@@ -173,6 +173,9 @@ public sealed class SyncProcessor : BackgroundService
                     _logger.LogError(
                         "SyncProcessor successfully posted outbox batch {Sequence} but received a null response payload from Central. Skipping local database mutations.",
                         request.ChunkSequence);
+
+                    var error = new SyncIngestClientError(SyncIngestClientErrorType.Unexpected, "Received a null response payload from Central.", "NULL_RESPONSE");
+                    await ackApplier.ApplyFailureAsync(batch, request, error, cancellationToken).ConfigureAwait(false);
                     return false;
                 }
 
@@ -204,6 +207,9 @@ public sealed class SyncProcessor : BackgroundService
                         request.ChunkSequence,
                         applyResult.ErrorCode,
                         applyResult.ErrorMessage);
+
+                    var error = new SyncIngestClientError(SyncIngestClientErrorType.Unexpected, applyResult.ErrorMessage ?? "Local DB ack apply failed.", applyResult.ErrorCode ?? "DB_WRITE_ERROR");
+                    await ackApplier.ApplyFailureAsync(batch, request, error, cancellationToken).ConfigureAwait(false);
                     return false;
                 }
             }
@@ -216,6 +222,8 @@ public sealed class SyncProcessor : BackgroundService
                     error?.ErrorType,
                     error?.Code,
                     error?.Message);
+
+                await ackApplier.ApplyFailureAsync(batch, request, error, cancellationToken).ConfigureAwait(false);
                 return false;
             }
         }

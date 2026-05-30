@@ -154,4 +154,29 @@ public sealed class SyncProcessorOptionsTests
         Assert.NotNull(errorMessage);
         Assert.Contains("BackoffMultiplier", errorMessage);
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-5)]
+    [InlineData(101)]
+    public void SyncProcessorOptions_InvalidMaxRetryAttempts_FailsValidation(int value)
+    {
+        var options = new SyncProcessorOptions { MaxRetryAttempts = value };
+        var isValid = options.Validate(out var errorMessage);
+        Assert.False(isValid);
+        Assert.NotNull(errorMessage);
+        Assert.Contains("MaxRetryAttempts", errorMessage);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(5)]
+    [InlineData(100)]
+    public void SyncProcessorOptions_ValidMaxRetryAttempts_PassesValidation(int value)
+    {
+        var options = new SyncProcessorOptions { MaxRetryAttempts = value };
+        var isValid = options.Validate(out var errorMessage);
+        Assert.True(isValid);
+        Assert.Null(errorMessage);
+    }
 }

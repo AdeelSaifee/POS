@@ -627,4 +627,346 @@ public sealed class SyncAckApplierTests : IDisposable
         Assert.Equal(3, dbRow.AttemptCount); // Preserved
         Assert.Equal(new DateTimeOffset(2026, 5, 30, 6, 0, 0, TimeSpan.Zero), dbRow.LastAttemptOn); // Preserved
     }
+
+    [Fact]
+    public async Task ApplySuccess_FromFailedToAcked_SuccessfullyTransitions()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext();
+        using var db = CreateDbContext(context);
+        var applier = new EfSyncAckApplier(db, context, NullLogger<EfSyncAckApplier>.Instance);
+
+        var row = CreateTestOutbox();
+        row.Status = SyncOutboxStatus.Failed; // Start as Failed
+        row.AttemptCount = 2;
+        db.SyncOutbox.Add(row);
+        await db.SaveChangesAsync();
+
+        var item = ToBatchItem(row);
+        var ev = ToRequestEvent(item, 101);
+        var batch = new SyncOutboxBatch(new[] { item });
+        var request = new SyncIngestRequest(1, 10, 20, 101, "idem", "hash", "corr", new[] { ev });
+        var ack = ToResponseAck(ev);
+        var response = new SyncIngestResponse(Guid.NewGuid(), 101, "idem", "Received", 1, new[] { ack }, null, null);
+
+        // Act
+        var result = await applier.ApplySuccessAsync(batch, request, response);
+
+        // Assert
+        Assert.True(result.Success);
+
+        var dbRow = await db.SyncOutbox.FindAsync(row.Id);
+        Assert.NotNull(dbRow);
+        Assert.Equal(SyncOutboxStatus.Acked, dbRow.Status);
+    }
+
+    [Fact]
+    public async Task ApplyFailure_FirstFailure_IncrementsCountAndSetsFailedStatus()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext();
+        using var db = CreateDbContext(context);
+        var options = new SyncProcessorOptions { MaxRetryAttempts = 3 };
+        var applier = new EfSyncAckApplier(db, context, options, NullLogger<EfSyncAckApplier>.Instance);
+
+        var row = CreateTestOutbox();
+        row.Status = SyncOutboxStatus.Pending;
+        row.AttemptCount = 0;
+        db.SyncOutbox.Add(row);
+        await db.SaveChangesAsync();
+
+        var item = ToBatchItem(row);
+        var ev = ToRequestEvent(item, 200);
+        var batch = new SyncOutboxBatch(new[] { item });
+        var request = new SyncIngestRequest(1, 10, 20, 200, "idem", "hash", "corr", new[] { ev });
+        var error = new SyncIngestClientError(SyncIngestClientErrorType.Timeout, "Request timed out", "TIMEOUT_ERROR");
+
+        // Act
+        var result = await applier.ApplyFailureAsync(batch, request, error);
+
+        // Assert
+        Assert.True(result.Success);
+
+        var dbRow = await db.SyncOutbox.FindAsync(row.Id);
+        Assert.NotNull(dbRow);
+        Assert.Equal(SyncOutboxStatus.Failed, dbRow.Status);
+        Assert.Equal(1, dbRow.AttemptCount);
+        Assert.NotNull(dbRow.LastAttemptOn);
+        Assert.Equal("TIMEOUT_ERROR", dbRow.LastErrorCode);
+        Assert.Equal("Request timed out", dbRow.LastErrorMessage);
+    }
+
+    [Fact]
+    public async Task ApplyFailure_ReachesMaxAttempts_TransitionsToDeadLetterAndCreatesRecoveryJournalEntry()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext();
+        using var db = CreateDbContext(context);
+        var options = new SyncProcessorOptions { MaxRetryAttempts = 3 };
+        var applier = new EfSyncAckApplier(db, context, options, NullLogger<EfSyncAckApplier>.Instance);
+
+        var row = CreateTestOutbox();
+        row.Status = SyncOutboxStatus.Failed;
+        row.AttemptCount = 2; // Next failure will make it 3 (equal to MaxRetryAttempts)
+        db.SyncOutbox.Add(row);
+        await db.SaveChangesAsync();
+
+        var item = ToBatchItem(row);
+        var ev = ToRequestEvent(item, 300);
+        var batch = new SyncOutboxBatch(new[] { item });
+        var request = new SyncIngestRequest(1, 10, 20, 300, "idem", "hash", "corr", new[] { ev });
+        var error = new SyncIngestClientError(SyncIngestClientErrorType.Conflict, "Conflict occurred", "CONFLICT_ERROR");
+
+        // Act
+        var result = await applier.ApplyFailureAsync(batch, request, error);
+
+        // Assert
+        Assert.True(result.Success);
+
+        var dbRow = await db.SyncOutbox.FindAsync(row.Id);
+        Assert.NotNull(dbRow);
+        Assert.Equal(SyncOutboxStatus.DeadLetter, dbRow.Status);
+        Assert.Equal(3, dbRow.AttemptCount);
+
+        // Assert recovery journal entry
+        var journalEntry = await db.LocalRecoveryJournal.FirstOrDefaultAsync(x => x.IdempotencyKey == $"quarantine:syncoutbox:{row.Id}");
+        Assert.NotNull(journalEntry);
+        Assert.Equal(RecoveryType.SyncInFlight, journalEntry.RecoveryType);
+        Assert.Equal(RecoveryJournalStatus.Open, journalEntry.Status);
+        Assert.Equal(RequiredRecoveryAction.RetrySync, journalEntry.RequiredAction);
+        Assert.Equal(row.CorrelationId, journalEntry.CorrelationId);
+
+        // Validate safe payload does not leak database business PayloadJson
+        Assert.DoesNotContain(row.PayloadJson, journalEntry.StatePayloadJson);
+
+        var payloadDoc = System.Text.Json.JsonDocument.Parse(journalEntry.StatePayloadJson);
+        Assert.Equal(row.Id.ToString(), payloadDoc.RootElement.GetProperty("OutboxId").GetString());
+        Assert.Equal("DeadLetter", payloadDoc.RootElement.GetProperty("Status").GetString());
+        Assert.Equal("CONFLICT_ERROR", payloadDoc.RootElement.GetProperty("LastErrorCode").GetString());
+        Assert.Equal(3, payloadDoc.RootElement.GetProperty("AttemptCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task ApplyFailure_PreventsDuplicateRecoveryJournalEntries()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext();
+        using var db = CreateDbContext(context);
+        var options = new SyncProcessorOptions { MaxRetryAttempts = 3 };
+        var applier = new EfSyncAckApplier(db, context, options, NullLogger<EfSyncAckApplier>.Instance);
+
+        var row = CreateTestOutbox();
+        row.Status = SyncOutboxStatus.Failed;
+        row.AttemptCount = 2; // Next failure will make it 3
+        db.SyncOutbox.Add(row);
+
+        // Manually seed an existing journal entry with the same idempotency key
+        var existingJournal = new LocalRecoveryJournal
+        {
+            Id = Guid.NewGuid(),
+            TenantId = context.CurrentTenantId,
+            LocationId = context.CurrentLocationId,
+            TerminalId = context.CurrentTerminalId,
+            RecoveryType = RecoveryType.SyncInFlight,
+            Status = RecoveryJournalStatus.Open,
+            RequiredAction = RequiredRecoveryAction.RetrySync,
+            StatePayloadJson = "{}",
+            IdempotencyKey = $"quarantine:syncoutbox:{row.Id}",
+            CorrelationId = row.CorrelationId,
+            IsActive = true,
+            CreatedBy = "test-seeding",
+            CreatedOn = DateTimeOffset.UtcNow
+        };
+        db.LocalRecoveryJournal.Add(existingJournal);
+        await db.SaveChangesAsync();
+
+        var item = ToBatchItem(row);
+        var ev = ToRequestEvent(item, 400);
+        var batch = new SyncOutboxBatch(new[] { item });
+        var request = new SyncIngestRequest(1, 10, 20, 400, "idem", "hash", "corr", new[] { ev });
+        var error = new SyncIngestClientError(SyncIngestClientErrorType.Conflict, "Conflict occurred", "CONFLICT_ERROR");
+
+        // Act
+        var result = await applier.ApplyFailureAsync(batch, request, error);
+
+        // Assert
+        Assert.True(result.Success);
+
+        // Count should still be exactly 1 in the DB (the seed wasn't duplicated/overwritten)
+        var count = await db.LocalRecoveryJournal.CountAsync(x => x.IdempotencyKey == $"quarantine:syncoutbox:{row.Id}");
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public async Task SyncQuarantineService_GetQuarantinedItems_ReturnsSafeMetadata()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext();
+        using var db = CreateDbContext(context);
+
+        var pendingRow = CreateTestOutbox(idempotencyKey: "idem-pending");
+        pendingRow.Status = SyncOutboxStatus.Pending;
+
+        var deadLetterRow = CreateTestOutbox(idempotencyKey: "idem-deadletter");
+        deadLetterRow.Status = SyncOutboxStatus.DeadLetter;
+        deadLetterRow.AttemptCount = 5;
+        deadLetterRow.LastAttemptOn = DateTimeOffset.UtcNow;
+        deadLetterRow.LastErrorCode = "TEST_CODE";
+        deadLetterRow.LastErrorMessage = "TEST_MESSAGE";
+
+        db.SyncOutbox.AddRange(pendingRow, deadLetterRow);
+        await db.SaveChangesAsync();
+
+        var service = new SyncQuarantineService(db, context);
+
+        // Act
+        var items = await service.GetQuarantinedItemsAsync();
+
+        // Assert
+        Assert.Single(items);
+        var item = items[0];
+        Assert.Equal(deadLetterRow.Id, item.OutboxId);
+        Assert.Equal(deadLetterRow.EventType, item.EventType);
+        Assert.Equal(deadLetterRow.EventId, item.EventId);
+        Assert.Equal("TEST_CODE", item.LastErrorCode);
+        Assert.Equal("TEST_MESSAGE", item.LastErrorMessage);
+        Assert.Equal(5, item.AttemptCount);
+    }
+
+    [Fact]
+    public async Task SyncQuarantineService_GetQuarantinedItems_UnprovisionedTerminal_ReturnsEmpty()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { IsProvisioned = false };
+        using var db = CreateDbContext(context);
+
+        var deadLetterRow = CreateTestOutbox(idempotencyKey: "idem-deadletter");
+        deadLetterRow.Status = SyncOutboxStatus.DeadLetter;
+
+        db.SyncOutbox.Add(deadLetterRow);
+        await db.SaveChangesAsync();
+
+        var service = new SyncQuarantineService(db, context);
+
+        // Act
+        var items = await service.GetQuarantinedItemsAsync();
+
+        // Assert
+        Assert.Empty(items);
+    }
+
+    [Fact]
+    public async Task SyncQuarantineService_GetQuarantinedItems_DifferentLocationOrTerminal_IsExcluded()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { CurrentLocationId = 10, CurrentTerminalId = 20 };
+        using var db = CreateDbContext(context);
+
+        // Different location
+        var diffLocationRow = CreateTestOutbox(idempotencyKey: "idem-diff-loc", locationId: 11, terminalId: 20);
+        diffLocationRow.Status = SyncOutboxStatus.DeadLetter;
+
+        // Different terminal
+        var diffTerminalRow = CreateTestOutbox(idempotencyKey: "idem-diff-term", locationId: 10, terminalId: 21);
+        diffTerminalRow.Status = SyncOutboxStatus.DeadLetter;
+
+        // Current location/terminal (active deadletter)
+        var currentMatchRow = CreateTestOutbox(idempotencyKey: "idem-match", locationId: 10, terminalId: 20);
+        currentMatchRow.Status = SyncOutboxStatus.DeadLetter;
+
+        db.SyncOutbox.AddRange(diffLocationRow, diffTerminalRow, currentMatchRow);
+        await db.SaveChangesAsync();
+
+        var service = new SyncQuarantineService(db, context);
+
+        // Act
+        var items = await service.GetQuarantinedItemsAsync();
+
+        // Assert
+        Assert.Single(items);
+        Assert.Equal(currentMatchRow.Id, items[0].OutboxId);
+    }
+
+    [Fact]
+    public async Task ApplyFailure_MissingSomeBatchRows_RollsBackEntireTransaction()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext();
+        using var db = CreateDbContext(context);
+        var options = new SyncProcessorOptions { MaxRetryAttempts = 5 };
+        var applier = new EfSyncAckApplier(db, context, options, NullLogger<EfSyncAckApplier>.Instance);
+
+        var row1 = CreateTestOutbox(idempotencyKey: "idem-row1");
+        row1.Status = SyncOutboxStatus.Pending;
+        row1.AttemptCount = 0;
+
+        var row2 = CreateTestOutbox(idempotencyKey: "idem-row2");
+        row2.Status = SyncOutboxStatus.Pending;
+        row2.AttemptCount = 0;
+
+        db.SyncOutbox.Add(row1); // Add only row1 to DB, but omit row2 to simulate missing row
+        await db.SaveChangesAsync();
+
+        var item1 = ToBatchItem(row1);
+        var item2 = ToBatchItem(row2);
+
+        var ev1 = ToRequestEvent(item1, 1);
+        var ev2 = ToRequestEvent(item2, 2);
+
+        var batch = new SyncOutboxBatch(new[] { item1, item2 });
+        var request = new SyncIngestRequest(1, 10, 20, 500, "idem", "hash", "corr", new[] { ev1, ev2 });
+        var error = new SyncIngestClientError(SyncIngestClientErrorType.Timeout, "Request timed out", "TIMEOUT_ERROR");
+
+        // Act
+        var result = await applier.ApplyFailureAsync(batch, request, error);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Equal("OUTBOX_ROWS_MISSING", result.ErrorCode);
+
+        // Ensure row1 was NOT modified (attempt count remains 0, status remains Pending)
+        var dbRow1 = await db.SyncOutbox.FindAsync(row1.Id);
+        Assert.NotNull(dbRow1);
+        Assert.Equal(SyncOutboxStatus.Pending, dbRow1.Status);
+        Assert.Equal(0, dbRow1.AttemptCount);
+    }
+
+    [Fact]
+    public async Task ApplyFailure_RowMetadataMismatch_RollsBackEntireTransaction()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext();
+        using var db = CreateDbContext(context);
+        var options = new SyncProcessorOptions { MaxRetryAttempts = 5 };
+        var applier = new EfSyncAckApplier(db, context, options, NullLogger<EfSyncAckApplier>.Instance);
+
+        var row = CreateTestOutbox(idempotencyKey: "idem-correct");
+        row.Status = SyncOutboxStatus.Pending;
+        row.AttemptCount = 0;
+        db.SyncOutbox.Add(row);
+        await db.SaveChangesAsync();
+
+        var item = ToBatchItem(row);
+        var ev = ToRequestEvent(item, 600);
+
+        // Create a mismatch event (different idempotency key)
+        var mismatchEv = ev with { IdempotencyKey = "mismatch-idem-key" };
+
+        var batch = new SyncOutboxBatch(new[] { item });
+        var request = new SyncIngestRequest(1, 10, 20, 600, "idem", "hash", "corr", new[] { mismatchEv });
+        var error = new SyncIngestClientError(SyncIngestClientErrorType.Timeout, "Request timed out", "TIMEOUT_ERROR");
+
+        // Act
+        var result = await applier.ApplyFailureAsync(batch, request, error);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Equal("OUTBOX_ROW_MISMATCH", result.ErrorCode);
+
+        // Ensure row was NOT modified
+        var dbRow = await db.SyncOutbox.FindAsync(row.Id);
+        Assert.NotNull(dbRow);
+        Assert.Equal(SyncOutboxStatus.Pending, dbRow.Status);
+        Assert.Equal(0, dbRow.AttemptCount);
+    }
 }

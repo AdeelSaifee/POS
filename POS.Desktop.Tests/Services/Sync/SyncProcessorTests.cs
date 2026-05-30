@@ -185,6 +185,41 @@ public sealed class SyncProcessorTests
                 return _targetCallCountTcs.Task;
             }
         }
+
+        public int ApplyFailureCallCount { get; private set; }
+        private TaskCompletionSource? _targetFailureCallCountTcs;
+        private int _targetFailureCallCount;
+
+        public Task<SyncAckApplyResult> ApplyFailureAsync(
+            SyncOutboxBatch batch,
+            SyncIngestRequest request,
+            SyncIngestClientError? error,
+            CancellationToken cancellationToken = default)
+        {
+            lock (_lock)
+            {
+                ApplyFailureCallCount++;
+                if (_targetFailureCallCountTcs != null && ApplyFailureCallCount >= _targetFailureCallCount)
+                {
+                    _targetFailureCallCountTcs.TrySetResult();
+                }
+            }
+            return Task.FromResult(SyncAckApplyResult.Succeeded(batch.Count, request.ChunkSequence));
+        }
+
+        public Task WaitForFailureCallCountAsync(int targetCount)
+        {
+            lock (_lock)
+            {
+                if (ApplyFailureCallCount >= targetCount)
+                {
+                    return Task.CompletedTask;
+                }
+                _targetFailureCallCount = targetCount;
+                _targetFailureCallCountTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                return _targetFailureCallCountTcs.Task;
+            }
+        }
     }
 
     private sealed class FakeSyncRetryPolicy : ISyncRetryPolicy
@@ -766,5 +801,42 @@ public sealed class SyncProcessorTests
         Assert.True(callCount >= 2);
         // On first run: failed, ConsecutiveFailureCountCalculated becomes 1
         Assert.Equal(1, fakeRetryPolicy.ConsecutiveFailureCountCalculated);
+    }
+
+    [Fact]
+    public async Task SyncProcessor_IngestFails_CallsApplyFailureAsync()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { IsProvisioned = true };
+        var logger = new TestLogger<SyncProcessor>();
+        var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
+
+        var item = new SyncOutboxBatchItem(Guid.NewGuid(), 1, 10, 20, new DateOnly(2026, 5, 30), 100, "OrderCompleted", Guid.NewGuid(), "{}", "hash", "idem", "corr");
+        var reader = new FakeSyncOutboxBatchReaderWithItems(new[] { item });
+
+        var builder = new FakeSyncIngestRequestBuilder(batch => new SyncIngestRequest(1, 10, 20, 100, "idem-chunk", "hash-chunk", "corr-chunk", Array.Empty<SyncIngestEvent>()));
+
+        // Client always fails
+        var client = new FakeSyncIngestClient(request => Task.FromResult(SyncIngestClientResult.Failed(
+            new SyncIngestClientError(SyncIngestClientErrorType.Timeout, "Request timed out.", "TIMEOUT")
+        )));
+
+        var applier = new FakeSyncAckApplier((b, req, resp) => Task.FromResult(SyncAckApplyResult.Succeeded(b.Count, resp.ChunkSequence)));
+
+        var scopeFactory = CreateMockScopeFactory(reader, builder, client, applier);
+        var fakeRetryPolicy = new FakeSyncRetryPolicy { ReturnedDelay = TimeSpan.FromMilliseconds(1) };
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory, fakeRetryPolicy);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var runTask = processor.StartAsync(cts.Token);
+
+        // Wait deterministically for at least 1 failure to be applied
+        await Task.WhenAny(applier.WaitForFailureCallCountAsync(1), Task.Delay(1000));
+        await processor.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(applier.ApplyFailureCallCount >= 1);
     }
 }

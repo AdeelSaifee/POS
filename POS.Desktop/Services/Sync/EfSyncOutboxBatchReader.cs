@@ -65,7 +65,7 @@ public sealed class EfSyncOutboxBatchReader : ISyncOutboxBatchReader
             .AsNoTracking()
             .Where(x => x.LocationId == currentLocationId &&
                         x.TerminalId == currentTerminalId &&
-                        x.Status == SyncOutboxStatus.Pending &&
+                        (x.Status == SyncOutboxStatus.Pending || x.Status == SyncOutboxStatus.Failed) &&
                         x.IsActive)
             .OrderBy(x => x.BusinessDate)
             .ThenBy(x => x.TerminalSequence)

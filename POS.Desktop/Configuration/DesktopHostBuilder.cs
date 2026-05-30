@@ -95,6 +95,7 @@ public static class DesktopHostBuilder
                 services.AddSingleton<ISyncRetryPolicy, SyncRetryPolicy>();
                 services.AddScoped<ISyncOutboxBatchReader, EfSyncOutboxBatchReader>();
                 services.AddScoped<ISyncAckApplier, EfSyncAckApplier>();
+                services.AddScoped<ISyncQuarantineService, SyncQuarantineService>();
                 services.AddHostedService<SyncProcessor>();
                 services.AddHttpClient<ISyncIngestClient, SyncIngestClient>((serviceProvider, client) =>
                 {

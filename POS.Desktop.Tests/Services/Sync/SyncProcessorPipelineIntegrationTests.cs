@@ -140,6 +140,15 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
                 throw;
             }
         }
+
+        public Task<SyncAckApplyResult> ApplyFailureAsync(
+            SyncOutboxBatch batch,
+            SyncIngestRequest request,
+            SyncIngestClientError? error,
+            CancellationToken cancellationToken = default)
+        {
+            return _inner.ApplyFailureAsync(batch, request, error, cancellationToken);
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -207,6 +216,7 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
 
         // Register the concrete EfSyncAckApplier so the wrapper factory can resolve it per scope.
         services.AddScoped<EfSyncAckApplier>();
+        services.AddScoped<ISyncQuarantineService, SyncQuarantineService>();
 
         // The SignalingSyncAckApplier is registered as the ISyncAckApplier binding.
         // Each scope creates its own instance wrapping the real EfSyncAckApplier; both

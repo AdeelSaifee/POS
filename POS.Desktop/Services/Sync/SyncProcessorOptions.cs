@@ -33,6 +33,11 @@ public sealed class SyncProcessorOptions
     public double BackoffMultiplier { get; set; } = 2.0;
 
     /// <summary>
+    /// Gets or sets the maximum number of sync attempts before quarantining/dead-lettering a row. Default is 5.
+    /// </summary>
+    public int MaxRetryAttempts { get; set; } = 5;
+
+    /// <summary>
     /// Performs self-validation on options and returns a descriptive error message if invalid.
     /// </summary>
     /// <param name="errorMessage">The validation error message, or null if valid.</param>
@@ -74,6 +79,12 @@ public sealed class SyncProcessorOptions
         if (BackoffMultiplier < 1.0 || BackoffMultiplier > 10.0)
         {
             errorMessage = "BackoffMultiplier must be between 1.0 and 10.0.";
+            return false;
+        }
+
+        if (MaxRetryAttempts < 1 || MaxRetryAttempts > 100)
+        {
+            errorMessage = "MaxRetryAttempts must be between 1 and 100.";
             return false;
         }
 

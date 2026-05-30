@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +22,7 @@ public sealed class EfSyncAckApplier : ISyncAckApplier
     private const string StreamNameOutboxPush = "push:outbox";
     private readonly PosLocalDbContext _db;
     private readonly IProvisionedTerminalContext _provisioningContext;
+    private readonly SyncProcessorOptions _options;
     private readonly ILogger<EfSyncAckApplier> _logger;
 
     /// <summary>
@@ -33,9 +35,26 @@ public sealed class EfSyncAckApplier : ISyncAckApplier
         PosLocalDbContext db,
         IProvisionedTerminalContext provisioningContext,
         ILogger<EfSyncAckApplier> logger)
+        : this(db, provisioningContext, new SyncProcessorOptions(), logger)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="EfSyncAckApplier"/>.
+    /// </summary>
+    /// <param name="db">The local database context.</param>
+    /// <param name="provisioningContext">The provisioning state helper.</param>
+    /// <param name="options">The sync processor options.</param>
+    /// <param name="logger">The logger helper.</param>
+    public EfSyncAckApplier(
+        PosLocalDbContext db,
+        IProvisionedTerminalContext provisioningContext,
+        SyncProcessorOptions options,
+        ILogger<EfSyncAckApplier> logger)
     {
         _db = db ?? throw new ArgumentNullException(nameof(db));
         _provisioningContext = provisioningContext ?? throw new ArgumentNullException(nameof(provisioningContext));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -131,7 +150,7 @@ public sealed class EfSyncAckApplier : ISyncAckApplier
                 .Where(x => batchIds.Contains(x.Id) &&
                             x.LocationId == locationId &&
                             x.TerminalId == terminalId &&
-                            x.Status == SyncOutboxStatus.Pending &&
+                            (x.Status == SyncOutboxStatus.Pending || x.Status == SyncOutboxStatus.Failed) &&
                             x.IsActive)
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -223,6 +242,151 @@ public sealed class EfSyncAckApplier : ISyncAckApplier
         {
             await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
             _logger.LogError(ex, "Exception caught during SyncAckApplier transaction save. Transaction rolled back.");
+            return SyncAckApplyResult.Failed("TRANSACTION_FAILED", ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<SyncAckApplyResult> ApplyFailureAsync(
+        SyncOutboxBatch batch,
+        SyncIngestRequest request,
+        SyncIngestClientError? error,
+        CancellationToken cancellationToken = default)
+    {
+        if (batch == null) throw new ArgumentNullException(nameof(batch));
+        if (request == null) throw new ArgumentNullException(nameof(request));
+
+        // 1. Verify terminal provisioning context
+        if (!_provisioningContext.IsProvisioned)
+        {
+            return SyncAckApplyResult.Failed("UNCONFIGURED_TERMINAL", "Terminal session is not configured/provisioned.");
+        }
+
+        var tenantId = _provisioningContext.CurrentTenantId;
+        var locationId = _provisioningContext.CurrentLocationId;
+        var terminalId = _provisioningContext.CurrentTerminalId;
+
+        // 2. Validate request identity matches current terminal
+        if (request.TenantId != tenantId ||
+            request.LocationId != locationId ||
+            request.TerminalId != terminalId)
+        {
+            return SyncAckApplyResult.Failed("IDENTITY_MISMATCH", "The request identity fields do not match the current provisioned terminal context.");
+        }
+
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var batchIds = batch.Items.Select(x => x.Id).ToList();
+            var dbRows = await _db.SyncOutbox
+                .Where(x => batchIds.Contains(x.Id) &&
+                            x.LocationId == locationId &&
+                            x.TerminalId == terminalId &&
+                            (x.Status == SyncOutboxStatus.Pending || x.Status == SyncOutboxStatus.Failed) &&
+                            x.IsActive)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            if (dbRows.Count != request.Events.Count)
+            {
+                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                return SyncAckApplyResult.Failed("OUTBOX_ROWS_MISSING", $"Failed to locate all matching pending or failed outbox rows in local database. Expected: {request.Events.Count}, Found: {dbRows.Count}.");
+            }
+
+            var rowMap = dbRows.ToDictionary(x => x.EventId);
+
+            foreach (var ev in request.Events)
+            {
+                if (!rowMap.TryGetValue(ev.EventId, out var row) ||
+                    row.IdempotencyKey != ev.IdempotencyKey ||
+                    row.TerminalSequence != ev.TerminalSequence)
+                {
+                    await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                    return SyncAckApplyResult.Failed("OUTBOX_ROW_MISMATCH", $"Local outbox record details mismatch for EventId '{ev.EventId}'.");
+                }
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            var errorCode = error?.Code ?? "GENERIC_FAILURE";
+            var errorMessage = error?.Message ?? "An unknown failure occurred.";
+
+            foreach (var row in dbRows)
+            {
+                row.AttemptCount++;
+                row.LastAttemptOn = now;
+                row.LastErrorCode = errorCode.Length > 80 ? errorCode.Substring(0, 80) : errorCode;
+                row.LastErrorMessage = errorMessage.Length > 500 ? errorMessage.Substring(0, 500) : errorMessage;
+                row.UpdatedBy = "sync-processor";
+                row.UpdatedOn = now;
+
+                if (row.AttemptCount >= _options.MaxRetryAttempts)
+                {
+                    row.Status = SyncOutboxStatus.DeadLetter;
+
+                    var idempotencyKey = $"quarantine:syncoutbox:{row.Id}";
+                    var journalExists = await _db.LocalRecoveryJournal
+                        .AnyAsync(x => x.TenantId == tenantId && x.IdempotencyKey == idempotencyKey, cancellationToken)
+                        .ConfigureAwait(false);
+
+                    if (!journalExists)
+                    {
+                        var metadata = new Dictionary<string, object?>
+                        {
+                            { "OutboxId", row.Id },
+                            { "EventType", row.EventType },
+                            { "EventId", row.EventId },
+                            { "BusinessDate", row.BusinessDate.ToString("yyyy-MM-dd") },
+                            { "TerminalSequence", row.TerminalSequence },
+                            { "LastErrorCode", row.LastErrorCode },
+                            { "LastErrorMessage", row.LastErrorMessage },
+                            { "AttemptCount", row.AttemptCount },
+                            { "LastAttemptOn", row.LastAttemptOn?.ToString("o") },
+                            { "Status", "DeadLetter" }
+                        };
+                        var statePayloadJson = JsonSerializer.Serialize(metadata);
+
+                        var journalEntry = new LocalRecoveryJournal
+                        {
+                            Id = Guid.NewGuid(),
+                            TenantId = tenantId,
+                            LocationId = locationId,
+                            TerminalId = terminalId,
+                            ShiftId = null,
+                            OrderId = null,
+                            PaymentId = null,
+                            RecoveryType = RecoveryType.SyncInFlight,
+                            Status = RecoveryJournalStatus.Open,
+                            RequiredAction = RequiredRecoveryAction.RetrySync,
+                            StatePayloadJson = statePayloadJson,
+                            IdempotencyKey = idempotencyKey,
+                            CorrelationId = row.CorrelationId,
+                            IsActive = true,
+                            CreatedBy = "sync-processor",
+                            CreatedOn = now
+                        };
+                        _db.LocalRecoveryJournal.Add(journalEntry);
+                    }
+                }
+                else
+                {
+                    row.Status = SyncOutboxStatus.Failed;
+                }
+            }
+
+            await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+            return SyncAckApplyResult.Succeeded(dbRows.Count, request.ChunkSequence);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            _logger.LogError(ex, "Exception caught during SyncAckApplier ApplyFailureAsync transaction save. Transaction rolled back.");
             return SyncAckApplyResult.Failed("TRANSACTION_FAILED", ex.Message);
         }
     }

@@ -85,10 +85,13 @@ public static class DesktopHostBuilder
                 services.AddScoped<ICashControlService, CashControlService>();
                 services.AddScoped<IReceiptRenderer, ReceiptRenderer>();
 
-                // Sync Services (Task 6.2.6)
+                // Sync Services (Task 6.2.6 / 6.3.2)
                 services.Configure<SyncClientOptions>(hostContext.Configuration.GetSection("Sync"));
                 services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<SyncClientOptions>>().Value);
+                services.Configure<SyncProcessorOptions>(hostContext.Configuration.GetSection("Sync"));
+                services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<SyncProcessorOptions>>().Value);
                 services.AddSingleton<IDeviceTokenProvider, UnconfiguredDeviceTokenProvider>();
+                services.AddHostedService<SyncProcessor>();
                 services.AddHttpClient<ISyncIngestClient, SyncIngestClient>((serviceProvider, client) =>
                 {
                     var options = serviceProvider.GetRequiredService<SyncClientOptions>();

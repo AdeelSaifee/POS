@@ -1,8 +1,20 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 6 / Milestone 6.2 - Device-authenticated HTTP client
-- **Group**: Group 4 (Tasks 6.2.9 to 6.2.10 - completed)
+- **Milestone**: Phase 6 / Milestone 6.3 - Outbox drain processor
+- **Group**: Group 1 (Tasks 6.3.1, 6.3.2, 6.3.7, 6.3.8, 6.3.9 - completed)
+
+## Status of All Milestone 6.3 Tasks (Group 1 COMPLETE)
+- `[x]` Task 6.3.1 - Define the SyncProcessor (Completed)
+- `[x]` Task 6.3.2 - Register as a hosted service (Completed)
+- `[ ]` Task 6.3.3 - Batch unsent outbox rows
+- `[ ]` Task 6.3.4 - Post the batch
+- `[ ]` Task 6.3.5 - Mark rows sent on success
+- `[ ]` Task 6.3.6 - Advance the cursor
+- `[x]` Task 6.3.7 - Run off the UI thread (Completed)
+- `[x]` Task 6.3.8 - Tune batch size/interval (Completed)
+- `[x]` Task 6.3.9 - Pause cleanly on shutdown (Completed)
+- `[ ]` Task 6.3.10 - Test events reach central
 
 ## Status of All Milestone 6.2 Tasks (Group 4 COMPLETE - 100% COMPLETE)
 - `[x]` Task 6.2.1 - Add API base URL config
@@ -78,6 +90,15 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.3 - Group 1 (Tasks 6.3.1, 6.3.2, 6.3.7 - 6.3.9 completed)
+- [ADD] `POS.Desktop/Services/Sync/SyncProcessorOptions.cs` (Configuration options for worker batch size and poll interval with validation)
+- [ADD] `POS.Desktop/Services/Sync/SyncProcessor.cs` (Core background service outbox sync worker with yielding, unprovisioned gating, and safe cancellation)
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs` (Registered options and added SyncProcessor as an IHostedService background worker)
+- [MODIFY] `POS.Desktop/appsettings.json` (Added BatchSize and PollIntervalSeconds parameters inside the Sync config block)
+- [ADD] `POS.Desktop.Tests/Services/Sync/SyncProcessorOptionsTests.cs` (Unit tests verifying option constraints and valid boundaries)
+- [ADD] `POS.Desktop.Tests/Services/Sync/SyncProcessorTests.cs` (Lifecycle, unprovisioned safety gating, options validation shutdown, and cancellation tests for the hosted service)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncDiResolutionTests.cs` (Verify hosted service resolves SyncProcessor from container and configurations bind correctly)
 
 ### Phase 6 / Milestone 6.2 - Group 4 (Tasks 6.2.9 & 6.2.10 - completed)
 - [ADD] `POS.Tests/IntegrationTests/SyncIngestSmokeTests.cs` (Direct API-side integration smoke test verifying that a valid POST request to /api/sync/ingest successfully authenticates via TestRequestAuthentication and is acknowledged as Received by the persistence engine)
@@ -649,6 +670,23 @@ The `openShift()` function in `shift_open.html` transition flow:
 - `dotnet test POS.Tests/POS.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncIngestSmokeTests"`: **1/1 passed** (+1 new API smoke test case)
 - `dotnet test POS.slnx --configuration Debug`: **571/571 passed** (502 desktop tests + 69 API integration tests)
 
+## Verification Summary (Milestone 6.3 Group 1)
+
+### Design Decisions & Implementation Details
+- **SyncProcessor Background Worker**: Implemented as a hosted service deriving from `BackgroundService`. The lifecycle execution immediately yields control using `await Task.Yield()`, avoiding any block of WPF startup or UI thread initialization.
+- **Unprovisioned Device Safety**: Gated outbox sweeps on `IProvisionedTerminalContext.IsProvisioned` check. If terminal is not provisioned, DB and API sync operations are skipped and the service delays until the next interval.
+- **Clean Cooperative Shutdown**: Handled the host `CancellationToken` gracefully. Captured `OperationCanceledException` when cancellation is requested to ensure clean worker shutdown without unhandled exceptions on application exit.
+- **Config-Driven Options**: Tuned `BatchSize` (1-500) and `PollIntervalSeconds` (1-3600) default values in `appsettings.json` and bound to `SyncProcessorOptions` POCO mapped via Microsoft.Extensions.Options.
+- **Thorough Test Coverage**: Created `SyncProcessorOptionsTests.cs` (5 unit tests) and `SyncProcessorTests.cs` (3 lifecycle/safety tests), and expanded `SyncDiResolutionTests.cs` (hosted service container registration assertions).
+- **Asynchronous Safety Check**: Verified that no blocking calls (`.Result`, `.Wait()`, or `GetAwaiter().GetResult()`) exist in the new files via `SyncStaticAnalysisTests.cs`.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **68/68 passed** (+17 new test cases/methods for processor lifecycle and options)
+- `dotnet test POS.slnx --configuration Debug`: **588/588 passed** (519 desktop tests + 69 API integration tests)
+
 ## Next Recommended Milestone
-- **Phase 6 / Milestone 6.3 - Outbox drain processor** (Task 6.3.1 - Not started)
+- **Phase 6 / Milestone 6.3 - Group 2 / Task 6.3.3 Batch unsent outbox rows**
 

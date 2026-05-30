@@ -27,20 +27,28 @@ public sealed class SyncDiResolutionTests
         // Act
         var options = sp.GetRequiredService<SyncClientOptions>();
         var optionsWrapper = sp.GetRequiredService<IOptions<SyncClientOptions>>();
+        var processorOptions = sp.GetRequiredService<SyncProcessorOptions>();
+        var processorOptionsWrapper = sp.GetRequiredService<IOptions<SyncProcessorOptions>>();
         var tokenProvider = sp.GetRequiredService<IDeviceTokenProvider>();
         var syncClient = sp.GetRequiredService<ISyncIngestClient>();
+        var hostedServices = sp.GetServices<IHostedService>();
 
         // Assert
         Assert.NotNull(options);
         Assert.NotNull(optionsWrapper);
+        Assert.NotNull(processorOptions);
+        Assert.NotNull(processorOptionsWrapper);
         Assert.NotNull(tokenProvider);
         Assert.NotNull(syncClient);
+        Assert.Contains(hostedServices, s => s is SyncProcessor);
 
         // Verify default options bindings are resolved from appsettings.json
         Assert.Equal("https://localhost:5001", options.ApiBaseUrl);
         Assert.Equal("/api/sync/ingest", options.IngestPath);
         Assert.Equal(15, options.TimeoutSeconds);
         Assert.Equal(300, options.ClockSkewSeconds);
+        Assert.Equal(50, processorOptions.BatchSize);
+        Assert.Equal(10, processorOptions.PollIntervalSeconds);
 
         // Verify token provider is UnconfiguredDeviceTokenProvider by default
         Assert.IsType<UnconfiguredDeviceTokenProvider>(tokenProvider);

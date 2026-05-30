@@ -2,13 +2,13 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 6 / Milestone 6.3 - Outbox drain processor
-- **Group**: Group 2 (Task 6.3.3 - completed)
+- **Group**: Group 3 (Task 6.3.4 - completed)
 
-## Status of All Milestone 6.3 Tasks (Group 2 COMPLETE)
+## Status of All Milestone 6.3 Tasks (Group 3 COMPLETE)
 - `[x]` Task 6.3.1 - Define the SyncProcessor (Completed)
 - `[x]` Task 6.3.2 - Register as a hosted service (Completed)
 - `[x]` Task 6.3.3 - Batch unsent outbox rows (Completed)
-- `[ ]` Task 6.3.4 - Post the batch
+- `[x]` Task 6.3.4 - Post the batch (Completed)
 - `[ ]` Task 6.3.5 - Mark rows sent on success
 - `[ ]` Task 6.3.6 - Advance the cursor
 - `[x]` Task 6.3.7 - Run off the UI thread (Completed)
@@ -90,6 +90,15 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.3 - Group 3 (Task 6.3.4 completed)
+- [ADD] `POS.Desktop/Services/Sync/ISyncIngestRequestBuilder.cs` (Decoupled, stateless pure interface defining outbox to ingest request mapper)
+- [ADD] `POS.Desktop/Services/Sync/SyncIngestRequestBuilder.cs` (Pure, validated deterministic implementation generating stable sequences, idempotency keys, correlation IDs, and canonical request hashes)
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs` (Registered ISyncIngestRequestBuilder as a Singleton service in dependency container)
+- [MODIFY] `POS.Desktop/Services/Sync/SyncProcessor.cs` (Resolved builder, client, and batch reader dynamically; added in-memory process-local HashSet one-flight guard to prevent duplicate post loop)
+- [ADD] `POS.Desktop.Tests/Services/Sync/SyncIngestRequestBuilderTests.cs` (Robust unit test suite covering empty batch exceptions, deterministic sequence/key/hash calculations, uniqueness constraints, and mixed tenant validations)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorTests.cs` (Added test cases verifying empty batch bypass, failed client retries, success logs, and one-flight guard duplicate blocks)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncDiResolutionTests.cs` (Verify DI container resolves ISyncIngestRequestBuilder as SyncIngestRequestBuilder)
 
 ### Phase 6 / Milestone 6.3 - Group 2 (Task 6.3.3 completed)
 - [ADD] `POS.Desktop/Services/Sync/SyncOutboxBatch.cs` (Read-only record holding a read-only projection list of SyncOutbox items)
@@ -714,6 +723,26 @@ The `openShift()` function in `shift_open.html` transition flow:
 - `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **74/74 passed** (+6 new integration tests verifying query constraints, batch ordering, and projections; +0 regressions)
 - `dotnet test POS.slnx --configuration Debug`: **594/594 passed** (525 desktop tests + 69 API integration tests)
 
+## Verification Summary (Milestone 6.3 Group 3)
+
+### Design Decisions & Implementation Details
+- **Stateless Request Builder Pattern**: Created `ISyncIngestRequestBuilder` and implementation `SyncIngestRequestBuilder` to isolate the payload creation from the worker thread. It has zero external dependencies, database access, or network integrations, making it completely decoupled and pure.
+- **Deterministic Batch Sequence Identification**: Calculated sequence values without `SyncCursor` dependency by resolving `Min(x => x.TerminalSequence)` from the current batch items.
+- **Deterministic Key / Hash / Correlation Generation**:
+  - `ChunkIdempotencyKey`: Mapped via composite string values including tenant, location, terminal, business date ranges, min/max terminal sequences, event counts, and 32-character SHA-256 hex hashes of ordered events identity material. Max length remains well under 120 characters (~73 characters).
+  - `CorrelationId`: Formatted deterministically as `sync-chunk-{shortHash}`, remaining under 100 characters.
+  - `RequestHash`: Generated deterministically from canonical request metadata and event collections mapped via `|` structured delimiters, strictly preventing any process-skew or non-deterministic variance.
+- **Process-Local Duplicate Post Guard**: Implemented a thread-safe `HashSet` duplication guard (`_successfullyPostedChunkKeysThisSession`) in `SyncProcessor` to prevent spamming the central API during the same application session. This guard bridges the gap until Group 4 introduces persistent database outbox updates and cursor increments.
+- **Asynchronous Safety Check**: Maintained 100% asynchronous safety; zero thread-blocking calls (`.Result`, `.Wait()`, `GetAwaiter().GetResult()`) exist in the new files.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **95/95 passed** (+16 new tests: 12 builder validation and uniqueness checks, 4 processor guard/retry checks; +0 regressions)
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncStaticAnalysisTests"`: **1/1 passed** (no async-blocking warnings)
+- `dotnet test POS.slnx --configuration Debug`: **615/615 passed** (546 desktop tests + 69 API integration tests)
+
 ## Next Recommended Milestone
-- **Phase 6 / Milestone 6.3 - Group 3 / Task 6.3.4 Post the batch**
+- **Phase 6 / Milestone 6.3 - Group 4 / Tasks 6.3.5 and 6.3.6: mark rows sent on success and advance SyncCursor**
 

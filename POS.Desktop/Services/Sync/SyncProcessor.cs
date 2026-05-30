@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,8 @@ public sealed class SyncProcessor : BackgroundService
     private readonly IProvisionedTerminalContext _provisioningContext;
     private readonly SyncProcessorOptions _options;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly HashSet<string> _successfullyPostedChunkKeysThisSession = new(StringComparer.Ordinal);
+    private readonly object _guardLock = new();
 
     /// <summary>
     /// Initializes a new instance of <see cref="SyncProcessor"/>.
@@ -93,7 +96,7 @@ public sealed class SyncProcessor : BackgroundService
     }
 
     /// <summary>
-    /// Performs a single processor sweep using a scoped batch reader to query pending events.
+    /// Performs a single processor sweep using a scoped batch reader, a request builder, and a sync client.
     /// </summary>
     private async Task RunOnceAsync(CancellationToken cancellationToken)
     {
@@ -101,16 +104,57 @@ public sealed class SyncProcessor : BackgroundService
         {
             await using var scope = _scopeFactory.CreateAsyncScope();
             var reader = scope.ServiceProvider.GetRequiredService<ISyncOutboxBatchReader>();
+            var builder = scope.ServiceProvider.GetRequiredService<ISyncIngestRequestBuilder>();
+            var client = scope.ServiceProvider.GetRequiredService<ISyncIngestClient>();
 
             var batch = await reader.ReadPendingBatchAsync(cancellationToken).ConfigureAwait(false);
 
-            if (batch.HasItems)
+            if (!batch.HasItems)
             {
-                _logger.LogInformation("SyncProcessor assembled outbox batch containing {Count} pending events.", batch.Count);
+                _logger.LogDebug("SyncProcessor assembled an empty outbox batch.");
+                return;
+            }
+
+            _logger.LogInformation("SyncProcessor assembled outbox batch containing {Count} pending events.", batch.Count);
+
+            var request = builder.Build(batch);
+
+            lock (_guardLock)
+            {
+                if (_successfullyPostedChunkKeysThisSession.Contains(request.ChunkIdempotencyKey))
+                {
+                    _logger.LogDebug(
+                        "SyncProcessor: Batch {Sequence} with key {Key} was already successfully posted in this process session. Skipping re-transmission.",
+                        request.ChunkSequence,
+                        request.ChunkIdempotencyKey);
+                    return;
+                }
+            }
+
+            var result = await client.IngestAsync(request, cancellationToken).ConfigureAwait(false);
+
+            if (result.Success)
+            {
+                _logger.LogInformation(
+                    "SyncProcessor successfully posted outbox batch {Sequence} containing {Count} events. IdempotencyKey: {Key}",
+                    request.ChunkSequence,
+                    request.Events.Count,
+                    request.ChunkIdempotencyKey);
+
+                lock (_guardLock)
+                {
+                    _successfullyPostedChunkKeysThisSession.Add(request.ChunkIdempotencyKey);
+                }
             }
             else
             {
-                _logger.LogDebug("SyncProcessor assembled an empty outbox batch.");
+                var error = result.Error;
+                _logger.LogError(
+                    "SyncProcessor failed to post outbox batch {Sequence}. ErrorType: {ErrorType}, Code: {Code}, Message: {Message}",
+                    request.ChunkSequence,
+                    error?.ErrorType,
+                    error?.Code,
+                    error?.Message);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

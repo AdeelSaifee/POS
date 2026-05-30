@@ -32,6 +32,7 @@ public sealed class SyncDiResolutionTests
         var tokenProvider = sp.GetRequiredService<IDeviceTokenProvider>();
         var syncClient = sp.GetRequiredService<ISyncIngestClient>();
         var batchReader = sp.GetRequiredService<ISyncOutboxBatchReader>();
+        var requestBuilder = sp.GetRequiredService<ISyncIngestRequestBuilder>();
         var hostedServices = sp.GetServices<IHostedService>();
 
         // Assert
@@ -42,6 +43,8 @@ public sealed class SyncDiResolutionTests
         Assert.NotNull(tokenProvider);
         Assert.NotNull(syncClient);
         Assert.NotNull(batchReader);
+        Assert.NotNull(requestBuilder);
+        Assert.IsType<SyncIngestRequestBuilder>(requestBuilder);
         Assert.IsType<EfSyncOutboxBatchReader>(batchReader);
         Assert.Contains(hostedServices, s => s is SyncProcessor);
 

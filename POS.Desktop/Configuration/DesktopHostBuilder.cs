@@ -93,6 +93,7 @@ public static class DesktopHostBuilder
                 services.AddSingleton<IDeviceTokenProvider, UnconfiguredDeviceTokenProvider>();
                 services.AddSingleton<ISyncIngestRequestBuilder, SyncIngestRequestBuilder>();
                 services.AddScoped<ISyncOutboxBatchReader, EfSyncOutboxBatchReader>();
+                services.AddScoped<ISyncAckApplier, EfSyncAckApplier>();
                 services.AddHostedService<SyncProcessor>();
                 services.AddHttpClient<ISyncIngestClient, SyncIngestClient>((serviceProvider, client) =>
                 {

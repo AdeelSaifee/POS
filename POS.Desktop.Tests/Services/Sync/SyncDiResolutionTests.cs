@@ -33,6 +33,7 @@ public sealed class SyncDiResolutionTests
         var syncClient = sp.GetRequiredService<ISyncIngestClient>();
         var batchReader = sp.GetRequiredService<ISyncOutboxBatchReader>();
         var requestBuilder = sp.GetRequiredService<ISyncIngestRequestBuilder>();
+        var ackApplier = sp.GetRequiredService<ISyncAckApplier>();
         var hostedServices = sp.GetServices<IHostedService>();
 
         // Assert
@@ -44,8 +45,10 @@ public sealed class SyncDiResolutionTests
         Assert.NotNull(syncClient);
         Assert.NotNull(batchReader);
         Assert.NotNull(requestBuilder);
+        Assert.NotNull(ackApplier);
         Assert.IsType<SyncIngestRequestBuilder>(requestBuilder);
         Assert.IsType<EfSyncOutboxBatchReader>(batchReader);
+        Assert.IsType<EfSyncAckApplier>(ackApplier);
         Assert.Contains(hostedServices, s => s is SyncProcessor);
 
         // Verify default options bindings are resolved from appsettings.json

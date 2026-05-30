@@ -118,11 +118,35 @@ public sealed class SyncProcessorTests
         }
     }
 
+    private sealed class FakeSyncAckApplier : ISyncAckApplier
+    {
+        private readonly Func<SyncOutboxBatch, SyncIngestRequest, SyncIngestResponse, Task<SyncAckApplyResult>> _callback;
+        public int ApplyCallCount { get; private set; }
+
+        public FakeSyncAckApplier(Func<SyncOutboxBatch, SyncIngestRequest, SyncIngestResponse, Task<SyncAckApplyResult>> callback)
+        {
+            _callback = callback;
+        }
+
+        public async Task<SyncAckApplyResult> ApplySuccessAsync(
+            SyncOutboxBatch batch,
+            SyncIngestRequest request,
+            SyncIngestResponse response,
+            CancellationToken cancellationToken = default)
+        {
+            ApplyCallCount++;
+            return await _callback(batch, request, response);
+        }
+    }
+
     private IServiceScopeFactory CreateMockScopeFactory(
         ISyncOutboxBatchReader reader,
         ISyncIngestRequestBuilder? builder = null,
-        ISyncIngestClient? client = null)
+        ISyncIngestClient? client = null,
+        ISyncAckApplier? ackApplier = null)
     {
+        ackApplier ??= new FakeSyncAckApplier((b, req, resp) => Task.FromResult(SyncAckApplyResult.Succeeded(b.Count, resp.ChunkSequence)));
+
         var serviceProvider = new TestServiceProvider(type =>
         {
             if (type == typeof(ISyncOutboxBatchReader))
@@ -136,6 +160,10 @@ public sealed class SyncProcessorTests
             if (type == typeof(ISyncIngestClient))
             {
                 return client;
+            }
+            if (type == typeof(ISyncAckApplier))
+            {
+                return ackApplier;
             }
             return null;
         });
@@ -363,5 +391,136 @@ public sealed class SyncProcessorTests
         // Assert
         // In-memory guard prevents re-posting the same batch, so call count should be EXACTLY 1!
         Assert.Equal(1, client.IngestCallCount);
+    }
+
+    [Fact]
+    public async Task SyncProcessor_SuccessfulIngestAndAckApply_CallsApplierAndAddsToGuard()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { IsProvisioned = true };
+        var logger = new TestLogger<SyncProcessor>();
+        var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
+
+        var item = new SyncOutboxBatchItem(Guid.NewGuid(), 1, 10, 20, new DateOnly(2026, 5, 30), 100, "OrderCompleted", Guid.NewGuid(), "{}", "hash", "idem", "corr");
+        var reader = new FakeSyncOutboxBatchReaderWithItems(new[] { item });
+
+        var builder = new FakeSyncIngestRequestBuilder(batch => new SyncIngestRequest(1, 10, 20, 100, "idem-chunk", "hash-chunk", "corr-chunk", Array.Empty<SyncIngestEvent>()));
+        var client = new FakeSyncIngestClient(request => Task.FromResult(SyncIngestClientResult.Succeeded(
+            new SyncIngestResponse(Guid.NewGuid(), 100, "idem-chunk", "Received", 0, Array.Empty<SyncIngestEventAck>(), null, null)
+        )));
+
+        var applier = new FakeSyncAckApplier((b, req, resp) => Task.FromResult(SyncAckApplyResult.Succeeded(b.Count, resp.ChunkSequence)));
+
+        var scopeFactory = CreateMockScopeFactory(reader, builder, client, applier);
+        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var runTask = processor.StartAsync(cts.Token);
+        await Task.Delay(50);
+        await processor.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.Equal(1, client.IngestCallCount);
+        Assert.Equal(1, applier.ApplyCallCount);
+    }
+
+    [Fact]
+    public async Task SyncProcessor_SuccessfulIngestButFailedAckApply_DoesNotAddToGuardAndAllowsRetry()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { IsProvisioned = true };
+        var logger = new TestLogger<SyncProcessor>();
+        var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
+
+        var item = new SyncOutboxBatchItem(Guid.NewGuid(), 1, 10, 20, new DateOnly(2026, 5, 30), 100, "OrderCompleted", Guid.NewGuid(), "{}", "hash", "idem", "corr");
+        var reader = new FakeSyncOutboxBatchReaderWithItems(new[] { item });
+
+        var builder = new FakeSyncIngestRequestBuilder(batch => new SyncIngestRequest(1, 10, 20, 100, "idem-chunk", "hash-chunk", "corr-chunk", Array.Empty<SyncIngestEvent>()));
+        var client = new FakeSyncIngestClient(request => Task.FromResult(SyncIngestClientResult.Succeeded(
+            new SyncIngestResponse(Guid.NewGuid(), 100, "idem-chunk", "Received", 0, Array.Empty<SyncIngestEventAck>(), null, null)
+        )));
+
+        var applier = new FakeSyncAckApplier((b, req, resp) => Task.FromResult(SyncAckApplyResult.Failed("DB_ERROR", "Failed to save to database.")));
+
+        var scopeFactory = CreateMockScopeFactory(reader, builder, client, applier);
+        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var runTask = processor.StartAsync(cts.Token);
+        await Task.Delay(1300); // Allow two cycles to run
+        await processor.StopAsync(CancellationToken.None);
+
+        // Assert
+        // Ingest should be called twice since the in-memory guard was not updated (due to failed DB ack apply)
+        Assert.True(client.IngestCallCount >= 2);
+        Assert.True(applier.ApplyCallCount >= 2);
+    }
+
+    [Fact]
+    public async Task SyncProcessor_SuccessfulIngestWithNullResponse_DoesNotCallApplierAndDoesNotAddToGuard()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { IsProvisioned = true };
+        var logger = new TestLogger<SyncProcessor>();
+        var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
+
+        var item = new SyncOutboxBatchItem(Guid.NewGuid(), 1, 10, 20, new DateOnly(2026, 5, 30), 100, "OrderCompleted", Guid.NewGuid(), "{}", "hash", "idem", "corr");
+        var reader = new FakeSyncOutboxBatchReaderWithItems(new[] { item });
+
+        var builder = new FakeSyncIngestRequestBuilder(batch => new SyncIngestRequest(1, 10, 20, 100, "idem-chunk", "hash-chunk", "corr-chunk", Array.Empty<SyncIngestEvent>()));
+        var client = new FakeSyncIngestClient(request => Task.FromResult(SyncIngestClientResult.Succeeded(null!))); // null response
+
+        var applier = new FakeSyncAckApplier((b, req, resp) => Task.FromResult(SyncAckApplyResult.Succeeded(b.Count, resp.ChunkSequence)));
+
+        var scopeFactory = CreateMockScopeFactory(reader, builder, client, applier);
+        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var runTask = processor.StartAsync(cts.Token);
+        await Task.Delay(1300); // Allow two cycles to run
+        await processor.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(client.IngestCallCount >= 2);
+        Assert.Equal(0, applier.ApplyCallCount); // Applier never called
+    }
+
+    [Fact]
+    public async Task SyncProcessor_FailedIngest_DoesNotCallApplierAndDoesNotAddToGuard()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { IsProvisioned = true };
+        var logger = new TestLogger<SyncProcessor>();
+        var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
+
+        var item = new SyncOutboxBatchItem(Guid.NewGuid(), 1, 10, 20, new DateOnly(2026, 5, 30), 100, "OrderCompleted", Guid.NewGuid(), "{}", "hash", "idem", "corr");
+        var reader = new FakeSyncOutboxBatchReaderWithItems(new[] { item });
+
+        var builder = new FakeSyncIngestRequestBuilder(batch => new SyncIngestRequest(1, 10, 20, 100, "idem-chunk", "hash-chunk", "corr-chunk", Array.Empty<SyncIngestEvent>()));
+        var client = new FakeSyncIngestClient(request => Task.FromResult(SyncIngestClientResult.Failed(
+            new SyncIngestClientError(SyncIngestClientErrorType.Timeout, "Request timed out.", "TIMEOUT")
+        )));
+
+        var applier = new FakeSyncAckApplier((b, req, resp) => Task.FromResult(SyncAckApplyResult.Succeeded(b.Count, resp.ChunkSequence)));
+
+        var scopeFactory = CreateMockScopeFactory(reader, builder, client, applier);
+        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var runTask = processor.StartAsync(cts.Token);
+        await Task.Delay(1300); // Allow two cycles to run
+        await processor.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(client.IngestCallCount >= 2);
+        Assert.Equal(0, applier.ApplyCallCount); // Applier never called
     }
 }

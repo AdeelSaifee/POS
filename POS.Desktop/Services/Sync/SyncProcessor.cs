@@ -96,7 +96,7 @@ public sealed class SyncProcessor : BackgroundService
     }
 
     /// <summary>
-    /// Performs a single processor sweep using a scoped batch reader, a request builder, and a sync client.
+    /// Performs a single processor sweep using a scoped batch reader, a request builder, a sync client, and an ack applier.
     /// </summary>
     private async Task RunOnceAsync(CancellationToken cancellationToken)
     {
@@ -106,6 +106,7 @@ public sealed class SyncProcessor : BackgroundService
             var reader = scope.ServiceProvider.GetRequiredService<ISyncOutboxBatchReader>();
             var builder = scope.ServiceProvider.GetRequiredService<ISyncIngestRequestBuilder>();
             var client = scope.ServiceProvider.GetRequiredService<ISyncIngestClient>();
+            var ackApplier = scope.ServiceProvider.GetRequiredService<ISyncAckApplier>();
 
             var batch = await reader.ReadPendingBatchAsync(cancellationToken).ConfigureAwait(false);
 
@@ -135,15 +136,41 @@ public sealed class SyncProcessor : BackgroundService
 
             if (result.Success)
             {
+                if (result.Response == null)
+                {
+                    _logger.LogError(
+                        "SyncProcessor successfully posted outbox batch {Sequence} but received a null response payload from Central. Skipping local database mutations.",
+                        request.ChunkSequence);
+                    return;
+                }
+
                 _logger.LogInformation(
-                    "SyncProcessor successfully posted outbox batch {Sequence} containing {Count} events. IdempotencyKey: {Key}",
+                    "SyncProcessor successfully posted outbox batch {Sequence} containing {Count} events. IdempotencyKey: {Key}. Applying local DB updates.",
                     request.ChunkSequence,
                     request.Events.Count,
                     request.ChunkIdempotencyKey);
 
-                lock (_guardLock)
+                var applyResult = await ackApplier.ApplySuccessAsync(batch, request, result.Response, cancellationToken).ConfigureAwait(false);
+
+                if (applyResult.Success)
                 {
-                    _successfullyPostedChunkKeysThisSession.Add(request.ChunkIdempotencyKey);
+                    _logger.LogInformation(
+                        "SyncProcessor successfully persisted outbox batch {Sequence} in local DB. Mark count: {Count}.",
+                        request.ChunkSequence,
+                        applyResult.AckedRowCount);
+
+                    lock (_guardLock)
+                    {
+                        _successfullyPostedChunkKeysThisSession.Add(request.ChunkIdempotencyKey);
+                    }
+                }
+                else
+                {
+                    _logger.LogError(
+                        "SyncProcessor failed to apply outbox database updates for batch {Sequence}. ErrorCode: {Code}, Message: {Message}",
+                        request.ChunkSequence,
+                        applyResult.ErrorCode,
+                        applyResult.ErrorMessage);
                 }
             }
             else

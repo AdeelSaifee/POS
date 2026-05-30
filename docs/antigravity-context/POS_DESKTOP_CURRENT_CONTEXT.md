@@ -2,15 +2,15 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 6 / Milestone 6.3 - Outbox drain processor
-- **Group**: Group 3 (Task 6.3.4 - completed)
+- **Group**: Group 4 (Tasks 6.3.5 and 6.3.6 - completed)
 
-## Status of All Milestone 6.3 Tasks (Group 3 COMPLETE)
+## Status of All Milestone 6.3 Tasks (Group 4 COMPLETE)
 - `[x]` Task 6.3.1 - Define the SyncProcessor (Completed)
 - `[x]` Task 6.3.2 - Register as a hosted service (Completed)
 - `[x]` Task 6.3.3 - Batch unsent outbox rows (Completed)
 - `[x]` Task 6.3.4 - Post the batch (Completed)
-- `[ ]` Task 6.3.5 - Mark rows sent on success
-- `[ ]` Task 6.3.6 - Advance the cursor
+- `[x]` Task 6.3.5 - Mark rows sent on success (Completed)
+- `[x]` Task 6.3.6 - Advance the cursor (Completed)
 - `[x]` Task 6.3.7 - Run off the UI thread (Completed)
 - `[x]` Task 6.3.8 - Tune batch size/interval (Completed)
 - `[x]` Task 6.3.9 - Pause cleanly on shutdown (Completed)
@@ -90,6 +90,16 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.3 - Group 4 (Tasks 6.3.5 and 6.3.6 completed)
+- [ADD] `POS.Desktop/Services/Sync/SyncAckApplyResult.cs` (Outcome carrier representing db mutations result)
+- [ADD] `POS.Desktop/Services/Sync/ISyncAckApplier.cs` (Durable db mutation scoped service contract)
+- [ADD] `POS.Desktop/Services/Sync/EfSyncAckApplier.cs` (Durable SQLite transaction and monotonic cursor implementation)
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs` (Registered scoped business service ISyncAckApplier)
+- [MODIFY] `POS.Desktop/Services/Sync/SyncProcessor.cs` (Durable DB ack updates resolved dynamically and in-memory guard updated only after database commit)
+- [ADD] `POS.Desktop.Tests/Services/Sync/SyncAckApplierTests.cs` (17 targeted in-memory SQLite integration tests covering identity matches, count validations, monotonic cursors and transaction rollbacks)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorTests.cs` (Added mock tests for successful ingest, failed ack database updates, null responses, and client ingest failures)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncDiResolutionTests.cs` (Added assertions for resolving ISyncAckApplier to EfSyncAckApplier)
 
 ### Phase 6 / Milestone 6.3 - Group 3 (Task 6.3.4 completed)
 - [ADD] `POS.Desktop/Services/Sync/ISyncIngestRequestBuilder.cs` (Decoupled, stateless pure interface defining outbox to ingest request mapper)
@@ -743,6 +753,23 @@ The `openShift()` function in `shift_open.html` transition flow:
 - `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncStaticAnalysisTests"`: **1/1 passed** (no async-blocking warnings)
 - `dotnet test POS.slnx --configuration Debug`: **615/615 passed** (546 desktop tests + 69 API integration tests)
 
-## Next Recommended Milestone
-- **Phase 6 / Milestone 6.3 - Group 4 / Tasks 6.3.5 and 6.3.6: mark rows sent on success and advance SyncCursor**
+## Verification Summary (Milestone 6.3 Group 4)
 
+### Design Decisions & Implementation Details
+- **Separate Scoped database mutation service**: Resolved `ISyncAckApplier` as a scoped service `EfSyncAckApplier` dynamically inside `SyncProcessor` loop iterations to execute SQLite mutations within shorter database contexts.
+- **Full Chunk "All-or-Nothing" Validation**: Strictly validated Central API response identity context, chunk sequence numbers, idempotency keys, response counts, and single-event Received acknowledgment details before applying database mutations. Missing or rejected event acks cleanly rollback changes.
+- **Durable Atomic SQLite Transactions**: Applied all database updates (acknowledging `SyncOutbox` pending rows and updating/inserting `SyncCursor` records) within a single SQLite transaction scope, preventing database state mismatch on write failures.
+- **Monotonic SyncCursor Advancement**: Monotonically advanced the unique SQLite cursor registered under stream name `"push:outbox"` and identified strictly by unique index fields `TenantId + TerminalId + StreamName` (excluding `LocationId` from uniqueness query).
+- **Process-Local Guard Integration**: Hardened the in-memory session duplicate-post guard to ONLY store successfully processed chunk keys after database transactions commit cleanly.
+- **Asynchronous Safety Check**: Maintained 100% asynchronous safety; zero thread-blocking calls (`.Result`, `.Wait()`, `GetAwaiter().GetResult()`) exist in production files.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **116/116 passed** (+17 new SQLite integration tests covering validations/cursors; +4 new processor workers tests; +0 regressions)
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncStaticAnalysisTests"`: **1/1 passed** (no async-blocking warnings)
+- `dotnet test POS.slnx --configuration Debug`: **636/636 passed** (567 desktop tests + 69 API integration tests)
+
+## Next Recommended Milestone
+- **Phase 6 / Milestone 6.3 - Group 5 / Task 6.3.10: Test events reach central**

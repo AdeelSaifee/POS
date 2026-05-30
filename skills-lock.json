@@ -7,6 +7,12 @@
       "skillPath": "skills/.curated/aspnet-core/SKILL.md",
       "computedHash": "192537b889ef60aba67db5f3c1f694e460fde9b6a45fb4c35ecab8e7710bfa67"
     },
+    "brainstorming": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/brainstorming/SKILL.md",
+      "computedHash": "f483c304fcde060211ffae00f49bb728536e7e7613c99db45b5b924d9fc17243"
+    },
     "dotnet-backend-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -84,6 +90,12 @@
       "sourceType": "github",
       "skillPath": "plugins/dotnet-test/skills/test-anti-patterns/SKILL.md",
       "computedHash": "6c3e8c143fffa1315ff7667b5c66b088cffc0fd51a3e439d48f167243ae0d483"
+    },
+    "using-superpowers": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/using-superpowers/SKILL.md",
+      "computedHash": "de10fd3ff46d797acc92b9df6b3ea456a5cd1d095b73c90bc921e83cce4c5bb9"
     },
     "verification-before-completion": {
       "source": "obra/superpowers",

@@ -1,8 +1,21 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 6 / Milestone 6.4 - Retry, recovery & reconciliation
-- **Group**: Group 4 final verification completed / Milestone 6.4 complete
+- **Milestone**: Phase 6 / Milestone 6.5 - Connectivity handling & sync observability
+- **Group**: Group 1 implementation completed / Milestone 6.5 Group 1 complete
+
+## Status of All Milestone 6.5 Tasks (Group 1 COMPLETE)
+- `[x]` Task 6.5.1 - Add connectivity detection (Completed)
+- `[x]` Task 6.5.2 - Pause processor when offline (Completed)
+- `[x]` Task 6.5.3 - Resume when online (Completed)
+- `[ ]` Task 6.5.4 - Track pending/last-synced counts (Group 2 pending)
+- `[ ]` Task 6.5.5 - Expose sync status via bridge (Group 2 pending)
+- `[ ]` Task 6.5.6 - Add sync logging/metrics (Group 2 pending)
+- `[ ]` Task 6.5.7 - Ensure offline ops unaffected (Group 3 pending)
+- `[x]` Task 6.5.8 - Keep checks off UI thread (Completed)
+- `[ ]` Task 6.5.9 - Test offline→online transition (Group 3 pending)
+- `[ ]` Task 6.5.10 - Verify no blocking on checks (Group 3 pending)
+
 
 ## Status of All Milestone 6.4 Tasks (100% COMPLETE)
 - `[x]` Task 6.4.1 - Define a retry policy (Completed)
@@ -103,6 +116,21 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.5 - Group 1 (Tasks 6.5.1, 6.5.2, 6.5.3, 6.5.8 completed)
+- [ADD] `POS.Desktop/Services/Sync/ISyncConnectivityService.cs` (Interface defining the contract for verifying network connectivity in a cheap, non-blocking manner)
+- [ADD] `POS.Desktop/Services/Sync/OsNetworkConnectivityService.cs` (Implements network connectivity detection using low-level, cached, non-blocking OS APIs without DNS or ping latency)
+- [MODIFY] `POS.Desktop/Services/Sync/SyncProcessor.cs` (Injected ISyncConnectivityService, added in-memory offline state transitions logging, gated outbox sweep to pause processor during offline states without incrementing failure counter, and preserved polling loop delay safety)
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs` (Registered ISyncConnectivityService as OsNetworkConnectivityService in the DI container as a stateless Singleton)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorTests.cs` (Added FakeSyncConnectivityService and TrackingOutboxBatchReader, updated CreateSyncProcessor to resolve construction parameters, and added 4 targeted unit tests verifying offline pauses, client bypasses, zero-failure increments, and online resumes)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncDiResolutionTests.cs` (Added DI resolution test for ISyncConnectivityService -> OsNetworkConnectivityService)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorPipelineIntegrationTests.cs` (Registered FakeSyncConnectivityService inside integration setup)
+  - Verification: `dotnet build POS.slnx --configuration Debug` runs with 0 errors / 0 warnings.
+  - Verification: `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"` passes with 168/168 tests successful.
+  - Verification: `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncStaticAnalysisTests"` passes with 1/1 tests successful.
+  - Verification: `dotnet test POS.slnx --configuration Debug` passes with 688/688 tests successful (619 desktop tests + 69 API integration tests).
+  - Verification: `git diff --check` and `git status --short` verified successfully with no formatting anomalies.
+  - No database migrations, no production behavior changes, no UI/bridge/API changes.
 
 ### Phase 6 / Milestone 6.4 - Group 4 (Task 6.4.8 completed)
 - [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorPipelineIntegrationTests.cs` (added transient failure -> eventual success integration test)
@@ -1114,17 +1142,26 @@ The `openShift()` function in `shift_open.html` transition flow:
 - **State Auditing**: Confirmed that when transient failure occurs, outbox rows successfully update with attempts, errors, and failure status without triggering quarantine/dead-letter rules or corrupting payments.
 - **Durable Recovery & Cleanup**: Verified that once the endpoint is back online, subsequent retry sweeps successfully write `Acked` status, clear error logs, advance cursor offsets, and reconcile all matching external tenders.
 
+### Phase 6 / Milestone 6.5 Group 1 (Tasks 6.5.1, 6.5.2, 6.5.3, and 6.5.8 complete)
+
+### Design Decisions & Implementation Details
+- **Cheap Connectivity Abstraction**: Introduced `ISyncConnectivityService` and `OsNetworkConnectivityService` using low-latency OS network adapter status `NetworkInterface.GetIsNetworkAvailable()`, completely avoiding expensive, blocking DNS/ping network roundtrips.
+- **Asynchronous Non-blocking Gating**: Gated outbox sweeps on `isConnected` status at the start of `SyncProcessor.ExecuteAsync` loop iteration, avoiding scope factory creations, outbox reads, or client ingestion attempts while offline.
+- **Offline State Safe Idle Sweep**: Offline states are treated as a safe idle sweep, resetting `consecutiveFailureCount = 0` and sleeping for `PollIntervalSeconds` to guarantee loop safety without hot-looping or burning retry attempts.
+- **State Change Transitions Logging**: Added in-memory transition state flags `wasOffline` to print online/offline resume and pause logs exactly once per state transition.
+- **Stateless Singleton registration**: Registered `ISyncConnectivityService` as a stateless `OsNetworkConnectivityService` Singleton, fully protecting Generic Host lifetimes.
+
 ### Builds
 - `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
 
 ### Tests
-- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **164/164 passed** (+1 new test case)
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **168/168 passed** (+4 new connectivity transition, pause, client bypass, and failure count unit tests)
 - `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncStaticAnalysisTests"`: **1/1 passed**
-- `dotnet test POS.slnx --configuration Debug`: **684/684 passed** (615 desktop tests + 69 API integration tests)
+- `dotnet test POS.slnx --configuration Debug`: **688/688 passed** (619 desktop tests + 69 API integration tests)
 
 ### Git hygiene
 - `git diff --check`: Zero whitespace/layout errors
 
 ## Next Recommended Milestone
-- **Phase 6 / Milestone 6.4 COMPLETE** (All 10 tasks complete)
-- **Next**: Phase 6 / Milestone 6.5 - Connectivity handling & sync observability
+- **Phase 6 / Milestone 6.5 Group 1 COMPLETE** (Tasks 6.5.1, 6.5.2, 6.5.3, and 6.5.8 complete)
+- **Next**: Phase 6 / Milestone 6.5 Group 2 (Tasks 6.5.4, 6.5.5, and 6.5.6 - Track pending/last-synced counts, Expose sync status via bridge, Add sync logging/metrics)

@@ -261,6 +261,16 @@ public sealed class SyncProcessorTests
         }
     }
 
+    private sealed class FakeSyncConnectivityService : ISyncConnectivityService
+    {
+        public bool IsConnected { get; set; } = true;
+
+        public Task<bool> IsConnectedAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(IsConnected);
+        }
+    }
+
     private sealed class ZeroBackoffRetryPolicy : ISyncRetryPolicy
     {
         private readonly SyncProcessorOptions _options;
@@ -283,10 +293,12 @@ public sealed class SyncProcessorTests
         IProvisionedTerminalContext context,
         SyncProcessorOptions options,
         IServiceScopeFactory scopeFactory,
-        ISyncRetryPolicy? retryPolicy = null)
+        ISyncRetryPolicy? retryPolicy = null,
+        ISyncConnectivityService? connectivityService = null)
     {
         retryPolicy ??= new ZeroBackoffRetryPolicy(options);
-        return new SyncProcessor(logger, context, options, retryPolicy, scopeFactory);
+        connectivityService ??= new FakeSyncConnectivityService();
+        return new SyncProcessor(logger, context, options, retryPolicy, connectivityService, scopeFactory);
     }
 
     private IServiceScopeFactory CreateMockScopeFactory(
@@ -838,5 +850,143 @@ public sealed class SyncProcessorTests
 
         // Assert
         Assert.True(applier.ApplyFailureCallCount >= 1);
+    }
+
+    [Fact]
+    public async Task SyncProcessor_OfflineState_PausesSweepsAndIdlesSafely()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { IsProvisioned = true };
+        var logger = new TestLogger<SyncProcessor>();
+        var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
+
+        var item = new SyncOutboxBatchItem(Guid.NewGuid(), 1, 10, 20, new DateOnly(2026, 5, 30), 100, "OrderCompleted", Guid.NewGuid(), "{}", "hash", "idem", "corr");
+        var reader = new FakeSyncOutboxBatchReaderWithItems(new[] { item });
+        var builder = new FakeSyncIngestRequestBuilder(batch => new SyncIngestRequest(1, 10, 20, 100, "idem-chunk", "hash-chunk", "corr-chunk", Array.Empty<SyncIngestEvent>()));
+        var client = new FakeSyncIngestClient(request => Task.FromResult(SyncIngestClientResult.Succeeded(
+            new SyncIngestResponse(Guid.NewGuid(), 100, "idem-chunk", "Success", 0, Array.Empty<SyncIngestEventAck>(), null, null)
+        )));
+
+        var scopeFactory = CreateMockScopeFactory(reader, builder, client);
+        var connectivityService = new FakeSyncConnectivityService { IsConnected = false }; // Offline
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory, connectivityService: connectivityService);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var runTask = processor.StartAsync(cts.Token);
+        await Task.Delay(50);
+        await processor.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.Equal(0, client.IngestCallCount); // Bypassed
+    }
+
+    private sealed class TrackingOutboxBatchReader : ISyncOutboxBatchReader
+    {
+        public int CallCount { get; private set; }
+        public Task<SyncOutboxBatch> ReadPendingBatchAsync(CancellationToken cancellationToken = default)
+        {
+            CallCount++;
+            return Task.FromResult(new SyncOutboxBatch(Array.Empty<SyncOutboxBatchItem>()));
+        }
+    }
+
+    [Fact]
+    public async Task SyncProcessor_OfflineState_DoesNotCallIngestClientOrBatchReader()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { IsProvisioned = true };
+        var logger = new TestLogger<SyncProcessor>();
+        var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
+
+        var reader = new TrackingOutboxBatchReader();
+        var client = new FakeSyncIngestClient(request => Task.FromResult(SyncIngestClientResult.Succeeded(null!)));
+
+        var scopeFactory = CreateMockScopeFactory(reader, client: client);
+        var connectivityService = new FakeSyncConnectivityService { IsConnected = false }; // Offline
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory, connectivityService: connectivityService);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var runTask = processor.StartAsync(cts.Token);
+        await Task.Delay(50);
+        await processor.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.Equal(0, reader.CallCount);
+        Assert.Equal(0, client.IngestCallCount);
+    }
+
+    [Fact]
+    public async Task SyncProcessor_OfflineState_DoesNotIncrementConsecutiveFailureCount()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { IsProvisioned = true };
+        var logger = new TestLogger<SyncProcessor>();
+        var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
+
+        var item = new SyncOutboxBatchItem(Guid.NewGuid(), 1, 10, 20, new DateOnly(2026, 5, 30), 100, "OrderCompleted", Guid.NewGuid(), "{}", "hash", "idem", "corr");
+        var reader = new FakeSyncOutboxBatchReaderWithItems(new[] { item });
+        var builder = new FakeSyncIngestRequestBuilder(batch => new SyncIngestRequest(1, 10, 20, 100, "idem-chunk", "hash-chunk", "corr-chunk", Array.Empty<SyncIngestEvent>()));
+        var client = new FakeSyncIngestClient(request => Task.FromResult(SyncIngestClientResult.Failed(
+            new SyncIngestClientError(SyncIngestClientErrorType.Timeout, "Request timed out.", "TIMEOUT")
+        )));
+
+        var scopeFactory = CreateMockScopeFactory(reader, builder, client);
+        var fakeRetryPolicy = new FakeSyncRetryPolicy { ReturnedDelay = TimeSpan.FromMilliseconds(1) };
+        var connectivityService = new FakeSyncConnectivityService { IsConnected = false }; // Offline
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory, fakeRetryPolicy, connectivityService);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var runTask = processor.StartAsync(cts.Token);
+        await Task.Delay(50);
+        await processor.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.Equal(0, client.IngestCallCount);
+        Assert.Equal(0, fakeRetryPolicy.ConsecutiveFailureCountCalculated); // Retry backoff calculation never called
+    }
+
+    [Fact]
+    public async Task SyncProcessor_OfflineOnlineTransition_ResumesProcessingOnLaterLoop()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { IsProvisioned = true };
+        var logger = new TestLogger<SyncProcessor>();
+        var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
+
+        var item = new SyncOutboxBatchItem(Guid.NewGuid(), 1, 10, 20, new DateOnly(2026, 5, 30), 100, "OrderCompleted", Guid.NewGuid(), "{}", "hash", "idem", "corr");
+        var reader = new FakeSyncOutboxBatchReaderWithItems(new[] { item });
+        var builder = new FakeSyncIngestRequestBuilder(batch => new SyncIngestRequest(1, 10, 20, 100, "idem-chunk", "hash-chunk", "corr-chunk", Array.Empty<SyncIngestEvent>()));
+        var client = new FakeSyncIngestClient(request => Task.FromResult(SyncIngestClientResult.Succeeded(
+            new SyncIngestResponse(Guid.NewGuid(), 100, "idem-chunk", "Success", 0, Array.Empty<SyncIngestEventAck>(), null, null)
+        )));
+
+        var scopeFactory = CreateMockScopeFactory(reader, builder, client);
+        var connectivityService = new FakeSyncConnectivityService { IsConnected = false }; // Start offline
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory, connectivityService: connectivityService);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var runTask = processor.StartAsync(cts.Token);
+
+        // Wait brief time, ensure 0 calls while offline
+        await Task.Delay(50);
+        Assert.Equal(0, client.IngestCallCount);
+
+        // Switch to online
+        connectivityService.IsConnected = true;
+
+        // Wait deterministically for the client call count to reach 1 (resumed processing)
+        await Task.WhenAny(client.WaitForCallCountAsync(1), Task.Delay(2000));
+        await processor.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(client.IngestCallCount >= 1);
     }
 }

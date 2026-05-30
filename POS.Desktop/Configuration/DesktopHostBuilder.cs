@@ -93,6 +93,7 @@ public static class DesktopHostBuilder
                 services.AddSingleton<IDeviceTokenProvider, UnconfiguredDeviceTokenProvider>();
                 services.AddSingleton<ISyncIngestRequestBuilder, SyncIngestRequestBuilder>();
                 services.AddSingleton<ISyncRetryPolicy, SyncRetryPolicy>();
+                services.AddSingleton<ISyncConnectivityService, OsNetworkConnectivityService>();
                 services.AddScoped<ISyncOutboxBatchReader, EfSyncOutboxBatchReader>();
                 services.AddScoped<ISyncAckApplier, EfSyncAckApplier>();
                 services.AddScoped<ISyncQuarantineService, SyncQuarantineService>();

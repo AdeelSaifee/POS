@@ -191,6 +191,12 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
         };
     }
 
+    private sealed class FakeSyncConnectivityService : ISyncConnectivityService
+    {
+        public bool IsConnected { get; set; } = true;
+        public Task<bool> IsConnectedAsync(CancellationToken cancellationToken = default) => Task.FromResult(IsConnected);
+    }
+
     /// <summary>
     /// Builds a ServiceProvider wired for one processor pipeline cycle.
     /// The fakeClient and ackTcs are created by the caller so they can be
@@ -213,6 +219,7 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
         services.AddSingleton<ISyncIngestRequestBuilder, SyncIngestRequestBuilder>();
         services.AddSingleton<ISyncIngestClient>(fakeClient);
         services.AddSingleton<ISyncRetryPolicy, SyncRetryPolicy>();
+        services.AddSingleton<ISyncConnectivityService, FakeSyncConnectivityService>();
 
         // Register the concrete EfSyncAckApplier so the wrapper factory can resolve it per scope.
         services.AddScoped<EfSyncAckApplier>();
@@ -238,6 +245,7 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
             ctx,
             options,
             sp.GetRequiredService<ISyncRetryPolicy>(),
+            sp.GetRequiredService<ISyncConnectivityService>(),
             sp.GetRequiredService<IServiceScopeFactory>());
     }
 
@@ -622,6 +630,7 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
         services.AddSingleton<ISyncIngestRequestBuilder, SyncIngestRequestBuilder>();
         services.AddSingleton<ISyncIngestClient>(fakeClient);
         services.AddSingleton<ISyncRetryPolicy, ZeroBackoffRetryPolicy>();
+        services.AddSingleton<ISyncConnectivityService, FakeSyncConnectivityService>();
 
         services.AddScoped<EfSyncAckApplier>();
         services.AddScoped<ISyncQuarantineService, SyncQuarantineService>();

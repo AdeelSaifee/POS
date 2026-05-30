@@ -18,6 +18,7 @@ public sealed class SyncProcessor : BackgroundService
     private readonly IProvisionedTerminalContext _provisioningContext;
     private readonly SyncProcessorOptions _options;
     private readonly ISyncRetryPolicy _retryPolicy;
+    private readonly ISyncConnectivityService _connectivityService;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly HashSet<string> _successfullyPostedChunkKeysThisSession = new(StringComparer.Ordinal);
     private readonly object _guardLock = new();
@@ -29,18 +30,21 @@ public sealed class SyncProcessor : BackgroundService
     /// <param name="provisioningContext">The provisioning state helper.</param>
     /// <param name="options">The sync processor options.</param>
     /// <param name="retryPolicy">The retry policy helper.</param>
+    /// <param name="connectivityService">The network connectivity check helper.</param>
     /// <param name="scopeFactory">The service scope factory to manage scoped services safely.</param>
     public SyncProcessor(
         ILogger<SyncProcessor> logger,
         IProvisionedTerminalContext provisioningContext,
         SyncProcessorOptions options,
         ISyncRetryPolicy retryPolicy,
+        ISyncConnectivityService connectivityService,
         IServiceScopeFactory scopeFactory)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _provisioningContext = provisioningContext ?? throw new ArgumentNullException(nameof(provisioningContext));
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _retryPolicy = retryPolicy ?? throw new ArgumentNullException(nameof(retryPolicy));
+        _connectivityService = connectivityService ?? throw new ArgumentNullException(nameof(connectivityService));
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
     }
 
@@ -61,6 +65,7 @@ public sealed class SyncProcessor : BackgroundService
         }
 
         int consecutiveFailureCount = 0;
+        bool wasOffline = false;
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -74,8 +79,27 @@ public sealed class SyncProcessor : BackgroundService
                 }
                 else
                 {
-                    _logger.LogDebug("Sync processor checking outbox. Terminal is provisioned.");
-                    success = await RunOnceAsync(stoppingToken).ConfigureAwait(false);
+                    bool isConnected = await _connectivityService.IsConnectedAsync(stoppingToken).ConfigureAwait(false);
+                    if (!isConnected)
+                    {
+                        if (!wasOffline)
+                        {
+                            _logger.LogInformation("Sync outbox drain processor network is offline. Sync attempts paused.");
+                            wasOffline = true;
+                        }
+                        _logger.LogDebug("Sync processor is offline. Sync attempts paused.");
+                        success = true; // Safe idle offline status does not count as failure
+                    }
+                    else
+                    {
+                        if (wasOffline)
+                        {
+                            _logger.LogInformation("Sync outbox drain processor network is back online. Sync attempts resumed.");
+                            wasOffline = false;
+                        }
+                        _logger.LogDebug("Sync processor checking outbox. Terminal is provisioned and online.");
+                        success = await RunOnceAsync(stoppingToken).ConfigureAwait(false);
+                    }
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

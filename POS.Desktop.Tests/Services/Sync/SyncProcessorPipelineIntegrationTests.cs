@@ -203,6 +203,7 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
         services.AddScoped<ISyncOutboxBatchReader, EfSyncOutboxBatchReader>();
         services.AddSingleton<ISyncIngestRequestBuilder, SyncIngestRequestBuilder>();
         services.AddSingleton<ISyncIngestClient>(fakeClient);
+        services.AddSingleton<ISyncRetryPolicy, SyncRetryPolicy>();
 
         // Register the concrete EfSyncAckApplier so the wrapper factory can resolve it per scope.
         services.AddScoped<EfSyncAckApplier>();
@@ -225,6 +226,7 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
             sp.GetRequiredService<ILogger<SyncProcessor>>(),
             ctx,
             options,
+            sp.GetRequiredService<ISyncRetryPolicy>(),
             sp.GetRequiredService<IServiceScopeFactory>());
     }
 

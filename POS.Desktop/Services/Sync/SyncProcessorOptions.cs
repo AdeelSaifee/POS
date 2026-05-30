@@ -18,6 +18,21 @@ public sealed class SyncProcessorOptions
     public int PollIntervalSeconds { get; set; } = 10;
 
     /// <summary>
+    /// Gets or sets the initial backoff delay in seconds. Default is 2.
+    /// </summary>
+    public int InitialBackoffSeconds { get; set; } = 2;
+
+    /// <summary>
+    /// Gets or sets the maximum backoff delay in seconds. Default is 300 (5 minutes).
+    /// </summary>
+    public int MaxBackoffSeconds { get; set; } = 300;
+
+    /// <summary>
+    /// Gets or sets the exponential backoff multiplier. Default is 2.0.
+    /// </summary>
+    public double BackoffMultiplier { get; set; } = 2.0;
+
+    /// <summary>
     /// Performs self-validation on options and returns a descriptive error message if invalid.
     /// </summary>
     /// <param name="errorMessage">The validation error message, or null if valid.</param>
@@ -35,6 +50,30 @@ public sealed class SyncProcessorOptions
         if (PollIntervalSeconds < 1 || PollIntervalSeconds > 3600)
         {
             errorMessage = "PollIntervalSeconds must be between 1 and 3600.";
+            return false;
+        }
+
+        if (InitialBackoffSeconds < 1 || InitialBackoffSeconds > 3600)
+        {
+            errorMessage = "InitialBackoffSeconds must be between 1 and 3600.";
+            return false;
+        }
+
+        if (MaxBackoffSeconds < 1 || MaxBackoffSeconds > 3600)
+        {
+            errorMessage = "MaxBackoffSeconds must be between 1 and 3600.";
+            return false;
+        }
+
+        if (MaxBackoffSeconds < InitialBackoffSeconds)
+        {
+            errorMessage = "MaxBackoffSeconds cannot be less than InitialBackoffSeconds.";
+            return false;
+        }
+
+        if (BackoffMultiplier < 1.0 || BackoffMultiplier > 10.0)
+        {
+            errorMessage = "BackoffMultiplier must be between 1.0 and 10.0.";
             return false;
         }
 

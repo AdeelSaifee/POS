@@ -103,8 +103,11 @@ public sealed class SyncProcessorTests
 
     private sealed class FakeSyncIngestClient : ISyncIngestClient
     {
+        private readonly object _lock = new();
         private readonly Func<SyncIngestRequest, Task<SyncIngestClientResult>> _ingestCallback;
         public int IngestCallCount { get; private set; }
+        private TaskCompletionSource? _targetCallCountTcs;
+        private int _targetCallCount;
 
         public FakeSyncIngestClient(Func<SyncIngestRequest, Task<SyncIngestClientResult>> ingestCallback)
         {
@@ -113,15 +116,39 @@ public sealed class SyncProcessorTests
 
         public async Task<SyncIngestClientResult> IngestAsync(SyncIngestRequest request, CancellationToken cancellationToken = default)
         {
-            IngestCallCount++;
+            lock (_lock)
+            {
+                IngestCallCount++;
+                if (_targetCallCountTcs != null && IngestCallCount >= _targetCallCount)
+                {
+                    _targetCallCountTcs.TrySetResult();
+                }
+            }
             return await _ingestCallback(request);
+        }
+
+        public Task WaitForCallCountAsync(int targetCount)
+        {
+            lock (_lock)
+            {
+                if (IngestCallCount >= targetCount)
+                {
+                    return Task.CompletedTask;
+                }
+                _targetCallCount = targetCount;
+                _targetCallCountTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                return _targetCallCountTcs.Task;
+            }
         }
     }
 
     private sealed class FakeSyncAckApplier : ISyncAckApplier
     {
+        private readonly object _lock = new();
         private readonly Func<SyncOutboxBatch, SyncIngestRequest, SyncIngestResponse, Task<SyncAckApplyResult>> _callback;
         public int ApplyCallCount { get; private set; }
+        private TaskCompletionSource? _targetCallCountTcs;
+        private int _targetCallCount;
 
         public FakeSyncAckApplier(Func<SyncOutboxBatch, SyncIngestRequest, SyncIngestResponse, Task<SyncAckApplyResult>> callback)
         {
@@ -134,9 +161,97 @@ public sealed class SyncProcessorTests
             SyncIngestResponse response,
             CancellationToken cancellationToken = default)
         {
-            ApplyCallCount++;
+            lock (_lock)
+            {
+                ApplyCallCount++;
+                if (_targetCallCountTcs != null && ApplyCallCount >= _targetCallCount)
+                {
+                    _targetCallCountTcs.TrySetResult();
+                }
+            }
             return await _callback(batch, request, response);
         }
+
+        public Task WaitForCallCountAsync(int targetCount)
+        {
+            lock (_lock)
+            {
+                if (ApplyCallCount >= targetCount)
+                {
+                    return Task.CompletedTask;
+                }
+                _targetCallCount = targetCount;
+                _targetCallCountTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                return _targetCallCountTcs.Task;
+            }
+        }
+    }
+
+    private sealed class FakeSyncRetryPolicy : ISyncRetryPolicy
+    {
+        private readonly object _lock = new();
+        public int ConsecutiveFailureCountCalculated { get; private set; } = 0;
+        public TimeSpan ReturnedDelay { get; set; } = TimeSpan.FromMilliseconds(5);
+        public bool IsTransientResult { get; set; } = true;
+        private TaskCompletionSource? _targetCountTcs;
+        private int _targetFailureCount;
+
+        public bool IsTransient(SyncIngestClientErrorType errorType) => IsTransientResult;
+
+        public TimeSpan CalculateBackoff(int consecutiveFailureCount)
+        {
+            lock (_lock)
+            {
+                ConsecutiveFailureCountCalculated = consecutiveFailureCount;
+                if (_targetCountTcs != null && consecutiveFailureCount >= _targetFailureCount)
+                {
+                    _targetCountTcs.TrySetResult();
+                }
+            }
+            return ReturnedDelay;
+        }
+
+        public Task WaitForFailureCountAsync(int targetCount)
+        {
+            lock (_lock)
+            {
+                if (ConsecutiveFailureCountCalculated >= targetCount)
+                {
+                    return Task.CompletedTask;
+                }
+                _targetFailureCount = targetCount;
+                _targetCountTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                return _targetCountTcs.Task;
+            }
+        }
+    }
+
+    private sealed class ZeroBackoffRetryPolicy : ISyncRetryPolicy
+    {
+        private readonly SyncProcessorOptions _options;
+
+        public ZeroBackoffRetryPolicy(SyncProcessorOptions options)
+        {
+            _options = options;
+        }
+
+        public bool IsTransient(SyncIngestClientErrorType errorType) => true;
+
+        public TimeSpan CalculateBackoff(int consecutiveFailureCount)
+        {
+            return TimeSpan.FromSeconds(_options.PollIntervalSeconds);
+        }
+    }
+
+    private SyncProcessor CreateSyncProcessor(
+        ILogger<SyncProcessor> logger,
+        IProvisionedTerminalContext context,
+        SyncProcessorOptions options,
+        IServiceScopeFactory scopeFactory,
+        ISyncRetryPolicy? retryPolicy = null)
+    {
+        retryPolicy ??= new ZeroBackoffRetryPolicy(options);
+        return new SyncProcessor(logger, context, options, retryPolicy, scopeFactory);
     }
 
     private IServiceScopeFactory CreateMockScopeFactory(
@@ -179,7 +294,7 @@ public sealed class SyncProcessorTests
         var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
         var reader = new FakeSyncOutboxBatchReader();
         var scopeFactory = CreateMockScopeFactory(reader);
-        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory);
 
         using var cts = new CancellationTokenSource();
 
@@ -206,7 +321,7 @@ public sealed class SyncProcessorTests
         var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
         var reader = new FakeSyncOutboxBatchReader();
         var scopeFactory = CreateMockScopeFactory(reader);
-        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory);
 
         using var cts = new CancellationTokenSource();
 
@@ -231,7 +346,7 @@ public sealed class SyncProcessorTests
         var options = new SyncProcessorOptions { BatchSize = -10 }; // Invalid BatchSize
         var reader = new FakeSyncOutboxBatchReader();
         var scopeFactory = CreateMockScopeFactory(reader);
-        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory);
 
         // Act
         var runTask = processor.StartAsync(CancellationToken.None);
@@ -262,7 +377,7 @@ public sealed class SyncProcessorTests
         )));
 
         var scopeFactory = CreateMockScopeFactory(reader, builder, client);
-        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory);
 
         using var cts = new CancellationTokenSource();
 
@@ -300,7 +415,7 @@ public sealed class SyncProcessorTests
         )));
 
         var scopeFactory = CreateMockScopeFactory(reader, builder, client);
-        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory);
 
         using var cts = new CancellationTokenSource();
 
@@ -346,7 +461,7 @@ public sealed class SyncProcessorTests
         )));
 
         var scopeFactory = CreateMockScopeFactory(reader, builder, client);
-        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory);
 
         using var cts = new CancellationTokenSource();
 
@@ -376,7 +491,7 @@ public sealed class SyncProcessorTests
         )));
 
         var scopeFactory = CreateMockScopeFactory(reader, builder, client);
-        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory);
 
         using var cts = new CancellationTokenSource();
 
@@ -412,7 +527,7 @@ public sealed class SyncProcessorTests
         var applier = new FakeSyncAckApplier((b, req, resp) => Task.FromResult(SyncAckApplyResult.Succeeded(b.Count, resp.ChunkSequence)));
 
         var scopeFactory = CreateMockScopeFactory(reader, builder, client, applier);
-        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory);
 
         using var cts = new CancellationTokenSource();
 
@@ -445,7 +560,7 @@ public sealed class SyncProcessorTests
         var applier = new FakeSyncAckApplier((b, req, resp) => Task.FromResult(SyncAckApplyResult.Failed("DB_ERROR", "Failed to save to database.")));
 
         var scopeFactory = CreateMockScopeFactory(reader, builder, client, applier);
-        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory);
 
         using var cts = new CancellationTokenSource();
 
@@ -477,7 +592,7 @@ public sealed class SyncProcessorTests
         var applier = new FakeSyncAckApplier((b, req, resp) => Task.FromResult(SyncAckApplyResult.Succeeded(b.Count, resp.ChunkSequence)));
 
         var scopeFactory = CreateMockScopeFactory(reader, builder, client, applier);
-        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory);
 
         using var cts = new CancellationTokenSource();
 
@@ -510,7 +625,7 @@ public sealed class SyncProcessorTests
         var applier = new FakeSyncAckApplier((b, req, resp) => Task.FromResult(SyncAckApplyResult.Succeeded(b.Count, resp.ChunkSequence)));
 
         var scopeFactory = CreateMockScopeFactory(reader, builder, client, applier);
-        var processor = new SyncProcessor(logger, context, options, scopeFactory);
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory);
 
         using var cts = new CancellationTokenSource();
 
@@ -522,5 +637,134 @@ public sealed class SyncProcessorTests
         // Assert
         Assert.True(client.IngestCallCount >= 2);
         Assert.Equal(0, applier.ApplyCallCount); // Applier never called
+    }
+
+    [Theory]
+    [InlineData(SyncIngestClientErrorType.Offline, true)]
+    [InlineData(SyncIngestClientErrorType.Timeout, true)]
+    [InlineData(SyncIngestClientErrorType.ServerError, true)]
+    [InlineData(SyncIngestClientErrorType.Unexpected, true)]
+    [InlineData(SyncIngestClientErrorType.Unauthorized, true)]
+    [InlineData(SyncIngestClientErrorType.Forbidden, false)]
+    [InlineData(SyncIngestClientErrorType.Validation, false)]
+    [InlineData(SyncIngestClientErrorType.Conflict, false)]
+    [InlineData(SyncIngestClientErrorType.Configuration, false)]
+    public void SyncRetryPolicy_IsTransient_ClassifiesCorrectly(SyncIngestClientErrorType errorType, bool expectedIsTransient)
+    {
+        var options = new SyncProcessorOptions();
+        var policy = new SyncRetryPolicy(options);
+        Assert.Equal(expectedIsTransient, policy.IsTransient(errorType));
+    }
+
+    [Theory]
+    [InlineData(0, 10)] // <= 0 returns PollIntervalSeconds
+    [InlineData(1, 2)]  // 2 * 2^0 = 2
+    [InlineData(2, 4)]  // 2 * 2^1 = 4
+    [InlineData(3, 8)]  // 2 * 2^2 = 8
+    [InlineData(10, 300)] // capped at max (300)
+    [InlineData(100, 300)] // capped and overflow protected
+    public void SyncRetryPolicy_CalculateBackoff_AppliesExponentialCurveAndCap(int consecutiveFailures, int expectedSeconds)
+    {
+        var options = new SyncProcessorOptions
+        {
+            PollIntervalSeconds = 10,
+            InitialBackoffSeconds = 2,
+            MaxBackoffSeconds = 300,
+            BackoffMultiplier = 2.0
+        };
+        var policy = new SyncRetryPolicy(options);
+        var backoff = policy.CalculateBackoff(consecutiveFailures);
+        Assert.Equal(TimeSpan.FromSeconds(expectedSeconds), backoff);
+    }
+
+    [Fact]
+    public async Task SyncProcessor_ConsecutiveFailure_AppliesExponentialBackoffLoopDelay()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { IsProvisioned = true };
+        var logger = new TestLogger<SyncProcessor>();
+        var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
+
+        var item = new SyncOutboxBatchItem(Guid.NewGuid(), 1, 10, 20, new DateOnly(2026, 5, 30), 100, "OrderCompleted", Guid.NewGuid(), "{}", "hash", "idem", "corr");
+        var reader = new FakeSyncOutboxBatchReaderWithItems(new[] { item });
+
+        var builder = new FakeSyncIngestRequestBuilder(batch => new SyncIngestRequest(1, 10, 20, 100, "idem-chunk", "hash-chunk", "corr-chunk", Array.Empty<SyncIngestEvent>()));
+        var client = new FakeSyncIngestClient(request => Task.FromResult(SyncIngestClientResult.Failed(
+            new SyncIngestClientError(SyncIngestClientErrorType.Timeout, "Request timed out.", "TIMEOUT")
+        )));
+
+        var scopeFactory = CreateMockScopeFactory(reader, builder, client);
+        var fakeRetryPolicy = new FakeSyncRetryPolicy { ReturnedDelay = TimeSpan.FromMilliseconds(1) };
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory, fakeRetryPolicy);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var runTask = processor.StartAsync(cts.Token);
+
+        // Wait deterministically for at least 2 client ingest calls (implying the backoff delay occurred and the second sweep was started)
+        await Task.WhenAny(client.WaitForCallCountAsync(2), Task.Delay(1000));
+        await processor.StopAsync(CancellationToken.None);
+
+        // Assert
+        // The policy should have been called with failure counts >= 1
+        Assert.True(fakeRetryPolicy.ConsecutiveFailureCountCalculated >= 1);
+        Assert.True(client.IngestCallCount >= 2);
+    }
+
+    [Fact]
+    public async Task SyncProcessor_FailureThenSuccess_ResetsFailureCount()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext { IsProvisioned = true };
+        var logger = new TestLogger<SyncProcessor>();
+        var options = new SyncProcessorOptions { PollIntervalSeconds = 1 };
+
+        var item = new SyncOutboxBatchItem(Guid.NewGuid(), 1, 10, 20, new DateOnly(2026, 5, 30), 100, "OrderCompleted", Guid.NewGuid(), "{}", "hash", "idem", "corr");
+        var reader = new FakeSyncOutboxBatchReaderWithItems(new[] { item });
+
+        var builder = new FakeSyncIngestRequestBuilder(batch => new SyncIngestRequest(1, 10, 20, 100, "idem-chunk", "hash-chunk", "corr-chunk", Array.Empty<SyncIngestEvent>()));
+
+        // Client fails on first call, succeeds on subsequent calls
+        int callCount = 0;
+        var client = new FakeSyncIngestClient(request => {
+            callCount++;
+            if (callCount == 1)
+            {
+                return Task.FromResult(SyncIngestClientResult.Failed(
+                    new SyncIngestClientError(SyncIngestClientErrorType.Timeout, "Request timed out.", "TIMEOUT")
+                ));
+            }
+            return Task.FromResult(SyncIngestClientResult.Succeeded(
+                new SyncIngestResponse(Guid.NewGuid(), 100, "idem-chunk", "Received", 0, Array.Empty<SyncIngestEventAck>(), null, null)
+            ));
+        });
+
+        // Hook into the applier to wait until the successful ack is processed.
+        var applier = new FakeSyncAckApplier((b, req, resp) => Task.FromResult(SyncAckApplyResult.Succeeded(b.Count, resp.ChunkSequence)));
+
+        var scopeFactory = CreateMockScopeFactory(reader, builder, client, applier);
+        var fakeRetryPolicy = new FakeSyncRetryPolicy { ReturnedDelay = TimeSpan.FromMilliseconds(1) };
+        var processor = CreateSyncProcessor(logger, context, options, scopeFactory, fakeRetryPolicy);
+
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var runTask = processor.StartAsync(cts.Token);
+
+        // Wait deterministically for the successful ingest (2nd client call) and the successful db ack apply.
+        // Once ApplySuccessAsync is called (ApplyCallCount >= 1), the second sweep is finishing and resetting failure count.
+        await Task.WhenAny(applier.WaitForCallCountAsync(1), Task.Delay(1000));
+
+        // Give a very small task delay (20ms) to let the background thread resume execution after the Applier returns
+        // and finish the current loop iteration to update/reset consecutiveFailureCount.
+        await Task.Delay(20);
+
+        await processor.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(callCount >= 2);
+        // On first run: failed, ConsecutiveFailureCountCalculated becomes 1
+        Assert.Equal(1, fakeRetryPolicy.ConsecutiveFailureCountCalculated);
     }
 }

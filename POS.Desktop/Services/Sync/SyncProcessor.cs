@@ -17,6 +17,7 @@ public sealed class SyncProcessor : BackgroundService
     private readonly ILogger<SyncProcessor> _logger;
     private readonly IProvisionedTerminalContext _provisioningContext;
     private readonly SyncProcessorOptions _options;
+    private readonly ISyncRetryPolicy _retryPolicy;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly HashSet<string> _successfullyPostedChunkKeysThisSession = new(StringComparer.Ordinal);
     private readonly object _guardLock = new();
@@ -27,16 +28,19 @@ public sealed class SyncProcessor : BackgroundService
     /// <param name="logger">The logger helper.</param>
     /// <param name="provisioningContext">The provisioning state helper.</param>
     /// <param name="options">The sync processor options.</param>
+    /// <param name="retryPolicy">The retry policy helper.</param>
     /// <param name="scopeFactory">The service scope factory to manage scoped services safely.</param>
     public SyncProcessor(
         ILogger<SyncProcessor> logger,
         IProvisionedTerminalContext provisioningContext,
         SyncProcessorOptions options,
+        ISyncRetryPolicy retryPolicy,
         IServiceScopeFactory scopeFactory)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _provisioningContext = provisioningContext ?? throw new ArgumentNullException(nameof(provisioningContext));
         _options = options ?? throw new ArgumentNullException(nameof(options));
+        _retryPolicy = retryPolicy ?? throw new ArgumentNullException(nameof(retryPolicy));
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
     }
 
@@ -56,18 +60,22 @@ public sealed class SyncProcessor : BackgroundService
             return;
         }
 
+        int consecutiveFailureCount = 0;
+
         while (!stoppingToken.IsCancellationRequested)
         {
+            bool success = false;
             try
             {
                 if (!_provisioningContext.IsProvisioned)
                 {
                     _logger.LogDebug("Terminal is not provisioned. Sync processor is idle.");
+                    success = true; // Safe idle status does not count as failure
                 }
                 else
                 {
                     _logger.LogDebug("Sync processor checking outbox. Terminal is provisioned.");
-                    await RunOnceAsync(stoppingToken).ConfigureAwait(false);
+                    success = await RunOnceAsync(stoppingToken).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -78,12 +86,35 @@ public sealed class SyncProcessor : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An unexpected exception occurred inside the sync processor execution loop.");
+                success = false;
+            }
+
+            if (success)
+            {
+                consecutiveFailureCount = 0;
+            }
+            else
+            {
+                consecutiveFailureCount++;
             }
 
             try
             {
-                // Delay using configured poll interval
-                await Task.Delay(TimeSpan.FromSeconds(_options.PollIntervalSeconds), stoppingToken).ConfigureAwait(false);
+                TimeSpan delay;
+                if (consecutiveFailureCount == 0)
+                {
+                    delay = TimeSpan.FromSeconds(_options.PollIntervalSeconds);
+                }
+                else
+                {
+                    delay = _retryPolicy.CalculateBackoff(consecutiveFailureCount);
+                    _logger.LogWarning(
+                        "Sync processor backoff applied. Failure count: {Count}. Delaying for {DelaySeconds}s.",
+                        consecutiveFailureCount,
+                        delay.TotalSeconds);
+                }
+
+                await Task.Delay(delay, stoppingToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -98,7 +129,8 @@ public sealed class SyncProcessor : BackgroundService
     /// <summary>
     /// Performs a single processor sweep using a scoped batch reader, a request builder, a sync client, and an ack applier.
     /// </summary>
-    private async Task RunOnceAsync(CancellationToken cancellationToken)
+    /// <returns>True if the sweep was successful (or no-op); false if a sync or write failure occurred.</returns>
+    private async Task<bool> RunOnceAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -113,7 +145,7 @@ public sealed class SyncProcessor : BackgroundService
             if (!batch.HasItems)
             {
                 _logger.LogDebug("SyncProcessor assembled an empty outbox batch.");
-                return;
+                return true; // No pending items is a successful sweep
             }
 
             _logger.LogInformation("SyncProcessor assembled outbox batch containing {Count} pending events.", batch.Count);
@@ -128,7 +160,7 @@ public sealed class SyncProcessor : BackgroundService
                         "SyncProcessor: Batch {Sequence} with key {Key} was already successfully posted in this process session. Skipping re-transmission.",
                         request.ChunkSequence,
                         request.ChunkIdempotencyKey);
-                    return;
+                    return true; // Already successfully posted during session
                 }
             }
 
@@ -141,7 +173,7 @@ public sealed class SyncProcessor : BackgroundService
                     _logger.LogError(
                         "SyncProcessor successfully posted outbox batch {Sequence} but received a null response payload from Central. Skipping local database mutations.",
                         request.ChunkSequence);
-                    return;
+                    return false;
                 }
 
                 _logger.LogInformation(
@@ -163,6 +195,7 @@ public sealed class SyncProcessor : BackgroundService
                     {
                         _successfullyPostedChunkKeysThisSession.Add(request.ChunkIdempotencyKey);
                     }
+                    return true;
                 }
                 else
                 {
@@ -171,6 +204,7 @@ public sealed class SyncProcessor : BackgroundService
                         request.ChunkSequence,
                         applyResult.ErrorCode,
                         applyResult.ErrorMessage);
+                    return false;
                 }
             }
             else
@@ -182,6 +216,7 @@ public sealed class SyncProcessor : BackgroundService
                     error?.ErrorType,
                     error?.Code,
                     error?.Message);
+                return false;
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -192,6 +227,7 @@ public sealed class SyncProcessor : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to execute outbox batch read cycle in RunOnceAsync.");
+            return false;
         }
     }
 }

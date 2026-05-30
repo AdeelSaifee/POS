@@ -1,8 +1,21 @@
 # POS Desktop UI Integration - Current Session Context
 
 ## Current Milestone & Group
-- **Milestone**: Phase 6 / Milestone 6.3 - Outbox drain processor
-- **Group**: Group 5 (Task 6.3.10 - completed) — Milestone 6.3 100% COMPLETE
+- **Milestone**: Phase 6 / Milestone 6.4 - Retry, recovery & reconciliation
+- **Group**: Group 1 only (Tasks 6.4.1 & 6.4.6 completed)
+
+## Status of All Milestone 6.4 Tasks
+- `[x]` Task 6.4.1 - Define a retry policy (Completed)
+- `[ ]` Task 6.4.2 - Persist retry state (Pending)
+- `[ ]` Task 6.4.3 - Bound retries / quarantine (Pending)
+- `[ ]` Task 6.4.4 - Wire reconciliation queue (Pending)
+- `[ ]` Task 6.4.5 - Reconcile payment acks (Pending)
+- `[x]` Task 6.4.6 - Prevent failure hot-loops (Completed)
+- `[ ]` Task 6.4.7 - Surface quarantined items (Pending)
+- `[ ]` Task 6.4.8 - Test transient → eventual success (Pending)
+- `[ ]` Task 6.4.9 - Test poison handling (Pending)
+- `[ ]` Task 6.4.10 - Test reconciliation closes loop (Pending)
+
 
 ## Status of All Milestone 6.3 Tasks (ALL COMPLETE)
 - `[x]` Task 6.3.1 - Define the SyncProcessor (Completed)
@@ -90,6 +103,18 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.4 - Group 1 (Tasks 6.4.1 and 6.4.6 completed)
+- [ADD] `POS.Desktop/Services/Sync/ISyncRetryPolicy.cs` (Interface defining sync retry backoff calculation and transient error check contract)
+- [ADD] `POS.Desktop/Services/Sync/SyncRetryPolicy.cs` (Capped exponential backoff and transient classification implementation)
+- [MODIFY] `POS.Desktop/Services/Sync/SyncProcessorOptions.cs` (Added InitialBackoffSeconds, MaxBackoffSeconds, and BackoffMultiplier with validations)
+- [MODIFY] `POS.Desktop/Services/Sync/SyncProcessor.cs` (Injected ISyncRetryPolicy, modified RunOnceAsync to return execution success status, and implemented loop-level in-memory backoff tracking)
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs` (Registered ISyncRetryPolicy as a Singleton service)
+- [MODIFY] `POS.Desktop/appsettings.json` (Added default retry parameters under Sync config block)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorOptionsTests.cs` (Added validation boundary tests for the new backoff options)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncDiResolutionTests.cs` (Added container resolution assertions for ISyncRetryPolicy and validated bound appsettings configuration)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorTests.cs` (Defined FakeSyncRetryPolicy and ZeroBackoffRetryPolicy helper classes, refactored test constructors, and added loop backoff lifecycle unit tests)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorPipelineIntegrationTests.cs` (Registered and passed ISyncRetryPolicy dependency in pipeline tests helper DI setup)
 
 ### Phase 6 / Milestone 6.3 - Group 5 (Task 6.3.10 completed)
 - [ADD] `POS.Desktop.Tests/Services/Sync/SyncProcessorPipelineIntegrationTests.cs` (2 SyncProcessor-driven integration tests proving the complete desktop push pipeline end-to-end using real SQLite, real EF reader/builder/ack applier, fake capturing ISyncIngestClient, and TaskCompletionSource synchronization)
@@ -797,6 +822,24 @@ The `openShift()` function in `shift_open.html` transition flow:
 - `git diff --check`: Zero whitespace/layout errors
 - `git status --short`: Only `SyncProcessorPipelineIntegrationTests.cs` (untracked new file) and `.claude/settings.local.json` (tool config, not production code)
 
+## Verification Summary (Milestone 6.4 Group 1)
+
+### Design Decisions & Implementation Details
+- **Decoupled Retry Policy**: Implemented `ISyncRetryPolicy` and `SyncRetryPolicy` to handle capped exponential backoff and transient failure classifications without database updates or state dependencies.
+- **In-Memory Hot-loop Prevention**: Refactored `SyncProcessor.cs` to track consecutive failures in-memory and apply retry backoff delays to the main HostedService delay intervals.
+- **Timing-safe Test double pattern**: Introduced `ZeroBackoffRetryPolicy` inside `SyncProcessorTests` to preserve original test timings and prevent test slow-downs, while verifying backoff behaviors with `FakeSyncRetryPolicy`.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **144/144 passed** (+26 test cases)
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncStaticAnalysisTests"`: **1/1 passed**
+- `dotnet test POS.slnx --configuration Debug`: **664/664 passed** (595 desktop tests + 69 API integration tests)
+
+### Git hygiene
+- `git diff --check`: Zero whitespace/layout errors
+
 ## Next Recommended Milestone
-- **Phase 6 / Milestone 6.3: COMPLETE** (all 10 tasks done)
-- **Next: Phase 6 / Milestone 6.4 — Retry and backoff / quarantine** (failed post handling, dead-letter, exponential backoff)
+- **Phase 6 / Milestone 6.4: Group 1 COMPLETE** (Tasks 6.4.1 & 6.4.6 complete)
+- **Next**: Group 2 (Tasks 6.4.2 & 6.4.3 - Durable retry state with `LocalRecoveryJournal` and Quarantine / DeadLetter rules)

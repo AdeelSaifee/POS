@@ -34,6 +34,7 @@ public sealed class SyncDiResolutionTests
         var batchReader = sp.GetRequiredService<ISyncOutboxBatchReader>();
         var requestBuilder = sp.GetRequiredService<ISyncIngestRequestBuilder>();
         var ackApplier = sp.GetRequiredService<ISyncAckApplier>();
+        var retryPolicy = sp.GetRequiredService<ISyncRetryPolicy>();
         var hostedServices = sp.GetServices<IHostedService>();
 
         // Assert
@@ -46,9 +47,11 @@ public sealed class SyncDiResolutionTests
         Assert.NotNull(batchReader);
         Assert.NotNull(requestBuilder);
         Assert.NotNull(ackApplier);
+        Assert.NotNull(retryPolicy);
         Assert.IsType<SyncIngestRequestBuilder>(requestBuilder);
         Assert.IsType<EfSyncOutboxBatchReader>(batchReader);
         Assert.IsType<EfSyncAckApplier>(ackApplier);
+        Assert.IsType<SyncRetryPolicy>(retryPolicy);
         Assert.Contains(hostedServices, s => s is SyncProcessor);
 
         // Verify default options bindings are resolved from appsettings.json
@@ -58,6 +61,9 @@ public sealed class SyncDiResolutionTests
         Assert.Equal(300, options.ClockSkewSeconds);
         Assert.Equal(50, processorOptions.BatchSize);
         Assert.Equal(10, processorOptions.PollIntervalSeconds);
+        Assert.Equal(2, processorOptions.InitialBackoffSeconds);
+        Assert.Equal(300, processorOptions.MaxBackoffSeconds);
+        Assert.Equal(2.0, processorOptions.BackoffMultiplier);
 
         // Verify token provider is UnconfiguredDeviceTokenProvider by default
         Assert.IsType<UnconfiguredDeviceTokenProvider>(tokenProvider);

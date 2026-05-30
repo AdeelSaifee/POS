@@ -106,4 +106,52 @@ public sealed class SyncProcessorOptionsTests
         Assert.NotNull(errorMessage);
         Assert.Contains("PollIntervalSeconds", errorMessage);
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(3601)]
+    public void SyncProcessorOptions_InvalidInitialBackoffSeconds_FailsValidation(int value)
+    {
+        var options = new SyncProcessorOptions { InitialBackoffSeconds = value };
+        var isValid = options.Validate(out var errorMessage);
+        Assert.False(isValid);
+        Assert.NotNull(errorMessage);
+        Assert.Contains("InitialBackoffSeconds", errorMessage);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(3601)]
+    public void SyncProcessorOptions_InvalidMaxBackoffSeconds_FailsValidation(int value)
+    {
+        var options = new SyncProcessorOptions { MaxBackoffSeconds = value };
+        var isValid = options.Validate(out var errorMessage);
+        Assert.False(isValid);
+        Assert.NotNull(errorMessage);
+        Assert.Contains("MaxBackoffSeconds", errorMessage);
+    }
+
+    [Fact]
+    public void SyncProcessorOptions_MaxBackoffLessThanInitialBackoff_FailsValidation()
+    {
+        var options = new SyncProcessorOptions { InitialBackoffSeconds = 10, MaxBackoffSeconds = 5 };
+        var isValid = options.Validate(out var errorMessage);
+        Assert.False(isValid);
+        Assert.NotNull(errorMessage);
+        Assert.Contains("MaxBackoffSeconds cannot be less than InitialBackoffSeconds", errorMessage);
+    }
+
+    [Theory]
+    [InlineData(0.9)]
+    [InlineData(10.1)]
+    public void SyncProcessorOptions_InvalidBackoffMultiplier_FailsValidation(double value)
+    {
+        var options = new SyncProcessorOptions { BackoffMultiplier = value };
+        var isValid = options.Validate(out var errorMessage);
+        Assert.False(isValid);
+        Assert.NotNull(errorMessage);
+        Assert.Contains("BackoffMultiplier", errorMessage);
+    }
 }

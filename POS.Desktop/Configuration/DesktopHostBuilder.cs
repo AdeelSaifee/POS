@@ -96,6 +96,7 @@ public static class DesktopHostBuilder
                 services.AddScoped<ISyncOutboxBatchReader, EfSyncOutboxBatchReader>();
                 services.AddScoped<ISyncAckApplier, EfSyncAckApplier>();
                 services.AddScoped<ISyncQuarantineService, SyncQuarantineService>();
+                services.AddScoped<ISyncPaymentReconciliationService, SyncPaymentReconciliationService>();
                 services.AddHostedService<SyncProcessor>();
                 services.AddHttpClient<ISyncIngestClient, SyncIngestClient>((serviceProvider, client) =>
                 {

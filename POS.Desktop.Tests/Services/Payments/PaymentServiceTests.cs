@@ -153,6 +153,10 @@ public class PaymentServiceTests : IDisposable
         Assert.NotNull(savedPayment);
         Assert.Equal(1, savedPayment.TenderMethodId);
         Assert.Equal(105m, savedPayment.Amount);
+        Assert.False(savedPayment.RequiresReconciliation);
+
+        var hasRecon = await db.PaymentReconciliationQueue.AnyAsync(r => r.PaymentId == savedPayment.Id);
+        Assert.False(hasRecon);
 
         // Draft cart must be cleared
         Assert.True(stubOrderService.ClearCartCalled);
@@ -247,6 +251,14 @@ public class PaymentServiceTests : IDisposable
         Assert.NotNull(savedPayment);
         Assert.Equal(2, savedPayment.TenderMethodId);
         Assert.Equal("TXN-CARD-99", savedPayment.ExternalPaymentReference);
+        Assert.True(savedPayment.RequiresReconciliation);
+
+        var reconRow = await db.PaymentReconciliationQueue.FirstOrDefaultAsync(r => r.PaymentId == savedPayment.Id);
+        Assert.NotNull(reconRow);
+        Assert.Null(reconRow.PaymentToken); // Assert PaymentToken is null per security rules
+        Assert.Equal(PaymentReconciliationStatus.Pending, reconRow.Status);
+        Assert.Equal("TXN-CARD-99", reconRow.ExternalPaymentReference);
+        Assert.Equal($"reconciliation:payment:{savedPayment.Id}", reconRow.IdempotencyKey);
     }
 
     [Fact]

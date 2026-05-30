@@ -383,9 +383,11 @@ public sealed class PaymentService : IPaymentService
         }
 
         var payments = new List<LocalPayment>();
+        var reconciliationEntries = new List<PaymentReconciliationQueue>();
         foreach (var tender in request.Tenders)
         {
             var method = dbTenderMethods.First(m => m.Id == tender.TenderMethodId);
+            var requiresReconciliation = RequiresReconciliation(method, tender.ExternalPaymentReference);
 
             var localPayment = new LocalPayment
             {
@@ -412,7 +414,7 @@ public sealed class PaymentService : IPaymentService
                 CardLast4 = null,
                 FailureCode = null,
                 FailureMessage = null,
-                RequiresReconciliation = false,
+                RequiresReconciliation = requiresReconciliation,
                 ReconciledOn = null,
                 ProcessedOn = DateTimeOffset.UtcNow,
                 SyncedOn = null,
@@ -426,6 +428,37 @@ public sealed class PaymentService : IPaymentService
                 UpdatedOn = null
             };
             payments.Add(localPayment);
+
+            if (requiresReconciliation)
+            {
+                var reconEntry = new PaymentReconciliationQueue
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = currentTenantId,
+                    LocationId = currentLocationId,
+                    TerminalId = currentTerminalId,
+                    OrderId = orderId,
+                    PaymentId = localPayment.Id,
+                    TenderMethodId = localPayment.TenderMethodId,
+                    ExternalPaymentReference = localPayment.ExternalPaymentReference,
+                    PaymentToken = null, // Set to null per security rule
+                    Status = PaymentReconciliationStatus.Pending,
+                    AttemptCount = 0,
+                    NextAttemptOn = null,
+                    LastAttemptOn = null,
+                    LastResultCode = null,
+                    LastResultMessage = null,
+                    IdempotencyKey = $"reconciliation:payment:{localPayment.Id}",
+                    CorrelationId = correlationId,
+                    RetainUntil = null,
+                    IsActive = true,
+                    CreatedBy = currentSession.DisplayName,
+                    CreatedOn = localOrder.CreatedOn,
+                    UpdatedBy = null,
+                    UpdatedOn = null
+                };
+                reconciliationEntries.Add(reconEntry);
+            }
         }
 
         // 14. Execute atomic SQLite transaction commit with Concurrency Unique Constraint Race Handler
@@ -599,6 +632,10 @@ public sealed class PaymentService : IPaymentService
             _db.LocalPayments.AddRange(payments);
             _db.SyncOutbox.Add(syncOutbox);
             _db.PrintQueue.Add(printQueue);
+            if (reconciliationEntries.Count > 0)
+            {
+                _db.PaymentReconciliationQueue.AddRange(reconciliationEntries);
+            }
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -781,5 +818,33 @@ public sealed class PaymentService : IPaymentService
             builder.Append(bytes[i].ToString("x2"));
         }
         return builder.ToString();
+    }
+
+    private static readonly string[] ExternalTenderTypes = new[] { "Card", "Wallet", "Online", "Bank", "External", "Digital" };
+
+    private bool RequiresReconciliation(LocalTenderMethod method, string? externalReference)
+    {
+        if (string.Equals(method.TenderType, "Cash", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (method.RequiresExternalReference)
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(externalReference))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrEmpty(method.TenderType) &&
+            ExternalTenderTypes.Contains(method.TenderType, StringComparer.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return false;
     }
 }

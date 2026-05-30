@@ -969,4 +969,172 @@ public sealed class SyncAckApplierTests : IDisposable
         Assert.Equal(SyncOutboxStatus.Pending, dbRow.Status);
         Assert.Equal(0, dbRow.AttemptCount);
     }
+
+    [Fact]
+    public async Task ApplySuccessAsync_ReconcilesCardPayments_UpdatesQueueAndLocalPayment()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext();
+        using var db = CreateDbContext(context);
+
+        var reconciliationService = new SyncPaymentReconciliationService(db, context, NullLogger<SyncPaymentReconciliationService>.Instance);
+        var applier = new EfSyncAckApplier(db, context, new SyncProcessorOptions(), reconciliationService, NullLogger<EfSyncAckApplier>.Instance);
+
+        var orderId = Guid.NewGuid();
+        var row = CreateTestOutbox(id: orderId, eventType: "OrderCompleted", eventId: orderId, idempotencyKey: "idem-ord");
+        db.SyncOutbox.Add(row);
+
+        // Add a card payment that requires reconciliation
+        var payment = new LocalPayment
+        {
+            Id = Guid.NewGuid(),
+            TenantId = context.CurrentTenantId,
+            OrderId = orderId,
+            LocationId = context.CurrentLocationId,
+            TerminalId = context.CurrentTerminalId,
+            TenderMethodId = 2,
+            RequiresReconciliation = true,
+            Status = PaymentStatus.Paid,
+            IsActive = true,
+            IdempotencyKey = "idem-pay",
+            CorrelationId = row.CorrelationId,
+            CreatedBy = "Operator",
+            CreatedOn = DateTimeOffset.UtcNow
+        };
+        db.LocalPayments.Add(payment);
+
+        // Add corresponding queue row in Pending status
+        var queueRow = new PaymentReconciliationQueue
+        {
+            Id = Guid.NewGuid(),
+            TenantId = context.CurrentTenantId,
+            LocationId = context.CurrentLocationId,
+            TerminalId = context.CurrentTerminalId,
+            OrderId = orderId,
+            PaymentId = payment.Id,
+            TenderMethodId = 2,
+            Status = PaymentReconciliationStatus.Pending,
+            IdempotencyKey = $"reconciliation:payment:{payment.Id}",
+            CorrelationId = row.CorrelationId,
+            IsActive = true,
+            CreatedBy = "Operator",
+            CreatedOn = DateTimeOffset.UtcNow
+        };
+        db.PaymentReconciliationQueue.Add(queueRow);
+        await db.SaveChangesAsync();
+
+        var item = ToBatchItem(row);
+        var ev = ToRequestEvent(item, 10);
+        var batch = new SyncOutboxBatch(new[] { item });
+        var request = new SyncIngestRequest(1, 10, 20, 10, "idem-chunk", "hash-chunk", "corr-chunk", new[] { ev });
+        var response = new SyncIngestResponse(
+            Guid.NewGuid(), 10, "idem-chunk", "Received", 1,
+            new[] { new SyncIngestEventAck(ev.EventId, ev.IdempotencyKey, ev.TerminalSequence, "Received", null, null) },
+            null, null);
+
+        // Act
+        var result = await applier.ApplySuccessAsync(batch, request, response);
+
+        // Assert
+        Assert.True(result.Success);
+
+        // Verify LocalPayment requires reconciliation is cleared
+        var dbPayment = await db.LocalPayments.FindAsync(payment.Id);
+        Assert.NotNull(dbPayment);
+        Assert.False(dbPayment.RequiresReconciliation);
+        Assert.NotNull(dbPayment.ReconciledOn);
+
+        // Verify Queue Row transitioned to ResolvedCaptured
+        var dbQueueRow = await db.PaymentReconciliationQueue.FindAsync(queueRow.Id);
+        Assert.NotNull(dbQueueRow);
+        Assert.Equal(PaymentReconciliationStatus.ResolvedCaptured, dbQueueRow.Status);
+        Assert.Equal("SYNC_ACK", dbQueueRow.LastResultCode);
+        Assert.Contains("successfully uploaded", dbQueueRow.LastResultMessage);
+    }
+
+    [Fact]
+    public async Task ApplySuccessAsync_ReplayedSyncAck_IsIdempotentForPayments()
+    {
+        // Arrange
+        var context = new TestProvisionedTerminalContext();
+        using var db = CreateDbContext(context);
+
+        var reconciliationService = new SyncPaymentReconciliationService(db, context, NullLogger<SyncPaymentReconciliationService>.Instance);
+        var applier = new EfSyncAckApplier(db, context, new SyncProcessorOptions(), reconciliationService, NullLogger<EfSyncAckApplier>.Instance);
+
+        var orderId = Guid.NewGuid();
+
+        // Outbox row is still Pending (but Central already has it, and payment/queue are already resolved locally)
+        var row = CreateTestOutbox(id: orderId, eventType: "OrderCompleted", eventId: orderId, idempotencyKey: "idem-ord");
+        row.Status = SyncOutboxStatus.Pending;
+        db.SyncOutbox.Add(row);
+
+        // Payment is already reconciled
+        var payment = new LocalPayment
+        {
+            Id = Guid.NewGuid(),
+            TenantId = context.CurrentTenantId,
+            OrderId = orderId,
+            LocationId = context.CurrentLocationId,
+            TerminalId = context.CurrentTerminalId,
+            TenderMethodId = 2,
+            RequiresReconciliation = false, // already false
+            ReconciledOn = DateTimeOffset.UtcNow.AddMinutes(-5),
+            Status = PaymentStatus.Paid,
+            IsActive = true,
+            IdempotencyKey = "idem-pay",
+            CorrelationId = row.CorrelationId,
+            CreatedBy = "Operator",
+            CreatedOn = DateTimeOffset.UtcNow
+        };
+        db.LocalPayments.Add(payment);
+
+        // Queue row is already ResolvedCaptured
+        var queueRow = new PaymentReconciliationQueue
+        {
+            Id = Guid.NewGuid(),
+            TenantId = context.CurrentTenantId,
+            LocationId = context.CurrentLocationId,
+            TerminalId = context.CurrentTerminalId,
+            OrderId = orderId,
+            PaymentId = payment.Id,
+            TenderMethodId = 2,
+            Status = PaymentReconciliationStatus.ResolvedCaptured,
+            IdempotencyKey = $"reconciliation:payment:{payment.Id}",
+            CorrelationId = row.CorrelationId,
+            IsActive = true,
+            CreatedBy = "Operator",
+            CreatedOn = DateTimeOffset.UtcNow
+        };
+        db.PaymentReconciliationQueue.Add(queueRow);
+        await db.SaveChangesAsync();
+
+        var item = ToBatchItem(row);
+        var ev = ToRequestEvent(item, 10);
+        var batch = new SyncOutboxBatch(new[] { item });
+        var request = new SyncIngestRequest(1, 10, 20, 10, "idem-chunk", "hash-chunk", "corr-chunk", new[] { ev });
+        var response = new SyncIngestResponse(
+            Guid.NewGuid(), 10, "idem-chunk", "Received", 1,
+            new[] { new SyncIngestEventAck(ev.EventId, ev.IdempotencyKey, ev.TerminalSequence, "Received", null, null) },
+            null, null);
+
+        // Act
+        var result = await applier.ApplySuccessAsync(batch, request, response);
+
+        // Assert
+        Assert.True(result.Success);
+
+        // Outbox row is now Acked
+        var dbRow = await db.SyncOutbox.FindAsync(row.Id);
+        Assert.NotNull(dbRow);
+        Assert.Equal(SyncOutboxStatus.Acked, dbRow.Status);
+
+        var dbPayment = await db.LocalPayments.FindAsync(payment.Id);
+        Assert.NotNull(dbPayment);
+        Assert.False(dbPayment.RequiresReconciliation);
+
+        var dbQueueRow = await db.PaymentReconciliationQueue.FindAsync(queueRow.Id);
+        Assert.NotNull(dbQueueRow);
+        Assert.Equal(PaymentReconciliationStatus.ResolvedCaptured, dbQueueRow.Status);
+    }
 }

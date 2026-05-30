@@ -2,19 +2,19 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 6 / Milestone 6.4 - Retry, recovery & reconciliation
-- **Group**: Group 2 (Tasks 6.4.1, 6.4.2, 6.4.3, 6.4.6, 6.4.7, 6.4.9 completed)
+- **Group**: Group 3 (Tasks 6.4.4, 6.4.5, 6.4.10 completed)
 
 ## Status of All Milestone 6.4 Tasks
 - `[x]` Task 6.4.1 - Define a retry policy (Completed)
 - `[x]` Task 6.4.2 - Persist retry state (Completed)
 - `[x]` Task 6.4.3 - Bound retries / quarantine (Completed)
-- `[ ]` Task 6.4.4 - Wire reconciliation queue (Pending)
-- `[ ]` Task 6.4.5 - Reconcile payment acks (Pending)
+- `[x]` Task 6.4.4 - Wire reconciliation queue (Completed)
+- `[x]` Task 6.4.5 - Reconcile payment acks (Completed)
 - `[x]` Task 6.4.6 - Prevent failure hot-loops (Completed)
 - `[x]` Task 6.4.7 - Surface quarantined items (Completed)
 - `[ ]` Task 6.4.8 - Test transient → eventual success (Pending)
 - `[x]` Task 6.4.9 - Test poison handling (Completed)
-- `[ ]` Task 6.4.10 - Test reconciliation closes loop (Pending)
+- `[x]` Task 6.4.10 - Test reconciliation closes loop (Completed)
 
 
 ## Status of All Milestone 6.3 Tasks (ALL COMPLETE)
@@ -115,6 +115,16 @@
 - [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncDiResolutionTests.cs` (Added container resolution assertions for ISyncRetryPolicy and validated bound appsettings configuration)
 - [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorTests.cs` (Defined FakeSyncRetryPolicy and ZeroBackoffRetryPolicy helper classes, refactored test constructors, and added loop backoff lifecycle unit tests)
 - [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorPipelineIntegrationTests.cs` (Registered and passed ISyncRetryPolicy dependency in pipeline tests helper DI setup)
+
+### Phase 6 / Milestone 6.4 - Group 3 (Tasks 6.4.4, 6.4.5, and 6.4.10 completed)
+- [ADD] `POS.Desktop/Services/Sync/ISyncPaymentReconciliationService.cs` (Interface contract for matching and reconciling synchronized payments inside SQLite transactions)
+- [ADD] `POS.Desktop/Services/Sync/SyncPaymentReconciliationService.cs` (Concrete service implementing location, terminal, and tenant-isolated payment reconciliation, transitioning matched local payments and queue status to resolved states)
+- [MODIFY] `POS.Desktop/Services/Payments/PaymentService.cs` (Atomic payment reconciliation queue logging during CompleteOrderAsync based on case-insensitive card/wallet/online/bank/external/digital tender classifications and non-blank external references, strictly setting PaymentToken to null for safety)
+- [MODIFY] `POS.Desktop/Services/Sync/EfSyncAckApplier.cs` (Injected ISyncPaymentReconciliationService and called ReconcilePaymentsAsync on successful sync acknowledgements for completed orders)
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs` (Registered ISyncPaymentReconciliationService in dependency injection container)
+- [MODIFY] `POS.Desktop.Tests/Services/Payments/PaymentServiceTests.cs` (Updated tests to assert no reconciliation for cash completions, and assert RequiresReconciliation = true, PaymentToken = null, and pending queue rows for card completions)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncAckApplierTests.cs` (Added unit tests to assert card payment reconciliation updates and safe idempotent replay checks)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorPipelineIntegrationTests.cs` (Added SyncProcessor_ReconciliationClosesLoop_UpdatesQueueAndLocalPayment integration test to verify the complete closed-loop reconciliation flow end-to-end)
 
 ### Phase 6 / Milestone 6.3 - Group 5 (Task 6.3.10 completed)
 - [ADD] `POS.Desktop.Tests/Services/Sync/SyncProcessorPipelineIntegrationTests.cs` (2 SyncProcessor-driven integration tests proving the complete desktop push pipeline end-to-end using real SQLite, real EF reader/builder/ack applier, fake capturing ISyncIngestClient, and TaskCompletionSource synchronization)
@@ -1062,3 +1072,29 @@ The `openShift()` function in `shift_open.html` transition flow:
 ## Next Recommended Milestone
 - **Phase 6 / Milestone 6.4: Group 2 COMPLETE** (Tasks 6.4.2, 6.4.3, 6.4.7, and 6.4.9 complete)
 - **Next**: Group 3 (Tasks 6.4.4 & 6.4.5 - Wire reconciliation queue and Reconcile payment acks)
+
+## Verification Summary (Milestone 6.4 Group 3)
+
+### Design Decisions & Implementation Details
+- **Decoupled Reconciliation Service**: Designed and implemented `ISyncPaymentReconciliationService` and `SyncPaymentReconciliationService` to isolate payment reconciliation logic.
+- **Tender Classification Rules**: Implemented tender classification rules to reconcile payments representing external payment methods (case-insensitive string checks on `"Card"`, `"Wallet"`, `"Online"`, `"Bank"`, `"External"`, `"Digital"`, or if `RequiresExternalReference` is true, or if `ExternalPaymentReference` is present). Explicitly excluded cash tenders.
+- **Durable Queue Operations**: During payment completion inside the atomic order database transaction (`CompleteOrderAsync` in `PaymentService.cs`), created pending reconciliation queue records with unique idempotency keys (`reconciliation:payment:{paymentId}`).
+- **Strict Token Security**: Confirmed that `PaymentReconciliationQueue.PaymentToken` is set to null, and `PaymentToken` is never copied, logged, or exposed in any logs or DTOs.
+- **Transaction-Linked Ack Application**: Inside `EfSyncAckApplier.ApplySuccessAsync`, successfully chained constructor for existing DI compatibility, parsed completed order IDs from `OrderCompleted` outbox event types, and invoked the reconciliation service inside the active SQLite transaction boundary.
+- **Idempotency & Replay-Safety**: Handled existing records by gracefully ignoring already reconciled rows in subsequent sync runs, keeping updates replay-safe.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Payments"`: **20/20 passed**
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **163/163 passed** (+7 new test cases including replay safety and closed-loop integration testing)
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~SyncStaticAnalysisTests"`: **1/1 passed**
+- `dotnet test POS.slnx --configuration Debug`: **683/683 passed** (614 desktop tests + 69 API integration tests)
+
+### Git hygiene
+- `git diff --check`: Zero whitespace/layout errors
+
+## Next Recommended Milestone
+- **Phase 6 / Milestone 6.4: Group 3 COMPLETE** (Tasks 6.4.4, 6.4.5, and 6.4.10 complete)
+- **Next**: Group 4 (Task 6.4.8 - Test transient → eventual success)

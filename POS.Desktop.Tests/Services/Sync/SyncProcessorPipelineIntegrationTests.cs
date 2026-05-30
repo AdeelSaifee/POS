@@ -217,6 +217,7 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
         // Register the concrete EfSyncAckApplier so the wrapper factory can resolve it per scope.
         services.AddScoped<EfSyncAckApplier>();
         services.AddScoped<ISyncQuarantineService, SyncQuarantineService>();
+        services.AddScoped<ISyncPaymentReconciliationService, SyncPaymentReconciliationService>();
 
         // The SignalingSyncAckApplier is registered as the ISyncAckApplier binding.
         // Each scope creates its own instance wrapping the real EfSyncAckApplier; both
@@ -369,5 +370,114 @@ public sealed class SyncProcessorPipelineIntegrationTests : IDisposable
             assertDb, ctx, options, NullLogger<EfSyncOutboxBatchReader>.Instance);
         var batchAfterAck = await reader.ReadPendingBatchAsync();
         Assert.False(batchAfterAck.HasItems);
+    }
+
+    /// <summary>
+    /// Proves that when a card payment requires reconciliation, completing a push/ack cycle via the SyncProcessor
+    /// successfully triggers the reconciliation service, updates the LocalPayment RequiresReconciliation to false,
+    /// and transitions the PaymentReconciliationQueue item to ResolvedCaptured.
+    /// </summary>
+    [Fact]
+    public async Task SyncProcessor_ReconciliationClosesLoop_UpdatesQueueAndLocalPayment()
+    {
+        // Arrange
+        var ctx = new TestProvisionedTerminalContext();
+        var options = new SyncProcessorOptions { BatchSize = 50, PollIntervalSeconds = 60 };
+
+        var orderId = Guid.NewGuid();
+        var paymentId = Guid.NewGuid();
+        var tenderMethodId = 2; // Card tender method
+
+        using var seedDb = CreateDbContext(ctx);
+
+        var payment = new LocalPayment
+        {
+            Id = paymentId,
+            TenantId = ctx.CurrentTenantId,
+            OrderId = orderId,
+            LocationId = ctx.CurrentLocationId,
+            TerminalId = ctx.CurrentTerminalId,
+            TenderMethodId = tenderMethodId,
+            BusinessDate = new DateOnly(2026, 5, 30),
+            TerminalSequence = 101,
+            PaymentType = PaymentType.Sale,
+            Status = PaymentStatus.Paid,
+            Amount = 150m,
+            RequiresReconciliation = true,
+            ProcessedOn = DateTimeOffset.UtcNow,
+            IsActive = true,
+            CreatedBy = "test",
+            CreatedOn = DateTimeOffset.UtcNow
+        };
+
+        var queueRow = new PaymentReconciliationQueue
+        {
+            Id = Guid.NewGuid(),
+            TenantId = ctx.CurrentTenantId,
+            LocationId = ctx.CurrentLocationId,
+            TerminalId = ctx.CurrentTerminalId,
+            OrderId = orderId,
+            PaymentId = paymentId,
+            TenderMethodId = tenderMethodId,
+            ExternalPaymentReference = "TXN-CARD-99",
+            Status = PaymentReconciliationStatus.Pending,
+            AttemptCount = 0,
+            IdempotencyKey = $"reconciliation:payment:{paymentId}",
+            IsActive = true,
+            CreatedBy = "test",
+            CreatedOn = DateTimeOffset.UtcNow
+        };
+
+        var outboxRow = new SyncOutbox
+        {
+            Id = Guid.NewGuid(),
+            TenantId = ctx.CurrentTenantId,
+            LocationId = ctx.CurrentLocationId,
+            TerminalId = ctx.CurrentTerminalId,
+            BusinessDate = new DateOnly(2026, 5, 30),
+            TerminalSequence = 101,
+            EventType = "OrderCompleted",
+            EventId = orderId,
+            PayloadJson = "{\"orderId\":\"" + orderId + "\"}",
+            PayloadHash = "test-payload-hash-002",
+            IdempotencyKey = $"order-completed:{orderId}",
+            CorrelationId = "test-corr-id",
+            Status = SyncOutboxStatus.Pending,
+            IsActive = true,
+            AttemptCount = 0,
+            CreatedBy = "test",
+            CreatedOn = DateTimeOffset.UtcNow
+        };
+
+        seedDb.LocalPayments.Add(payment);
+        seedDb.PaymentReconciliationQueue.Add(queueRow);
+        seedDb.SyncOutbox.Add(outboxRow);
+        await seedDb.SaveChangesAsync();
+
+        var fakeClient = new CapturingSyncIngestClient();
+        var ackTcs = new TaskCompletionSource<SyncAckApplyResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await using var sp = BuildPipelineServiceProvider(ctx, options, fakeClient, ackTcs);
+        var processor = BuildProcessor(sp, ctx, options);
+
+        // Act
+        await processor.StartAsync(CancellationToken.None);
+        var ackResult = await ackTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await processor.StopAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(ackResult.Success);
+
+        // Verify Db rows
+        using var assertDb = CreateDbContext(ctx);
+        var updatedPayment = await assertDb.LocalPayments.FindAsync(paymentId);
+        Assert.NotNull(updatedPayment);
+        Assert.False(updatedPayment.RequiresReconciliation);
+        Assert.NotNull(updatedPayment.ReconciledOn);
+
+        var updatedQueueRow = await assertDb.PaymentReconciliationQueue.FirstOrDefaultAsync(q => q.PaymentId == paymentId);
+        Assert.NotNull(updatedQueueRow);
+        Assert.Equal(PaymentReconciliationStatus.ResolvedCaptured, updatedQueueRow.Status);
+        Assert.Equal("SYNC_ACK", updatedQueueRow.LastResultCode);
     }
 }

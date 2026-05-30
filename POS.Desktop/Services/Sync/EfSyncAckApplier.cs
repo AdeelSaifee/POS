@@ -23,6 +23,7 @@ public sealed class EfSyncAckApplier : ISyncAckApplier
     private readonly PosLocalDbContext _db;
     private readonly IProvisionedTerminalContext _provisioningContext;
     private readonly SyncProcessorOptions _options;
+    private readonly ISyncPaymentReconciliationService _reconciliationService;
     private readonly ILogger<EfSyncAckApplier> _logger;
 
     /// <summary>
@@ -51,10 +52,29 @@ public sealed class EfSyncAckApplier : ISyncAckApplier
         IProvisionedTerminalContext provisioningContext,
         SyncProcessorOptions options,
         ILogger<EfSyncAckApplier> logger)
+        : this(db, provisioningContext, options, new SyncPaymentReconciliationService(db, provisioningContext, Microsoft.Extensions.Logging.Abstractions.NullLogger<SyncPaymentReconciliationService>.Instance), logger)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="EfSyncAckApplier"/>.
+    /// </summary>
+    /// <param name="db">The local database context.</param>
+    /// <param name="provisioningContext">The provisioning state helper.</param>
+    /// <param name="options">The sync processor options.</param>
+    /// <param name="reconciliationService">The payment reconciliation service.</param>
+    /// <param name="logger">The logger helper.</param>
+    public EfSyncAckApplier(
+        PosLocalDbContext db,
+        IProvisionedTerminalContext provisioningContext,
+        SyncProcessorOptions options,
+        ISyncPaymentReconciliationService reconciliationService,
+        ILogger<EfSyncAckApplier> logger)
     {
         _db = db ?? throw new ArgumentNullException(nameof(db));
         _provisioningContext = provisioningContext ?? throw new ArgumentNullException(nameof(provisioningContext));
         _options = options ?? throw new ArgumentNullException(nameof(options));
+        _reconciliationService = reconciliationService ?? throw new ArgumentNullException(nameof(reconciliationService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -223,6 +243,17 @@ public sealed class EfSyncAckApplier : ISyncAckApplier
                     CreatedOn = now
                 };
                 _db.SyncCursors.Add(cursor);
+            }
+
+            // Reconcile payments for completed orders in this batch
+            var completedOrderIds = dbRows
+                .Where(x => string.Equals(x.EventType, "OrderCompleted", StringComparison.OrdinalIgnoreCase))
+                .Select(x => x.EventId)
+                .ToList();
+
+            if (completedOrderIds.Count > 0)
+            {
+                await _reconciliationService.ReconcilePaymentsAsync(completedOrderIds, cancellationToken).ConfigureAwait(false);
             }
 
             // Save modifications

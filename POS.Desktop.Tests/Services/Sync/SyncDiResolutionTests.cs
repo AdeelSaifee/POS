@@ -31,6 +31,7 @@ public sealed class SyncDiResolutionTests
         var processorOptionsWrapper = sp.GetRequiredService<IOptions<SyncProcessorOptions>>();
         var tokenProvider = sp.GetRequiredService<IDeviceTokenProvider>();
         var syncClient = sp.GetRequiredService<ISyncIngestClient>();
+        var batchReader = sp.GetRequiredService<ISyncOutboxBatchReader>();
         var hostedServices = sp.GetServices<IHostedService>();
 
         // Assert
@@ -40,6 +41,8 @@ public sealed class SyncDiResolutionTests
         Assert.NotNull(processorOptionsWrapper);
         Assert.NotNull(tokenProvider);
         Assert.NotNull(syncClient);
+        Assert.NotNull(batchReader);
+        Assert.IsType<EfSyncOutboxBatchReader>(batchReader);
         Assert.Contains(hostedServices, s => s is SyncProcessor);
 
         // Verify default options bindings are resolved from appsettings.json

@@ -91,6 +91,7 @@ public static class DesktopHostBuilder
                 services.Configure<SyncProcessorOptions>(hostContext.Configuration.GetSection("Sync"));
                 services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<SyncProcessorOptions>>().Value);
                 services.AddSingleton<IDeviceTokenProvider, UnconfiguredDeviceTokenProvider>();
+                services.AddScoped<ISyncOutboxBatchReader, EfSyncOutboxBatchReader>();
                 services.AddHostedService<SyncProcessor>();
                 services.AddHttpClient<ISyncIngestClient, SyncIngestClient>((serviceProvider, client) =>
                 {

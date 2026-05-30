@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using POS.Shared.Contracts;
@@ -15,6 +16,7 @@ public sealed class SyncProcessor : BackgroundService
     private readonly ILogger<SyncProcessor> _logger;
     private readonly IProvisionedTerminalContext _provisioningContext;
     private readonly SyncProcessorOptions _options;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     /// <summary>
     /// Initializes a new instance of <see cref="SyncProcessor"/>.
@@ -22,14 +24,17 @@ public sealed class SyncProcessor : BackgroundService
     /// <param name="logger">The logger helper.</param>
     /// <param name="provisioningContext">The provisioning state helper.</param>
     /// <param name="options">The sync processor options.</param>
+    /// <param name="scopeFactory">The service scope factory to manage scoped services safely.</param>
     public SyncProcessor(
         ILogger<SyncProcessor> logger,
         IProvisionedTerminalContext provisioningContext,
-        SyncProcessorOptions options)
+        SyncProcessorOptions options,
+        IServiceScopeFactory scopeFactory)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _provisioningContext = provisioningContext ?? throw new ArgumentNullException(nameof(provisioningContext));
         _options = options ?? throw new ArgumentNullException(nameof(options));
+        _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
     }
 
     /// <inheritdoc />
@@ -88,12 +93,34 @@ public sealed class SyncProcessor : BackgroundService
     }
 
     /// <summary>
-    /// Placeholder method representing a single processor sweep.
-    /// For Group 1, this does not query database, call HTTP client, or mutate state.
+    /// Performs a single processor sweep using a scoped batch reader to query pending events.
     /// </summary>
-    private Task RunOnceAsync(CancellationToken cancellationToken)
+    private async Task RunOnceAsync(CancellationToken cancellationToken)
     {
-        _logger.LogDebug("RunOnceAsync placeholder boundary executed.");
-        return Task.CompletedTask;
+        try
+        {
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var reader = scope.ServiceProvider.GetRequiredService<ISyncOutboxBatchReader>();
+
+            var batch = await reader.ReadPendingBatchAsync(cancellationToken).ConfigureAwait(false);
+
+            if (batch.HasItems)
+            {
+                _logger.LogInformation("SyncProcessor assembled outbox batch containing {Count} pending events.", batch.Count);
+            }
+            else
+            {
+                _logger.LogDebug("SyncProcessor assembled an empty outbox batch.");
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Propagate cancellation correctly
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to execute outbox batch read cycle in RunOnceAsync.");
+        }
     }
 }

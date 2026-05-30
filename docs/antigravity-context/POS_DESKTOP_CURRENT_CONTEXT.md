@@ -2,12 +2,12 @@
 
 ## Current Milestone & Group
 - **Milestone**: Phase 6 / Milestone 6.3 - Outbox drain processor
-- **Group**: Group 1 (Tasks 6.3.1, 6.3.2, 6.3.7, 6.3.8, 6.3.9 - completed)
+- **Group**: Group 2 (Task 6.3.3 - completed)
 
-## Status of All Milestone 6.3 Tasks (Group 1 COMPLETE)
+## Status of All Milestone 6.3 Tasks (Group 2 COMPLETE)
 - `[x]` Task 6.3.1 - Define the SyncProcessor (Completed)
 - `[x]` Task 6.3.2 - Register as a hosted service (Completed)
-- `[ ]` Task 6.3.3 - Batch unsent outbox rows
+- `[x]` Task 6.3.3 - Batch unsent outbox rows (Completed)
 - `[ ]` Task 6.3.4 - Post the batch
 - `[ ]` Task 6.3.5 - Mark rows sent on success
 - `[ ]` Task 6.3.6 - Advance the cursor
@@ -90,6 +90,17 @@
 - `[x]` Task 5.2.10 - End-to-end verification: full builds, full test suite, search checks, SHA-256 sync checks, bug fix for stale docs copy
 
 ## Files Created/Changed in this Milestone
+
+### Phase 6 / Milestone 6.3 - Group 2 (Task 6.3.3 completed)
+- [ADD] `POS.Desktop/Services/Sync/SyncOutboxBatch.cs` (Read-only record holding a read-only projection list of SyncOutbox items)
+- [ADD] `POS.Desktop/Services/Sync/SyncOutboxBatchItem.cs` (Read-only projected DTO modeling SyncOutbox columns to protect tracking state)
+- [ADD] `POS.Desktop/Services/Sync/ISyncOutboxBatchReader.cs` (Interface contract for querying pending outbox records)
+- [ADD] `POS.Desktop/Services/Sync/EfSyncOutboxBatchReader.cs` (EF Core non-tracking implementation with index-optimized sequencing)
+- [MODIFY] `POS.Desktop/Configuration/DesktopHostBuilder.cs` (Registered scoped business service ISyncOutboxBatchReader)
+- [MODIFY] `POS.Desktop/Services/Sync/SyncProcessor.cs` (Injected IServiceScopeFactory, resolved scoped batch reader inside transient scopes, and logged pending counts)
+- [ADD] `POS.Desktop.Tests/Services/Sync/SyncOutboxBatchReaderTests.cs` (Robust in-memory SQLite integration tests covering unprovisioned safety, status filters, ordering constraints, and batch sizing)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncProcessorTests.cs` (Updated worker unit tests to supply clean mock service scope factory and stubbed reader)
+- [MODIFY] `POS.Desktop.Tests/Services/Sync/SyncDiResolutionTests.cs` (Verify hosted container resolves ISyncOutboxBatchReader as EfSyncOutboxBatchReader)
 
 ### Phase 6 / Milestone 6.3 - Group 1 (Tasks 6.3.1, 6.3.2, 6.3.7 - 6.3.9 completed)
 - [ADD] `POS.Desktop/Services/Sync/SyncProcessorOptions.cs` (Configuration options for worker batch size and poll interval with validation)
@@ -687,6 +698,22 @@ The `openShift()` function in `shift_open.html` transition flow:
 - `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **68/68 passed** (+17 new test cases/methods for processor lifecycle and options)
 - `dotnet test POS.slnx --configuration Debug`: **588/588 passed** (519 desktop tests + 69 API integration tests)
 
+## Verification Summary (Milestone 6.3 Group 2)
+
+### Design Decisions & Implementation Details
+- **Decoupled Captive Dependency Management**: Created a separate scoped interface `ISyncOutboxBatchReader` and implementation `EfSyncOutboxBatchReader` to query SQLite. Resolved it dynamically inside `SyncProcessor` (Singleton) loop cycles using short-lived scopes generated via `IServiceScopeFactory`, protecting host DB container lifecycle limits.
+- **Index-Optimized Sequencing**: Aligned the LINQ outbox query strictly with the composite SQLite database index `IX_SyncOutbox_Status_Order` (Status, BusinessDate, TerminalSequence) using `.OrderBy(x => x.BusinessDate).ThenBy(x => x.TerminalSequence).ThenBy(x => x.Id)` to bypass expensive full-table scans.
+- **No-Tracking Projection**: Mapped records directly into lightweight, read-only DTO records (`SyncOutboxBatch` and `SyncOutboxBatchItem`) with `.AsNoTracking()`. This reduces change tracking allocations and guarantees that subsequent worker code cannot accidentally mutate in-memory entities.
+- **Robust Integration Testing**: Created `SyncOutboxBatchReaderTests.cs` using native in-memory SQLite providers. Verified unprovisioned terminal logic, status filtering boundaries, identity matches, chronological sequences, and batch size take limits without external third-party mocking packages.
+- **Asynchronous Safety Check**: Verified that no blocking calls (`.Result`, `.Wait()`, or `GetAwaiter().GetResult()`) exist in the new files via `SyncStaticAnalysisTests.cs`.
+
+### Builds
+- `dotnet build POS.slnx --configuration Debug`: **0 errors / 0 warnings**
+
+### Tests
+- `dotnet test POS.Desktop.Tests/POS.Desktop.Tests.csproj --configuration Debug --filter "FullyQualifiedName~Services.Sync"`: **74/74 passed** (+6 new integration tests verifying query constraints, batch ordering, and projections; +0 regressions)
+- `dotnet test POS.slnx --configuration Debug`: **594/594 passed** (525 desktop tests + 69 API integration tests)
+
 ## Next Recommended Milestone
-- **Phase 6 / Milestone 6.3 - Group 2 / Task 6.3.3 Batch unsent outbox rows**
+- **Phase 6 / Milestone 6.3 - Group 3 / Task 6.3.4 Post the batch**
 
